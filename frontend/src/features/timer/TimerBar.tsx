@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import type { TimeEntry } from '../../api/types'
+import type { EntrySuggestion, TimeEntry } from '../../api/types'
 import { DollarIcon, FolderIcon, PlayIcon, StopIcon } from '../../components/icons'
 import { entrySeconds, formatDuration } from '../../lib/time'
 import { useNow } from '../../lib/useNow'
 import { ProjectLabel } from '../projects/ProjectLabel'
+import { DescriptionInput } from '../time-entries/DescriptionInput'
 import { ProjectPicker } from '../projects/ProjectPicker'
 import { useProjectLookup } from '../projects/useProjects'
 import {
@@ -82,6 +83,12 @@ export function TimerBar() {
     else startTimer.mutate({ description, project_id: projectId })
   }
 
+  const handleSuggestion = (suggestion: EntrySuggestion) => {
+    setDescription(suggestion.description)
+    setProjectId(suggestion.project_id)
+    commit(suggestion.description, suggestion.project_id)
+  }
+
   const handleProjectChange = (nextProjectId: string | null) => {
     setProjectId(nextProjectId)
     commit(description, nextProjectId)
@@ -91,22 +98,20 @@ export function TimerBar() {
 
   return (
     <div className="flex h-20 shrink-0 items-center gap-4 border-b border-line bg-surface px-8">
-      <input
+      <DescriptionInput
         value={description}
         maxLength={MAX_DESCRIPTION_LENGTH}
-        onChange={(event) => setDescription(event.target.value)}
+        onChange={setDescription}
+        onSelect={handleSuggestion}
+        onSelectProject={handleProjectChange}
         onFocus={() => setIsEditing(true)}
         onBlur={() => {
           setIsEditing(false)
           commit(description, projectId)
         }}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter') return
-          if (running) event.currentTarget.blur()
-          else handleStartStop()
-        }}
+        onSubmit={(input) => (running ? input.blur() : handleStartStop())}
         placeholder={running ? '(no description)' : 'What are you working on?'}
-        className="h-full min-w-0 flex-1 bg-transparent text-lg outline-none placeholder:text-muted"
+        className="h-full w-full bg-transparent text-lg outline-none placeholder:text-muted"
       />
       <ProjectPicker
         value={projectId}

@@ -46,6 +46,15 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Entry across midnight split correctly across both days, day totals correct
 - [!] Failed start (server unreachable) keeps the typed description (was wiped)
 
+## 3b. Description suggestions
+- [x] Clicking an empty description shows recent previous entries (description + project/client)
+- [!] Opening an entry in the calendar auto-focused the description and popped the list open; the list now opens only on click, typing or ArrowDown
+- [x] Typing filters by description, then project/client name; a "Projects" section lists matching projects
+- [x] Entries older than a week still suggested (5-week-old entry found); only own entries; deleted entries and archived projects excluded
+- [x] Picking a suggestion fills description and project; idle timer doesn't start until Enter/Start; running timer is updated
+- [x] Works in the entry editor too; first Escape closes only the dropdown
+- [!] After Escape, ArrowDown + Enter submitted the typed text instead of selecting (options now computed while closed)
+
 ## 4. Manual entries and editing
 - [!] Drag on calendar creates entry with exact snapped times (fast drags lost the end; fixed)
 - [x] Single click on calendar creates a 30-minute draft

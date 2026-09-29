@@ -6,6 +6,7 @@ FastAPI + PostgreSQL backend, React frontend, deployed with Docker Compose on a 
 ## Features
 
 - **Timer**: start/stop from the top bar, edit description and project while running, one running timer per user, billable indicator from the project.
+- **Description suggestions**: typing a description suggests your previous entries (no time limit) and matching projects; picking one fills in the description, project and client, like Toggl.
 - **Calendar view**: week grid (5 or 7 days) with zoom, drag or click to create entries, click to edit, day and week totals.
 - **List view**: entries grouped by day with totals; continue, edit or delete an entry.
 - **Preferences**: view, days shown, zoom and light/dark theme (brandbook colors, toggle in the sidebar) are saved per user on the server.

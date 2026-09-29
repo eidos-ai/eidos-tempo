@@ -1,6 +1,6 @@
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
 
-const CONTROL_CLASSES =
+export const CONTROL_CLASSES =
   'h-10 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20'
 
 interface FieldProps {

@@ -64,6 +64,11 @@ export interface TimeEntryInput {
   stop: string | null
 }
 
+export interface EntrySuggestion {
+  description: string
+  project_id: string | null
+}
+
 export interface TimerStartInput {
   description: string
   project_id: string | null

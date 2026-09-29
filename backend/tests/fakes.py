@@ -5,7 +5,7 @@ from app.domain.clients import Client
 from app.domain.ids import ClientId, ProjectId, TimeEntryId, UserId
 from app.domain.projects import Project
 from app.domain.sessions import AuthSession
-from app.domain.time_entries import TimeEntry
+from app.domain.time_entries import EntrySuggestion, TimeEntry
 from app.domain.users import User
 from app.domain.value_objects import DateRange, EmailAddress
 from app.repositories.protocols import Repositories
@@ -140,6 +140,19 @@ class InMemoryTimeEntryRepository:
 
     def lock_user_entries(self, user_id: UserId) -> None:
         pass
+
+    def list_suggestions(self, user_id: UserId, limit: int) -> list[EntrySuggestion]:
+        latest: dict[tuple[str, ProjectId | None], datetime] = {}
+        for entry in self.items.values():
+            if entry.user_id != user_id or entry.is_deleted or not entry.description:
+                continue
+            key = (entry.description, entry.project_id)
+            latest[key] = max(latest.get(key, entry.start), entry.start)
+        ranked = sorted(latest.items(), key=lambda item: item[1], reverse=True)[:limit]
+        return [
+            EntrySuggestion(description, project_id, used)
+            for (description, project_id), used in ranked
+        ]
 
     def list_overlapping(self, user_id: UserId, period: DateRange) -> list[TimeEntry]:
         entries = [

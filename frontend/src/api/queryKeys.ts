@@ -5,6 +5,7 @@ export const queryKeys = {
   projects: ['projects'] as const,
   timeEntries: ['time-entries'] as const,
   runningEntry: ['time-entries', 'running'] as const,
+  entrySuggestions: ['time-entries', 'suggestions'] as const,
   weekEntries: ['time-entries', 'week'] as const,
   week: (weekStart: Date) => ['time-entries', 'week', weekStart.toISOString()] as const,
 }

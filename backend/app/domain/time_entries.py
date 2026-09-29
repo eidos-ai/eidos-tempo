@@ -37,6 +37,13 @@ class TimeEntry:
         self.stop = when
 
 
+@dataclass(frozen=True)
+class EntrySuggestion:
+    description: str
+    project_id: ProjectId | None
+    last_used: datetime
+
+
 def ensure_valid_period(start: datetime, stop: datetime | None) -> None:
     if start.tzinfo is None or (stop is not None and stop.tzinfo is None):
         raise InvalidValueError("Time entry times must be timezone-aware")

@@ -4,7 +4,12 @@ from fastapi import APIRouter, status
 from pydantic import AwareDatetime
 
 from app.api.deps import CurrentUser, TimeEntryServiceDep
-from app.api.schemas.time_entries import TimeEntryIn, TimeEntryOut, TimerStartIn
+from app.api.schemas.time_entries import (
+    EntrySuggestionOut,
+    TimeEntryIn,
+    TimeEntryOut,
+    TimerStartIn,
+)
 from app.domain.ids import TimeEntryId
 from app.domain.value_objects import DateRange
 
@@ -17,6 +22,11 @@ def list_entries(
 ) -> list[TimeEntryOut]:
     period = DateRange(start=start, end=end)
     return [TimeEntryOut.from_domain(entry) for entry in entries.list_entries(actor, period)]
+
+
+@router.get("/suggestions")
+def list_suggestions(actor: CurrentUser, entries: TimeEntryServiceDep) -> list[EntrySuggestionOut]:
+    return [EntrySuggestionOut.from_domain(s) for s in entries.list_suggestions(actor)]
 
 
 @router.get("/running")

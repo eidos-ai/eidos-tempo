@@ -113,3 +113,35 @@ def test_session_refresh_and_expired_cleanup(sql_repositories: Repositories) -> 
     assert stored is not None
     assert stored.expires_at == NOW + timedelta(days=90)
     assert sql_repositories.sessions.get(expired.token_hash) is None
+
+
+def test_suggestions_group_by_description_and_project(sql_repositories: Repositories) -> None:
+    user = make_user(sql_repositories)
+    other = User(
+        id=UserId(new_uuid()),
+        email=EmailAddress("other@eidos.ai"),
+        full_name="Other",
+        role=Role.MEMBER,
+        password_hash="hash",
+        created_at=NOW,
+    )
+    sql_repositories.users.add(other)
+    for hours, description, owner in [
+        (1, "Review", user),
+        (3, "Review", user),
+        (2, "Planning", user),
+        (0, "", user),
+        (0, "Not mine", other),
+    ]:
+        entry = make_entry(
+            owner, NOW + timedelta(hours=hours), NOW + timedelta(hours=hours, minutes=30)
+        )
+        entry.description = description
+        sql_repositories.time_entries.add(entry)
+
+    suggestions = sql_repositories.time_entries.list_suggestions(user.id, limit=10)
+
+    assert [(s.description, s.last_used) for s in suggestions] == [
+        ("Review", NOW + timedelta(hours=3)),
+        ("Planning", NOW + timedelta(hours=2)),
+    ]

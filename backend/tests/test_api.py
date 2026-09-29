@@ -70,3 +70,14 @@ def test_active_session_cookie_is_renewed(api_client: TestClient, api_clock: Fak
     renewed = api_client.get("/api/me")
     assert renewed.status_code == 200
     assert "tempo_session=" in renewed.headers["set-cookie"]
+
+
+def test_suggestions_endpoint(api_client: TestClient) -> None:
+    login(api_client)
+    api_client.post("/api/time-entries/start", json={"description": "Deep work"})
+    api_client.post("/api/time-entries/stop")
+
+    response = api_client.get("/api/time-entries/suggestions")
+
+    assert response.status_code == 200
+    assert response.json() == [{"description": "Deep work", "project_id": None}]

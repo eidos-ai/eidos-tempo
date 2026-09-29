@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 
 from app.domain.errors import ConflictError, InvalidValueError, NotFoundError
+from app.domain.ids import ProjectId
 from app.domain.users import User
 from app.domain.value_objects import DateRange, HexColor
 from app.services.projects import ProjectDraft, ProjectService
@@ -121,3 +122,50 @@ def test_archived_project_cannot_be_used_for_new_entries(
     )
     with pytest.raises(InvalidValueError):
         time_entry_service.start_timer(member, TimerStart("x", project.id))
+
+
+def test_suggestions_are_distinct_recent_first_and_exclude_unusable_entries(
+    time_entry_service: TimeEntryService,
+    project_service: ProjectService,
+    admin: User,
+    member: User,
+    clock: FakeClock,
+) -> None:
+    active = project_service.create_project(
+        admin, ProjectDraft("Active", HexColor("#7b4de7"), None, True)
+    )
+    retired = project_service.create_project(
+        admin, ProjectDraft("Retired", HexColor("#3f8f87"), None, True)
+    )
+
+    def log(
+        description: str, project_id: ProjectId | None, hours_ago: int, user: User = member
+    ) -> None:
+        start = clock.now() - timedelta(hours=hours_ago)
+        time_entry_service.create_entry(
+            user, TimeEntryDraft(description, project_id, start, start + timedelta(minutes=30))
+        )
+
+    log("Model training", active.id, hours_ago=10)
+    log("Standup", None, hours_ago=5)
+    log("Model training", active.id, hours_ago=2)
+    log("Old work", retired.id, hours_ago=3)
+    log("", active.id, hours_ago=1)
+    log("Admin only", None, hours_ago=1, user=admin)
+    deleted_start = clock.now() - timedelta(hours=1)
+    deleted = time_entry_service.create_entry(
+        member, TimeEntryDraft("Deleted", None, deleted_start, clock.now())
+    )
+    time_entry_service.delete_entry(member, deleted.id)
+    project_service.update_project(
+        admin,
+        retired.id,
+        ProjectDraft("Retired", HexColor("#3f8f87"), None, True, is_archived=True),
+    )
+
+    suggestions = time_entry_service.list_suggestions(member)
+
+    assert [(s.description, s.project_id) for s in suggestions] == [
+        ("Model training", active.id),
+        ("Standup", None),
+    ]

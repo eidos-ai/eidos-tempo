@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import AwareDatetime, BaseModel
 
 from app.domain.ids import ProjectId
-from app.domain.time_entries import TimeEntry
+from app.domain.time_entries import EntrySuggestion, TimeEntry
 from app.services.time_entries import TimeEntryDraft, TimerStart
 
 
@@ -24,6 +24,15 @@ class TimeEntryOut(BaseModel):
             start=entry.start,
             stop=entry.stop,
         )
+
+
+class EntrySuggestionOut(BaseModel):
+    description: str
+    project_id: UUID | None
+
+    @classmethod
+    def from_domain(cls, suggestion: EntrySuggestion) -> "EntrySuggestionOut":
+        return cls(description=suggestion.description, project_id=suggestion.project_id)
 
 
 class TimerStartIn(BaseModel):

@@ -1,10 +1,10 @@
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.db.models import TimeEntryRow, UserRow
 from app.domain.errors import NotFoundError
 from app.domain.ids import ProjectId, TimeEntryId, UserId
-from app.domain.time_entries import TimeEntry
+from app.domain.time_entries import EntrySuggestion, TimeEntry
 from app.domain.value_objects import DateRange
 
 
@@ -41,6 +41,28 @@ class SqlTimeEntryRepository:
             .order_by(TimeEntryRow.start.desc())
         )
         return [to_time_entry(row) for row in self._session.scalars(query)]
+
+    def list_suggestions(self, user_id: UserId, limit: int) -> list[EntrySuggestion]:
+        last_used = func.max(TimeEntryRow.start).label("last_used")
+        query = (
+            select(TimeEntryRow.description, TimeEntryRow.project_id, last_used)
+            .where(
+                TimeEntryRow.user_id == user_id,
+                TimeEntryRow.deleted_at.is_(None),
+                TimeEntryRow.description != "",
+            )
+            .group_by(TimeEntryRow.description, TimeEntryRow.project_id)
+            .order_by(last_used.desc())
+            .limit(limit)
+        )
+        return [
+            EntrySuggestion(
+                description=row.description,
+                project_id=ProjectId(row.project_id) if row.project_id else None,
+                last_used=row.last_used,
+            )
+            for row in self._session.execute(query)
+        ]
 
     def add(self, entry: TimeEntry) -> None:
         row = TimeEntryRow(id=entry.id)

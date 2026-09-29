@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import type { TimeEntry, TimeEntryInput } from '../../api/types'
 import { Button } from '../../components/Button'
-import { Field, TextInput } from '../../components/Field'
+import { CONTROL_CLASSES, Field, TextInput } from '../../components/Field'
 import { Modal } from '../../components/Modal'
 import { formatDuration, fromDateTimeInputValue, toDateTimeInputValue } from '../../lib/time'
 import { ProjectLabel } from '../projects/ProjectLabel'
 import { ProjectPicker } from '../projects/ProjectPicker'
+import { DescriptionInput } from '../time-entries/DescriptionInput'
 import { useCreateEntry, useDeleteEntry, useUpdateEntry } from '../time-entries/useTimeEntries'
 import { MAX_DESCRIPTION_LENGTH } from './TimerBar'
 
@@ -63,11 +64,17 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
     <Modal title={existing ? 'Edit time entry' : 'New time entry'} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Field label="Description">
-          <TextInput
+          <DescriptionInput
             value={description}
             maxLength={MAX_DESCRIPTION_LENGTH}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={setDescription}
+            onSelect={(suggestion) => {
+              setDescription(suggestion.description)
+              setProjectId(suggestion.project_id)
+            }}
+            onSelectProject={setProjectId}
             placeholder="What did you work on?"
+            className={CONTROL_CLASSES}
             autoFocus
           />
         </Field>

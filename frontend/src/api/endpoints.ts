@@ -1,6 +1,7 @@
 import { http } from './client'
 import type {
   Client,
+  EntrySuggestion,
   ClientInput,
   Preferences,
   Project,
@@ -54,6 +55,7 @@ export const timeEntriesApi = {
       `/time-entries?start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`,
     ),
   running: () => http.get<TimeEntry | null>('/time-entries/running'),
+  suggestions: () => http.get<EntrySuggestion[]>('/time-entries/suggestions'),
   start: (input: TimerStartInput) => http.post<TimeEntry>('/time-entries/start', input),
   stop: () => http.post<TimeEntry>('/time-entries/stop'),
   create: (input: TimeEntryInput) => http.post<TimeEntry>('/time-entries', input),

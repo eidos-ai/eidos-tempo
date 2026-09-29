@@ -4,12 +4,13 @@ from datetime import datetime
 from app.domain.clock import Clock
 from app.domain.errors import ConflictError, InvalidValueError, NotFoundError
 from app.domain.ids import ProjectId, TimeEntryId, new_uuid
-from app.domain.time_entries import TimeEntry, ensure_valid_period
+from app.domain.time_entries import EntrySuggestion, TimeEntry, ensure_valid_period
 from app.domain.users import User
 from app.domain.value_objects import DateRange
 from app.repositories.protocols import ProjectRepository, TimeEntryRepository
 
 MAX_DESCRIPTION_LENGTH = 500
+MAX_SUGGESTIONS = 300
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,16 @@ class TimeEntryService:
 
     def list_entries(self, actor: User, period: DateRange) -> list[TimeEntry]:
         return self._entries.list_overlapping(actor.id, period)
+
+    def list_suggestions(self, actor: User) -> list[EntrySuggestion]:
+        active_projects = {
+            project.id for project in self._projects.list_all(include_archived=False)
+        }
+        return [
+            suggestion
+            for suggestion in self._entries.list_suggestions(actor.id, MAX_SUGGESTIONS)
+            if suggestion.project_id is None or suggestion.project_id in active_projects
+        ]
 
     def get_running(self, actor: User) -> TimeEntry | None:
         return self._entries.get_running(actor.id)

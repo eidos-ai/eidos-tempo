@@ -18,6 +18,7 @@ MEMBER_ROUTES = {
     ("GET", "/api/projects"),
     ("GET", "/api/time-entries"),
     ("GET", "/api/time-entries/running"),
+    ("GET", "/api/time-entries/suggestions"),
     ("POST", "/api/time-entries/start"),
     ("POST", "/api/time-entries/stop"),
     ("POST", "/api/time-entries"),
