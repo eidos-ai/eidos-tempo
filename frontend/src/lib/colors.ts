@@ -15,9 +15,10 @@ export const PROJECT_COLORS = [
 
 export const NO_PROJECT_COLOR = '#9D9AC8'
 
-export function withAlpha(hexColor: string, alpha: number): string {
-  const channel = Math.round(alpha * 255)
-    .toString(16)
-    .padStart(2, '0')
-  return `${hexColor}${channel}`
+export function projectTextColor(color: string): string {
+  return `color-mix(in srgb, ${color} var(--project-text-strength), var(--color-ink))`
+}
+
+export function projectTint(color: string): string {
+  return `color-mix(in srgb, ${color} var(--project-tint), transparent)`
 }

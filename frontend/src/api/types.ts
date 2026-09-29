@@ -2,11 +2,13 @@ export type Role = 'admin' | 'member'
 export type TimerView = 'calendar' | 'list'
 export type CalendarZoom = 1 | 2 | 3 | 4 | 5
 export type DaysShown = 5 | 7
+export type Theme = 'light' | 'dark'
 
 export interface Preferences {
   calendar_zoom: CalendarZoom
   default_view: TimerView
   days_shown: DaysShown
+  theme: Theme
 }
 
 export interface User {

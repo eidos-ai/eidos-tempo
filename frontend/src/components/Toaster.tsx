@@ -21,7 +21,7 @@ export function Toaster() {
 
   if (!message) return null
   return (
-    <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-ink px-4 py-3 text-sm text-white shadow-xl">
+    <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-inverse px-4 py-3 text-sm text-on-inverse shadow-xl">
       {message}
     </div>
   )

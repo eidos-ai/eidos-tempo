@@ -6,6 +6,9 @@ import { App } from './App'
 import { Toaster } from './components/Toaster'
 import './index.css'
 import { queryClient } from './lib/queryClient'
+import { applyTheme, cachedTheme } from './lib/theme'
+
+applyTheme(cachedTheme())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

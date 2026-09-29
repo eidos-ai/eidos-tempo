@@ -4,7 +4,15 @@ from sqlalchemy.orm import Session
 from app.db.models import UserRow
 from app.domain.errors import NotFoundError
 from app.domain.ids import UserId
-from app.domain.users import CalendarZoom, DaysShown, Role, TimerView, User, UserPreferences
+from app.domain.users import (
+    CalendarZoom,
+    DaysShown,
+    Role,
+    Theme,
+    TimerView,
+    User,
+    UserPreferences,
+)
 from app.domain.value_objects import EmailAddress
 
 
@@ -51,6 +59,7 @@ def to_user(row: UserRow) -> User:
             calendar_zoom=CalendarZoom(row.calendar_zoom),
             default_view=TimerView(row.default_view),
             days_shown=DaysShown(row.days_shown),
+            theme=Theme(row.theme),
         ),
     )
 
@@ -64,4 +73,5 @@ def apply_user(row: UserRow, user: User) -> None:
     row.calendar_zoom = user.preferences.calendar_zoom.value
     row.default_view = user.preferences.default_view.value
     row.days_shown = user.preferences.days_shown.value
+    row.theme = user.preferences.theme.value
     row.created_at = user.created_at

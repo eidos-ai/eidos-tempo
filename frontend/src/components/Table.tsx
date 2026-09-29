@@ -22,7 +22,7 @@ export function Table({ headers, children }: { headers: string[]; children: Reac
 export function StatusBadge({ active, activeLabel = 'Active', inactiveLabel = 'Archived' }: { active: boolean; activeLabel?: string; inactiveLabel?: string }) {
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-xs font-medium ${active ? 'bg-primary-soft text-primary-strong' : 'bg-canvas text-muted'}`}
+      className={`rounded-full px-2 py-0.5 text-xs font-medium ${active ? 'bg-primary-soft text-accent' : 'bg-canvas text-muted'}`}
     >
       {active ? activeLabel : inactiveLabel}
     </span>

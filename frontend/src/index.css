@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "DM Sans", "Inter", ui-sans-serif, sans-serif;
@@ -15,6 +17,7 @@
   --color-primary: #7b4de7;
   --color-primary-strong: #5325b8;
   --color-primary-soft: #f1ecfd;
+  --color-accent: #5325b8;
   --color-deep: #2d008c;
   --color-lavender: #9d9ac8;
   --color-rose: #d4a8ad;
@@ -22,6 +25,43 @@
 
   --color-stop: #e26d5c;
   --color-danger: #c93c3c;
+
+  --color-inverse: #181633;
+  --color-on-inverse: #ffffff;
+  --color-overlay: rgb(24 22 51 / 0.3);
+  --color-logo: #181633;
+}
+
+:root {
+  color-scheme: light;
+  --project-text-strength: 100%;
+  --project-tint: 16%;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --project-text-strength: 55%;
+  --project-tint: 30%;
+
+  --color-ink: #f3eee6;
+  --color-ink-soft: #cfc9e3;
+  --color-muted: #9d9ac8;
+  --color-canvas: #181633;
+  --color-surface: #201d40;
+  --color-line: #2d2952;
+  --color-line-strong: #3e3970;
+
+  --color-primary-strong: #9470ee;
+  --color-primary-soft: #2c2560;
+  --color-accent: #c9b6f8;
+
+  --color-stop: #e8806f;
+  --color-danger: #f08a8a;
+
+  --color-inverse: #f3eee6;
+  --color-on-inverse: #181633;
+  --color-overlay: rgb(8 7 20 / 0.6);
+  --color-logo: #e1ccb3;
 }
 
 html,
@@ -32,6 +72,11 @@ body,
 
 body {
   @apply bg-canvas text-ink font-sans antialiased;
+}
+
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
 }
 
 button {

@@ -3,13 +3,22 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.domain.users import CalendarZoom, DaysShown, Role, TimerView, User, UserPreferences
+from app.domain.users import (
+    CalendarZoom,
+    DaysShown,
+    Role,
+    Theme,
+    TimerView,
+    User,
+    UserPreferences,
+)
 
 
 class PreferencesSchema(BaseModel):
     calendar_zoom: CalendarZoom
     default_view: TimerView
     days_shown: DaysShown
+    theme: Theme
 
     @classmethod
     def from_domain(cls, preferences: UserPreferences) -> "PreferencesSchema":
@@ -17,6 +26,7 @@ class PreferencesSchema(BaseModel):
             calendar_zoom=preferences.calendar_zoom,
             default_view=preferences.default_view,
             days_shown=preferences.days_shown,
+            theme=preferences.theme,
         )
 
     def to_domain(self) -> UserPreferences:
@@ -24,6 +34,7 @@ class PreferencesSchema(BaseModel):
             calendar_zoom=self.calendar_zoom,
             default_view=self.default_view,
             days_shown=self.days_shown,
+            theme=self.theme,
         )
 
 

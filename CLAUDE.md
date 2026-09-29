@@ -61,7 +61,13 @@ Dependencies point inward only: `api → services → repositories (protocols) �
 - The current user comes from `useCurrentUser()` (context provided by `RequireAuth`); never read the
   session query directly in pages.
 - Styling: Tailwind v4 with Eidos brand tokens in `index.css` (`--color-primary`, `--color-ink`, ...).
-  Fonts: DM Sans (`font-display`) for headings and the timer, Inter for UI text. Light theme only.
+  Fonts: DM Sans (`font-display`) for headings and the timer, Inter for UI text.
+- Themes: light and dark, stored per user in `preferences.theme` and applied as `data-theme` on `<html>`
+  (`lib/theme.ts`; cached in localStorage only to avoid a flash on load). Dark values override the same
+  tokens under `:root[data-theme="dark"]`. Always use tokens (`bg-surface`, `text-ink`, `text-accent`,
+  `bg-inverse`, `bg-overlay`), never raw colors or `text-white`/`bg-ink` for surfaces. Project colors go
+  through `projectTextColor` / `projectTint` so they stay readable in both themes. Use the `dark:` variant
+  only for one-off cases (e.g. the login gradient). The logo is `<Logo>` (a mask colored by `--color-logo`).
 - TypeScript uses `erasableSyntaxOnly`: use string/number union types, not TS `enum`.
 
 ## Code standards

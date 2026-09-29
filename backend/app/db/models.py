@@ -38,6 +38,7 @@ class UserRow(Base):
     calendar_zoom: Mapped[int] = mapped_column(SmallInteger)
     default_view: Mapped[str] = mapped_column(String(20))
     days_shown: Mapped[int] = mapped_column(SmallInteger)
+    theme: Mapped[str] = mapped_column(String(10), server_default="light")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 

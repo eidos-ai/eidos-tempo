@@ -8,7 +8,15 @@ from app.domain.errors import (
     InvalidValueError,
     PermissionDeniedError,
 )
-from app.domain.users import CalendarZoom, DaysShown, Role, TimerView, User, UserPreferences
+from app.domain.users import (
+    CalendarZoom,
+    DaysShown,
+    Role,
+    Theme,
+    TimerView,
+    User,
+    UserPreferences,
+)
 from app.domain.value_objects import EmailAddress
 from app.repositories.protocols import Repositories
 from app.services.auth import AuthService
@@ -46,7 +54,9 @@ def test_change_own_password_checks_current(user_service: UserService, member: U
 
 
 def test_update_preferences(user_service: UserService, member: User) -> None:
-    preferences = UserPreferences(CalendarZoom.DETAILED, TimerView.LIST, DaysShown.FULL_WEEK)
+    preferences = UserPreferences(
+        CalendarZoom.DETAILED, TimerView.LIST, DaysShown.FULL_WEEK, Theme.DARK
+    )
 
     updated = user_service.update_preferences(member, preferences)
 

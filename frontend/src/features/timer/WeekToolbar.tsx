@@ -68,7 +68,7 @@ export function WeekToolbar(props: WeekToolbarProps) {
             <button
               key={value}
               onClick={() => onViewChange(value)}
-              className={`px-4 text-sm font-medium transition-colors ${view === value ? 'bg-primary-soft text-primary-strong' : 'text-ink-soft hover:bg-canvas'}`}
+              className={`px-4 text-sm font-medium transition-colors ${view === value ? 'bg-primary-soft text-accent' : 'text-ink-soft hover:bg-canvas'}`}
             >
               {label}
             </button>

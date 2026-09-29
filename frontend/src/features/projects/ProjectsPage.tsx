@@ -114,7 +114,7 @@ function ProjectEditor({ project, onClose }: { project: Project | null; onClose:
                 key={color}
                 aria-label={`Color ${color}`}
                 onClick={() => update('color', color)}
-                className={`size-6 rounded-full ring-offset-2 ${form.color === color ? 'ring-2 ring-ink' : ''}`}
+                className={`size-6 rounded-full border border-line-strong ring-offset-2 ring-offset-surface${form.color === color ? 'ring-2 ring-ink' : ''}`}
                 style={{ backgroundColor: color }}
               />
             ))}

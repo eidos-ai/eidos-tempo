@@ -134,3 +134,21 @@ export const CloseIcon = (props: IconProps) => (
     <path d="M18 6 6 18M6 6l12 12" />
   </Icon>
 )
+
+export const SunIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="4.2" fill="currentColor" fillOpacity="0.25" />
+    <path d="M12 2.8v1.6M12 19.6v1.6M2.8 12h1.6M19.6 12h1.6M5.5 5.5l1.1 1.1M17.4 17.4l1.1 1.1M5.5 18.5l1.1-1.1M17.4 6.6l1.1-1.1" />
+  </Icon>
+)
+
+export const MoonIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path
+      d="M19.5 14.6A7.8 7.8 0 0 1 9.4 4.5a7.8 7.8 0 1 0 10.1 10.1Z"
+      fill="currentColor"
+      fillOpacity="0.25"
+    />
+    <path d="M17 3.5v2.4M15.8 4.7h2.4" />
+  </Icon>
+)

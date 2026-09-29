@@ -8,7 +8,7 @@ FastAPI + PostgreSQL backend, React frontend, deployed with Docker Compose on a 
 - **Timer**: start/stop from the top bar, edit description and project while running, one running timer per user, billable indicator from the project.
 - **Calendar view**: week grid (5 or 7 days) with zoom, drag or click to create entries, click to edit, day and week totals.
 - **List view**: entries grouped by day with totals; continue, edit or delete an entry.
-- **Preferences**: view, days shown and zoom are saved per user on the server.
+- **Preferences**: view, days shown, zoom and light/dark theme (brandbook colors, toggle in the sidebar) are saved per user on the server.
 - **Stay logged in**: sessions renew automatically while you use the app; you only log in again after 90 days without using it.
 - **Admin**: manage members (roles, deactivation, password reset), clients and billable projects; archive instead of delete.
 - **Data safety**: users only see their own time, deleted entries are kept (soft delete), daily backups with a restore script.

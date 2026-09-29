@@ -81,6 +81,16 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] View, days shown, zoom persist across reload and are per user
 - [!] Rapid changes do not race (earlier changes were overwritten; fixed)
 
+## 8b. Theme
+- [!] Sun/moon toggle in the sidebar switches instantly between light and dark (color transitions briefly showed mixed colors; now paused during the switch)
+- [x] Theme is saved per user (survives reload; admin dark and member light kept separately)
+- [!] No light flash when loading in dark mode (theme was applied by the app bundle, possibly after first paint; now set by a blocking `theme-init.js`, allowed by the CSP)
+- [x] Every page readable in dark: timer, calendar blocks and labels, list, project picker, projects, clients, members, profile, modals, toasts, login
+- [x] Logo uses the brandbook dark treatment (sand on navy); login uses a navy→deep violet gradient
+- [x] Native controls (date pickers, selects, scrollbars) follow the theme
+- [!] Navy project swatch invisible on dark (outline added)
+- [!] Single click in the lower half of a calendar slot created a 15-minute entry instead of 30 (click now detected by mouse movement)
+
 ## 9. Admin: clients and projects
 - [x] Create client; duplicate name (any case) rejected; empty name rejected
 - [x] Rename and archive client; Show archived toggle

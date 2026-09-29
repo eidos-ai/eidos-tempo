@@ -1,8 +1,9 @@
 import type { ComponentType, SVGProps } from 'react'
 import { NavLink } from 'react-router-dom'
-import logo from '../assets/brand/eidos-logo.png'
 import { useCurrentUser, useLogout } from '../features/auth/useAuth'
 import { BriefcaseIcon, ClockIcon, FolderIcon, LogOutIcon, UserIcon, UsersIcon } from './icons'
+import { Logo } from './Logo'
+import { ThemeToggle } from './ThemeToggle'
 
 interface NavItem {
   to: string
@@ -27,7 +28,7 @@ function NavSection({ title, items }: { title: string; items: NavItem[] }) {
           to={to}
           className={({ isActive }) =>
             `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              isActive ? 'bg-primary-soft text-primary-strong' : 'text-ink-soft hover:bg-canvas hover:text-ink'
+              isActive ? 'bg-primary-soft text-accent' : 'text-ink-soft hover:bg-canvas hover:text-ink'
             }`
           }
         >
@@ -46,7 +47,7 @@ export function Sidebar() {
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-line bg-surface">
       <div className="px-5 py-5">
-        <img src={logo} alt="eidos.ai" className="h-7 w-auto" />
+        <Logo height={28} />
       </div>
       <nav className="flex-1 space-y-6 px-3 py-2">
         <NavSection title="Track" items={TRACK_ITEMS} />
@@ -54,6 +55,7 @@ export function Sidebar() {
         {user.role === 'admin' && <NavSection title="Admin" items={ADMIN_ITEMS} />}
       </nav>
       <div className="space-y-1 border-t border-line px-3 py-3">
+        <ThemeToggle />
         <NavLink
           to="/profile"
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-soft hover:bg-canvas hover:text-ink"

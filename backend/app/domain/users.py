@@ -29,11 +29,17 @@ class DaysShown(IntEnum):
     FULL_WEEK = 7
 
 
+class Theme(StrEnum):
+    LIGHT = "light"
+    DARK = "dark"
+
+
 @dataclass(frozen=True)
 class UserPreferences:
     calendar_zoom: CalendarZoom = CalendarZoom.NORMAL
     default_view: TimerView = TimerView.CALENDAR
     days_shown: DaysShown = DaysShown.WORK_WEEK
+    theme: Theme = Theme.LIGHT
 
 
 @dataclass

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import type { CalendarZoom, DaysShown, TimeEntry } from '../../api/types'
 import { MinusIcon, PlusIcon } from '../../components/icons'
-import { NO_PROJECT_COLOR, withAlpha } from '../../lib/colors'
+import { NO_PROJECT_COLOR, projectTextColor, projectTint } from '../../lib/colors'
 import {
   addDays,
   addMinutes,
@@ -24,6 +24,7 @@ const MAX_ZOOM: CalendarZoom = 5
 const MINUTES_PER_DAY = 24 * 60
 const DEFAULT_SCROLL_HOUR = 8
 const CLICK_ENTRY_MINUTES = 30
+const CLICK_TOLERANCE_PX = 4
 const MIN_BLOCK_HEIGHT = 12
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
 
@@ -76,15 +77,15 @@ export function CalendarView(props: CalendarViewProps) {
       const currentMinute = minuteFromEvent(moveEvent, column, Math.round)
       setDrag({ dayIndex, anchorMinute, currentMinute })
     }
+    const pressY = event.clientY
     const handleUp = (upEvent: MouseEvent) => {
       window.removeEventListener('mousemove', handleMove)
       setDrag(null)
+      const isClick = Math.abs(upEvent.clientY - pressY) < CLICK_TOLERANCE_PX
       const releaseMinute = minuteFromEvent(upEvent, column, Math.round)
-      const isClick = Math.abs(releaseMinute - anchorMinute) < snapMinutes
       const startMinute = isClick ? anchorMinute : Math.min(anchorMinute, releaseMinute)
-      const endMinute = isClick
-        ? Math.min(MINUTES_PER_DAY, anchorMinute + CLICK_ENTRY_MINUTES)
-        : Math.max(anchorMinute, releaseMinute)
+      const draggedEnd = Math.max(anchorMinute, releaseMinute, startMinute + snapMinutes)
+      const endMinute = Math.min(MINUTES_PER_DAY, isClick ? anchorMinute + CLICK_ENTRY_MINUTES : draggedEnd)
       onCreate(addMinutes(day, startMinute), addMinutes(day, endMinute))
     }
     window.addEventListener('mousemove', handleMove)
@@ -171,12 +172,12 @@ function DayHeader({ day, entries, now, isToday }: { day: Date; entries: TimeEnt
   return (
     <div className="flex items-center gap-2 border-l border-line px-3 py-3">
       <span
-        className={`flex size-10 items-center justify-center rounded-full font-display text-2xl ${isToday ? 'bg-primary-soft text-primary-strong' : ''}`}
+        className={`flex size-10 items-center justify-center rounded-full font-display text-2xl ${isToday ? 'bg-primary-soft text-accent' : ''}`}
       >
         {day.getDate()}
       </span>
       <div className="leading-tight">
-        <p className={`text-xs font-semibold uppercase ${isToday ? 'text-primary-strong' : 'text-ink-soft'}`}>
+        <p className={`text-xs font-semibold uppercase ${isToday ? 'text-accent' : 'text-ink-soft'}`}>
           {day.toLocaleDateString([], { weekday: 'short' })}
         </p>
         <p className="text-xs text-muted tabular-nums">{formatDuration(totalSeconds)}</p>
@@ -205,12 +206,12 @@ function EntryBlock({ segment, hourHeight, now, onSelect }: { segment: DaySegmen
         height,
         left: `calc(${(segment.lane / segment.laneCount) * 100}% + 2px)`,
         width: `calc(${100 / segment.laneCount}% - 4px)`,
-        backgroundColor: withAlpha(color, 0.16),
+        backgroundColor: projectTint(color),
         borderLeftColor: color,
       }}
     >
       {height >= 20 && <p className="truncate font-medium text-ink">{entry.description || '(no description)'}</p>}
-      {height >= 36 && project && <p className="truncate" style={{ color }}>{project.name}</p>}
+      {height >= 36 && project && <p className="truncate" style={{ color: projectTextColor(color) }}>{project.name}</p>}
       {height >= 52 && <p className="mt-0.5 text-ink-soft tabular-nums">{formatDuration(entrySeconds(entry, now))}</p>}
     </button>
   )
