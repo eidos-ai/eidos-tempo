@@ -17,11 +17,7 @@ export function useSession() {
   return useQuery({ queryKey: queryKeys.me, queryFn: fetchCurrentUser, staleTime: Infinity })
 }
 
-export function useCurrentUser(): User {
-  const { data } = useSession()
-  if (!data) throw new Error('useCurrentUser must be used inside an authenticated route')
-  return data
-}
+export { useCurrentUser } from './CurrentUserContext'
 
 export function useLogin() {
   const queryClient = useQueryClient()
@@ -37,8 +33,8 @@ export function useLogout() {
   return useMutation({
     mutationFn: authApi.logout,
     onSettled: () => {
-      queryClient.clear()
       queryClient.setQueryData(queryKeys.me, null)
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== queryKeys.me[0] })
     },
   })
 }
