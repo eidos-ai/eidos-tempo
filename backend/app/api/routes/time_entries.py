@@ -1,0 +1,57 @@
+from uuid import UUID
+
+from fastapi import APIRouter, status
+from pydantic import AwareDatetime
+
+from app.api.deps import CurrentUser, TimeEntryServiceDep
+from app.api.schemas.time_entries import TimeEntryIn, TimeEntryOut, TimerStartIn
+from app.domain.ids import TimeEntryId
+from app.domain.value_objects import DateRange
+
+router = APIRouter(prefix="/time-entries", tags=["time entries"])
+
+
+@router.get("")
+def list_entries(
+    start: AwareDatetime, end: AwareDatetime, actor: CurrentUser, entries: TimeEntryServiceDep
+) -> list[TimeEntryOut]:
+    period = DateRange(start=start, end=end)
+    return [TimeEntryOut.from_domain(entry) for entry in entries.list_entries(actor, period)]
+
+
+@router.get("/running")
+def get_running(actor: CurrentUser, entries: TimeEntryServiceDep) -> TimeEntryOut | None:
+    running = entries.get_running(actor)
+    return TimeEntryOut.from_domain(running) if running else None
+
+
+@router.post("/start", status_code=status.HTTP_201_CREATED)
+def start_timer(
+    body: TimerStartIn, actor: CurrentUser, entries: TimeEntryServiceDep
+) -> TimeEntryOut:
+    return TimeEntryOut.from_domain(entries.start_timer(actor, body.to_command()))
+
+
+@router.post("/stop")
+def stop_timer(actor: CurrentUser, entries: TimeEntryServiceDep) -> TimeEntryOut:
+    return TimeEntryOut.from_domain(entries.stop_timer(actor))
+
+
+@router.post("", status_code=status.HTTP_201_CREATED)
+def create_entry(
+    body: TimeEntryIn, actor: CurrentUser, entries: TimeEntryServiceDep
+) -> TimeEntryOut:
+    return TimeEntryOut.from_domain(entries.create_entry(actor, body.to_draft()))
+
+
+@router.put("/{entry_id}")
+def update_entry(
+    entry_id: UUID, body: TimeEntryIn, actor: CurrentUser, entries: TimeEntryServiceDep
+) -> TimeEntryOut:
+    entry = entries.update_entry(actor, TimeEntryId(entry_id), body.to_draft())
+    return TimeEntryOut.from_domain(entry)
+
+
+@router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_entry(entry_id: UUID, actor: CurrentUser, entries: TimeEntryServiceDep) -> None:
+    entries.delete_entry(actor, TimeEntryId(entry_id))

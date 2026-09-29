@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: tempo
+      POSTGRES_PASSWORD: tempo
+      POSTGRES_DB: tempo
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./.dev-data/pgdata:/var/lib/postgresql/data
