@@ -37,11 +37,23 @@ frontend/src/
   api/           Typed HTTP client, endpoints, types, query keys
   features/      One folder per feature (timer, calendar, list, projects, ...)
   components/    Shared UI (buttons, modal, sidebar, ...)
-  lib/           Time helpers, query client, toasts
+  lib/           Time helpers, query client, toasts, theme
 scripts/         Deploy, backup, restore and create-admin scripts
 ```
 
 The frontend is a pure client of the JSON API, so the planned reports API and Chrome extension reuse the same services.
+
+### Development vs production
+
+| | Development | Production |
+|---|---|---|
+| Database | `docker-compose.dev.yml` (Postgres only, `localhost:5433`) | `db` container in `docker-compose.yml` |
+| Backend | uvicorn on your machine with auto-reload | `backend` image built from `backend/Dockerfile` |
+| Frontend | Vite dev server with hot reload; proxies `/api` to the backend | `web` image: Vite builds static files, nginx serves them and proxies `/api` |
+| Backups | none | `backup` container (official Postgres image running `scripts/backup-loop.sh`) |
+
+Only two images are built (`backend` and `web`); `db` and `backup` use the official `postgres:17` image.
+Development runs no app images at all, so code changes show up instantly.
 
 ## Local development
 
@@ -79,9 +91,11 @@ The dev login credentials are defined in `backend/scripts/seed_dev.py`. API docs
 Run before every commit:
 
 ```bash
-cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check . && uv run mypy app scripts
+cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check . && uv run mypy app scripts tests
 cd frontend && npm run lint && npm run build
 ```
+
+There is no CI yet, so these checks are run by hand before committing.
 
 Postgres integration tests run when `TEMPO_TEST_DATABASE_URL` is set in `backend/.env` (it is in `.env.example`) and are skipped otherwise.
 
@@ -132,6 +146,9 @@ scripts/create-admin.sh you@eidos.ai "Your Name"  # first admin; admins create e
 ```
 
 Updating: `git pull && scripts/deploy.sh`. The script takes a pre-deploy backup when the stack is running.
+Images are built on the server from the checked-out code; there is no CI/CD pipeline or image registry yet.
+
+Current workflow: develop locally → run the checks → commit → push → on the server `git pull && scripts/deploy.sh`.
 
 HTTPS: put a TLS-terminating reverse proxy (e.g. Caddy or nginx with a certificate) in front of `TEMPO_HTTP_PORT` and keep `TEMPO_COOKIE_SECURE=true`. Over plain HTTP with `true`, browsers drop the session cookie and the login page explains the problem.
 
@@ -149,7 +166,7 @@ Logs: `docker compose logs -f backend` (also `web`, `db`, `backup`).
 
 The server is reachable from the internet, so:
 
-- **HTTPS is mandatory.** Without it, passwords and session cookies travel in plain text. Terminate TLS in front of nginx and keep `TEMPO_COOKIE_SECURE=true`.
+- **HTTPS is mandatory and not set up yet.** Without it, passwords and session cookies travel in plain text. Terminate TLS in front of nginx and keep `TEMPO_COOKIE_SECURE=true` before exposing the server.
 - **Firewall**: expose only 80/443 (and SSH restricted to key-based login). The database and backend are never published; only the `web` container has a port.
 - **Every API endpoint requires a session** except `POST /api/auth/login`, `POST /api/auth/logout` and `GET /api/health`. Admin endpoints return 403 to members. `backend/tests/test_endpoint_protection.py` enforces this for every route.
 - **Login brute force**: nginx allows 5 login attempts per minute per IP (burst 10), then returns 429. Login takes the same time for unknown and existing emails, so accounts can't be discovered.

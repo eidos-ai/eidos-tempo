@@ -7,6 +7,7 @@ Guide for agents working in this repository. Read README.md for setup, configura
 Eidos Tempo is Eidos' internal replacement for Toggl: the team tracks time daily, admins manage
 members, clients and billable projects. Time entries are billing records, so **never lose data**.
 Planned next: reports/metrics API, personal API tokens, a Chrome extension using the same API.
+Not set up yet: HTTPS in front of the app, and CI/CD (images are built on the server by `scripts/deploy.sh`).
 
 ## Commands
 
@@ -20,9 +21,11 @@ cd backend && uv run python -m scripts.seed_dev                     # dev users 
 Before finishing any change, all of these must pass:
 
 ```bash
-cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check . && uv run mypy app scripts
+cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check . && uv run mypy app scripts tests
 cd frontend && npm run lint && npm run build
 ```
+
+There is no CI, so nothing else runs these for you.
 
 ## Backend architecture (`backend/app`)
 
