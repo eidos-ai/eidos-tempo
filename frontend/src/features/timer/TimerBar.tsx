@@ -15,6 +15,7 @@ import {
 } from '../time-entries/useTimeEntries'
 
 const APP_TITLE = 'Eidos Tempo'
+export const MAX_DESCRIPTION_LENGTH = 500
 
 export function TimerBar() {
   const { data: running = null } = useRunningEntry()
@@ -28,6 +29,7 @@ export function TimerBar() {
   const [projectId, setProjectId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const pendingCommit = useRef(false)
+  const previousRunning = useRef<TimeEntry | null>(null)
 
   const saveRunning = (entry: TimeEntry, nextDescription: string, nextProjectId: string | null) => {
     if (entry.description === nextDescription.trim() && entry.project_id === nextProjectId) return
@@ -47,7 +49,10 @@ export function TimerBar() {
   }
 
   useEffect(() => {
+    const failedStart = previousRunning.current !== null && isOptimistic(previousRunning.current)
+    previousRunning.current = running
     if (!running) {
+      if (failedStart) return
       setDescription('')
       setProjectId(null)
       return
@@ -88,6 +93,7 @@ export function TimerBar() {
     <div className="flex h-20 shrink-0 items-center gap-4 border-b border-line bg-surface px-8">
       <input
         value={description}
+        maxLength={MAX_DESCRIPTION_LENGTH}
         onChange={(event) => setDescription(event.target.value)}
         onFocus={() => setIsEditing(true)}
         onBlur={() => {

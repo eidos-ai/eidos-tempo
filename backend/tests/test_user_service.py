@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 
 from app.domain.errors import (
@@ -8,7 +10,10 @@ from app.domain.errors import (
 )
 from app.domain.users import CalendarZoom, DaysShown, Role, TimerView, User, UserPreferences
 from app.domain.value_objects import EmailAddress
+from app.repositories.protocols import Repositories
+from app.services.auth import AuthService
 from app.services.users import NewUser, UserService, UserUpdate
+from tests.fakes import FakeClock, FakePasswordHasher
 
 
 def new_user(email: str, role: Role = Role.MEMBER, password: str = "long-password") -> NewUser:
@@ -46,3 +51,42 @@ def test_update_preferences(user_service: UserService, member: User) -> None:
     updated = user_service.update_preferences(member, preferences)
 
     assert updated.preferences == preferences
+
+
+def test_deactivation_and_password_reset_revoke_sessions(
+    user_service: UserService,
+    repositories: Repositories,
+    admin: User,
+    member: User,
+    clock: FakeClock,
+) -> None:
+    auth = AuthService(
+        repositories.users, repositories.sessions, FakePasswordHasher(), clock, timedelta(days=1)
+    )
+    token = auth.login(member.email, "member-password").token
+
+    user_service.reset_password(admin, member.id, "brand-new-password")
+    with pytest.raises(AuthenticationError):
+        auth.authenticate(token)
+
+    token = auth.login(member.email, "brand-new-password").token
+    user_service.update_user(admin, member.id, UserUpdate("Member", Role.MEMBER, is_active=False))
+    user_service.update_user(admin, member.id, UserUpdate("Member", Role.MEMBER, is_active=True))
+    with pytest.raises(AuthenticationError):
+        auth.authenticate(token)
+
+
+def test_session_expires_after_ttl(
+    repositories: Repositories, member: User, clock: FakeClock
+) -> None:
+    auth = AuthService(
+        repositories.users, repositories.sessions, FakePasswordHasher(), clock, timedelta(days=14)
+    )
+    token = auth.login(member.email, "member-password").token
+
+    clock.advance(timedelta(days=13, hours=23))
+    assert auth.authenticate(token).id == member.id
+
+    clock.advance(timedelta(hours=1))
+    with pytest.raises(AuthenticationError):
+        auth.authenticate(token)

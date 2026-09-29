@@ -22,7 +22,12 @@ def repositories() -> Repositories:
 
 @pytest.fixture
 def user_service(repositories: Repositories, clock: FakeClock) -> UserService:
-    return UserService(users=repositories.users, hasher=FakePasswordHasher(), clock=clock)
+    return UserService(
+        users=repositories.users,
+        sessions=repositories.sessions,
+        hasher=FakePasswordHasher(),
+        clock=clock,
+    )
 
 
 @pytest.fixture

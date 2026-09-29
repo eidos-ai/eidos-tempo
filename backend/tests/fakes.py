@@ -64,6 +64,9 @@ class InMemorySessionRepository:
     def delete(self, token_hash: str) -> None:
         self.items.pop(token_hash, None)
 
+    def delete_for_user(self, user_id: UserId) -> None:
+        self.items = {k: s for k, s in self.items.items() if s.user_id != user_id}
+
 
 class InMemoryClientRepository:
     def __init__(self) -> None:
@@ -125,6 +128,9 @@ class InMemoryTimeEntryRepository:
             ),
             None,
         )
+
+    def lock_user_entries(self, user_id: UserId) -> None:
+        pass
 
     def list_overlapping(self, user_id: UserId, period: DateRange) -> list[TimeEntry]:
         entries = [

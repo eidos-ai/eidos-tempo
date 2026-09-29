@@ -7,6 +7,7 @@ import { formatDuration, fromDateTimeInputValue, toDateTimeInputValue } from '..
 import { ProjectLabel } from '../projects/ProjectLabel'
 import { ProjectPicker } from '../projects/ProjectPicker'
 import { useCreateEntry, useDeleteEntry, useUpdateEntry } from '../time-entries/useTimeEntries'
+import { MAX_DESCRIPTION_LENGTH } from './TimerBar'
 
 export type EditorTarget = { kind: 'edit'; entry: TimeEntry } | { kind: 'create'; start: Date; stop: Date }
 
@@ -39,6 +40,7 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
     event.preventDefault()
     if (!start || (!isRunning && !stop)) return setValidationError('Enter valid start and stop times')
     if (stop && stop < start) return setValidationError('Stop time must be after the start time')
+    if (isRunning && start > new Date()) return setValidationError('A running entry cannot start in the future')
 
     const input: TimeEntryInput = {
       description,
@@ -61,7 +63,13 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
     <Modal title={existing ? 'Edit time entry' : 'New time entry'} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Field label="Description">
-          <TextInput value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What did you work on?" autoFocus />
+          <TextInput
+            value={description}
+            maxLength={MAX_DESCRIPTION_LENGTH}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What did you work on?"
+            autoFocus
+          />
         </Field>
         <div className="space-y-1.5">
           <span className="text-xs font-semibold tracking-wide text-ink-soft uppercase">Project</span>

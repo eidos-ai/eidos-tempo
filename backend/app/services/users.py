@@ -7,7 +7,7 @@ from app.domain.errors import AuthenticationError, ConflictError, InvalidValueEr
 from app.domain.ids import UserId, new_uuid
 from app.domain.users import Role, User, UserPreferences
 from app.domain.value_objects import EmailAddress, require_text
-from app.repositories.protocols import UserRepository
+from app.repositories.protocols import SessionRepository, UserRepository
 from app.services.permissions import require_admin
 
 logger = logging.getLogger(__name__)
@@ -32,8 +32,15 @@ class UserUpdate:
 
 
 class UserService:
-    def __init__(self, users: UserRepository, hasher: PasswordHasher, clock: Clock) -> None:
+    def __init__(
+        self,
+        users: UserRepository,
+        sessions: SessionRepository,
+        hasher: PasswordHasher,
+        clock: Clock,
+    ) -> None:
         self._users = users
+        self._sessions = sessions
         self._hasher = hasher
         self._clock = clock
 
@@ -61,6 +68,9 @@ class UserService:
         user.role = update.role
         user.is_active = update.is_active
         self._users.save(user)
+        if not user.is_active:
+            self._sessions.delete_for_user(user.id)
+            logger.info("User %s deactivated by %s", user.email, actor.email)
         return user
 
     def reset_password(self, actor: User, user_id: UserId, new_password: str) -> None:
@@ -68,6 +78,8 @@ class UserService:
         user = self._get(user_id)
         user.password_hash = self._hash_password(new_password)
         self._users.save(user)
+        self._sessions.delete_for_user(user.id)
+        logger.info("Password of %s reset by %s", user.email, actor.email)
 
     def change_own_password(self, actor: User, current_password: str, new_password: str) -> None:
         if not self._hasher.verify(actor.password_hash, current_password):

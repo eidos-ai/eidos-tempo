@@ -7,6 +7,7 @@ import { addDays } from '../../lib/time'
 import { showToast } from '../../lib/toast'
 
 const OPTIMISTIC_ID_PREFIX = 'optimistic-'
+const SYNC_INTERVAL_MS = 30_000
 
 type EntriesUpdater = (entries: TimeEntry[]) => TimeEntry[]
 
@@ -37,11 +38,21 @@ export function useWeekEntries(weekStart: Date) {
     queryKey: queryKeys.week(weekStart),
     queryFn: () => fetchWeek(weekStart),
     placeholderData: (previous) => previous,
+    refetchInterval: () => syncInterval(queryClient),
   })
 }
 
 export function useRunningEntry() {
-  return useQuery({ queryKey: queryKeys.runningEntry, queryFn: timeEntriesApi.running })
+  const queryClient = useQueryClient()
+  return useQuery({
+    queryKey: queryKeys.runningEntry,
+    queryFn: timeEntriesApi.running,
+    refetchInterval: () => syncInterval(queryClient),
+  })
+}
+
+function syncInterval(queryClient: QueryClient): number | false {
+  return queryClient.isMutating({ mutationKey: queryKeys.timeEntries }) > 0 ? false : SYNC_INTERVAL_MS
 }
 
 async function snapshot(queryClient: QueryClient): Promise<Snapshot> {
@@ -80,6 +91,7 @@ function useEntryMutation<TVariables>(
 ) {
   const queryClient = useQueryClient()
   return useMutation({
+    mutationKey: queryKeys.timeEntries,
     mutationFn,
     onMutate: async (variables: TVariables) => {
       const previous = await snapshot(queryClient)

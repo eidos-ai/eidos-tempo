@@ -13,17 +13,35 @@ async function fetchCurrentUser(): Promise<User | null> {
   }
 }
 
+const SESSION_RETRY_MS = 5000
+
 export function useSession() {
-  return useQuery({ queryKey: queryKeys.me, queryFn: fetchCurrentUser, staleTime: Infinity })
+  return useQuery({
+    queryKey: queryKeys.me,
+    queryFn: fetchCurrentUser,
+    staleTime: Infinity,
+    refetchInterval: (query) => (query.state.status === 'error' ? SESSION_RETRY_MS : false),
+  })
 }
 
 export { useCurrentUser } from './CurrentUserContext'
+
+const REJECTED_SESSION_MESSAGE =
+  "Your browser didn't keep the login session because this site isn't served over HTTPS. " +
+  'Ask an admin to enable HTTPS (or set TEMPO_COOKIE_SECURE=false for plain-HTTP internal access).'
+
+async function loginAndVerifySession(email: string, password: string): Promise<User> {
+  await authApi.login(email, password)
+  const user = await fetchCurrentUser()
+  if (!user) throw new Error(REJECTED_SESSION_MESSAGE)
+  return user
+}
 
 export function useLogin() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
-      authApi.login(email, password),
+      loginAndVerifySession(email, password),
     onSuccess: (user) => queryClient.setQueryData(queryKeys.me, user),
   })
 }

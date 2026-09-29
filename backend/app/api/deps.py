@@ -67,7 +67,9 @@ def get_auth_service(
 def get_user_service(
     repositories: RepositoriesDep, hasher: HasherDep, clock: ClockDep
 ) -> UserService:
-    return UserService(users=repositories.users, hasher=hasher, clock=clock)
+    return UserService(
+        users=repositories.users, sessions=repositories.sessions, hasher=hasher, clock=clock
+    )
 
 
 def get_client_service(repositories: RepositoriesDep, clock: ClockDep) -> ClientService:

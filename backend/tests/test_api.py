@@ -21,7 +21,7 @@ def api_client() -> Iterator[TestClient]:
     repositories = build_in_memory_repositories()
     clock = FakeClock()
     hasher = FakePasswordHasher()
-    UserService(repositories.users, hasher, clock).bootstrap_admin(
+    UserService(repositories.users, repositories.sessions, hasher, clock).bootstrap_admin(
         NewUser(EmailAddress("admin@eidos.ai"), "Admin", "admin-password", Role.ADMIN)
     )
     app.dependency_overrides[get_repositories] = lambda: repositories

@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 DEV_ADMIN_EMAIL = "admin@eidos.local"
 DEV_ADMIN_PASSWORD = "tempo-dev-admin"
+DEV_MEMBER_EMAIL = "member@eidos.local"
+DEV_MEMBER_NAME = "Dev Member"
+DEV_MEMBER_PASSWORD = "tempo-dev-member"
 
 CLIENT_PROJECTS: tuple[tuple[str, tuple[tuple[str, str, bool], ...]], ...] = (
     ("BrainLogic", (("Vision Platform", "#7B4DE7", True),)),
@@ -34,9 +37,17 @@ def seed() -> None:
     session_factory = create_session_factory(get_settings().database_url)
     with session_factory.begin() as session:
         repositories = build_sql_repositories(session)
-        users = UserService(repositories.users, Argon2PasswordHasher(), clock)
+        users = UserService(
+            repositories.users, repositories.sessions, Argon2PasswordHasher(), clock
+        )
         admin = users.bootstrap_admin(
             NewUser(EmailAddress(DEV_ADMIN_EMAIL), "Dev Admin", DEV_ADMIN_PASSWORD, Role.ADMIN)
+        )
+        users.create_user(
+            admin,
+            NewUser(
+                EmailAddress(DEV_MEMBER_EMAIL), DEV_MEMBER_NAME, DEV_MEMBER_PASSWORD, Role.MEMBER
+            ),
         )
         clients = ClientService(repositories.clients, clock)
         projects = ProjectService(repositories.projects, repositories.clients, clock)

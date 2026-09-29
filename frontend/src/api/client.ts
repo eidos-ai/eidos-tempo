@@ -7,6 +7,9 @@ export class ApiError extends Error {
   }
 }
 
+const UNREACHABLE_MESSAGE = "Can't reach the server. Your change was not saved; please try again."
+const GATEWAY_STATUSES = new Set([502, 503, 504])
+
 interface ValidationIssue {
   msg: string
 }
@@ -26,13 +29,24 @@ async function readErrorMessage(response: Response): Promise<string> {
   return response.statusText || 'Request failed'
 }
 
+async function send(method: string, path: string, body?: unknown): Promise<Response> {
+  try {
+    return await fetch(`/api${path}`, {
+      method,
+      credentials: 'same-origin',
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(0, UNREACHABLE_MESSAGE)
+  }
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const response = await fetch(`/api${path}`, {
-    method,
-    credentials: 'same-origin',
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
+  const response = await send(method, path, body)
+  if (GATEWAY_STATUSES.has(response.status)) {
+    throw new ApiError(response.status, UNREACHABLE_MESSAGE)
+  }
   if (!response.ok) {
     throw new ApiError(response.status, await readErrorMessage(response))
   }

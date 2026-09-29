@@ -42,6 +42,7 @@ class TimeEntryService:
 
     def start_timer(self, actor: User, timer: TimerStart) -> TimeEntry:
         self._ensure_project_usable(timer.project_id, current=None)
+        self._entries.lock_user_entries(actor.id)
         now = self._clock.now()
         running = self._entries.get_running(actor.id)
         if running is not None:
@@ -60,6 +61,7 @@ class TimeEntryService:
         return entry
 
     def stop_timer(self, actor: User) -> TimeEntry:
+        self._entries.lock_user_entries(actor.id)
         running = self._entries.get_running(actor.id)
         if running is None:
             raise ConflictError("No timer is running")
@@ -105,6 +107,7 @@ class TimeEntryService:
         self._entries.save(entry)
 
     def _get_owned(self, actor: User, entry_id: TimeEntryId) -> TimeEntry:
+        self._entries.lock_user_entries(actor.id)
         entry = self._entries.get(entry_id)
         if entry is None or entry.is_deleted or entry.user_id != actor.id:
             raise NotFoundError("Time entry", entry_id)

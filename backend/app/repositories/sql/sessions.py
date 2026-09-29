@@ -34,3 +34,6 @@ class SqlSessionRepository:
 
     def delete(self, token_hash: str) -> None:
         self._session.execute(delete(AuthSessionRow).where(AuthSessionRow.token_hash == token_hash))
+
+    def delete_for_user(self, user_id: UserId) -> None:
+        self._session.execute(delete(AuthSessionRow).where(AuthSessionRow.user_id == user_id))

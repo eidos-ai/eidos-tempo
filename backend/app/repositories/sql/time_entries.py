@@ -1,7 +1,7 @@
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.db.models import TimeEntryRow
+from app.db.models import TimeEntryRow, UserRow
 from app.domain.errors import NotFoundError
 from app.domain.ids import ProjectId, TimeEntryId, UserId
 from app.domain.time_entries import TimeEntry
@@ -25,6 +25,9 @@ class SqlTimeEntryRepository:
             )
         )
         return to_time_entry(row) if row else None
+
+    def lock_user_entries(self, user_id: UserId) -> None:
+        self._session.execute(select(UserRow.id).where(UserRow.id == user_id).with_for_update())
 
     def list_overlapping(self, user_id: UserId, period: DateRange) -> list[TimeEntry]:
         query = (

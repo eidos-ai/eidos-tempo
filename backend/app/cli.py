@@ -22,8 +22,10 @@ def create_admin(email: str, full_name: str) -> None:
 
     session_factory = create_session_factory(get_settings().database_url)
     with session_factory.begin() as session:
+        repositories = build_sql_repositories(session)
         service = UserService(
-            users=build_sql_repositories(session).users,
+            users=repositories.users,
+            sessions=repositories.sessions,
             hasher=Argon2PasswordHasher(),
             clock=SystemClock(),
         )
