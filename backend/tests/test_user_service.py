@@ -74,19 +74,3 @@ def test_deactivation_and_password_reset_revoke_sessions(
     user_service.update_user(admin, member.id, UserUpdate("Member", Role.MEMBER, is_active=True))
     with pytest.raises(AuthenticationError):
         auth.authenticate(token)
-
-
-def test_session_expires_after_ttl(
-    repositories: Repositories, member: User, clock: FakeClock
-) -> None:
-    auth = AuthService(
-        repositories.users, repositories.sessions, FakePasswordHasher(), clock, timedelta(days=14)
-    )
-    token = auth.login(member.email, "member-password").token
-
-    clock.advance(timedelta(days=13, hours=23))
-    assert auth.authenticate(token).id == member.id
-
-    clock.advance(timedelta(hours=1))
-    with pytest.raises(AuthenticationError):
-        auth.authenticate(token)

@@ -9,6 +9,8 @@ export class ApiError extends Error {
 
 const UNREACHABLE_MESSAGE = "Can't reach the server. Your change was not saved; please try again."
 const GATEWAY_STATUSES = new Set([502, 503, 504])
+const TOO_MANY_REQUESTS = 429
+const RATE_LIMITED_MESSAGE = 'Too many attempts. Please wait a minute and try again.'
 
 interface ValidationIssue {
   msg: string
@@ -46,6 +48,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const response = await send(method, path, body)
   if (GATEWAY_STATUSES.has(response.status)) {
     throw new ApiError(response.status, UNREACHABLE_MESSAGE)
+  }
+  if (response.status === TOO_MANY_REQUESTS) {
+    throw new ApiError(response.status, RATE_LIMITED_MESSAGE)
   }
   if (!response.ok) {
     throw new ApiError(response.status, await readErrorMessage(response))

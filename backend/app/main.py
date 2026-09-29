@@ -11,7 +11,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level)
 
-    app = FastAPI(title="Eidos Tempo", docs_url="/api/docs", openapi_url="/api/openapi.json")
+    app = FastAPI(
+        title="Eidos Tempo",
+        docs_url="/api/docs" if settings.enable_api_docs else None,
+        openapi_url="/api/openapi.json" if settings.enable_api_docs else None,
+        redoc_url=None,
+    )
     app.state.settings = settings
     app.state.session_factory = create_session_factory(settings.database_url)
     register_error_handlers(app)

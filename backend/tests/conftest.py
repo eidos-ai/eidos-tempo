@@ -1,7 +1,13 @@
-import pytest
+from collections.abc import Iterator
 
+import pytest
+from fastapi.testclient import TestClient
+
+from app.api.deps import get_clock, get_password_hasher, get_repositories
+from app.config import Settings
 from app.domain.users import Role, User
 from app.domain.value_objects import EmailAddress
+from app.main import create_app
 from app.repositories.protocols import Repositories
 from app.services.clients import ClientService
 from app.services.projects import ProjectService
@@ -70,3 +76,32 @@ def member(user_service: UserService, admin: User) -> User:
             role=Role.MEMBER,
         ),
     )
+
+
+def build_test_settings() -> Settings:
+    return Settings(
+        _env_file=None,
+        database_url="postgresql+psycopg://unused:unused@localhost/unused",
+        cookie_secure=False,
+    )
+
+
+@pytest.fixture
+def api_clock() -> FakeClock:
+    return FakeClock()
+
+
+@pytest.fixture
+def api_client(api_clock: FakeClock) -> Iterator[TestClient]:
+    app = create_app(build_test_settings())
+    repositories = build_in_memory_repositories()
+    clock = api_clock
+    hasher = FakePasswordHasher()
+    UserService(repositories.users, repositories.sessions, hasher, clock).bootstrap_admin(
+        NewUser(EmailAddress("admin@eidos.ai"), "Admin", "admin-password", Role.ADMIN)
+    )
+    app.dependency_overrides[get_repositories] = lambda: repositories
+    app.dependency_overrides[get_clock] = lambda: clock
+    app.dependency_overrides[get_password_hasher] = lambda: hasher
+    with TestClient(app) as client:
+        yield client

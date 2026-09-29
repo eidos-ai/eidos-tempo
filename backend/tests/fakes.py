@@ -29,6 +29,9 @@ class FakePasswordHasher:
     def verify(self, password_hash: str, password: str) -> bool:
         return password_hash == f"hashed:{password}"
 
+    def verify_dummy(self, password: str) -> None:
+        pass
+
 
 class InMemoryUserRepository:
     def __init__(self) -> None:
@@ -60,6 +63,12 @@ class InMemorySessionRepository:
 
     def add(self, session: AuthSession) -> None:
         self.items[session.token_hash] = session
+
+    def save(self, session: AuthSession) -> None:
+        self.items[session.token_hash] = session
+
+    def delete_expired(self, now: datetime) -> None:
+        self.items = {k: s for k, s in self.items.items() if not s.is_expired(now)}
 
     def delete(self, token_hash: str) -> None:
         self.items.pop(token_hash, None)

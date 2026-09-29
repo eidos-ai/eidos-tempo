@@ -14,8 +14,9 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Log in → log out → log in again works (from Timer and Members)
 - [x] Protected pages redirect to login when logged out (deep link /projects)
 - [x] Session survives page reload
+- [x] Expired sessions are deleted at login
 - [x] Garbage session cookie → 401
-- [x] Session expires after 14 days (unit test)
+- [x] Sliding session: use renews it (at most one write a day) and re-sends the cookie; expires after 90 idle days (unit, API, Postgres and live tests)
 - [!] Session cookie rejected by the browser (HTTPS required) now shows an explanation instead of silently bouncing back to login
 - [x] Deactivated user is kicked out and cannot log in
 - [!] Admin password reset / deactivation ends that user's sessions (sessions survived; fixed)
@@ -125,13 +126,24 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] SPA deep links served by nginx (/projects)
 - [x] `TEMPO_COOKIE_SECURE=true` over plain HTTP: browser drops the cookie (verified), login page explains it
 
-## 15. Data correctness and scale
+## 15. Security (public IP)
+- [x] Every API route classified public/member/admin; anonymous and forged sessions get 401 on all non-public routes (automated, mutation-tested)
+- [x] Members get 403 on every admin route (automated)
+- [!] API docs and OpenAPI schema were public; now off in production (404)
+- [!] Login timing revealed which emails exist (57 ms vs 5 ms); now constant (56 ms both)
+- [!] No brute-force protection (100 guesses in 7 s); nginx now allows 5/min per IP, then 429 with a clear message
+- [!] Dev database listened on all interfaces with a weak password; now bound to 127.0.0.1
+- [x] Only the web port is published; database and backend unreachable from the network
+- [!] Security headers added (CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy), server version hidden; app verified working under the CSP
+- [x] No CORS allowance for other origins; SameSite=Lax HttpOnly session cookie
+- [ ] HTTPS in front of the app (required before exposing the public IP)
+
+## 16. Data correctness and scale
 - [x] Times stored in UTC, shown in browser local time
 - [x] Week query 5–17 ms end to end with a year of simulated data for 30 users (index used)
 - [x] Description with HTML/script is shown as text (no XSS)
 
 ## Known follow-ups (not bugs, not blocking v1)
-- Expired rows in `auth_sessions` are never cleaned up (tiny volume; add a periodic cleanup later).
 - After login you always land on Timer, not the page you originally requested.
 - A calendar block split at midnight shows the whole entry's duration, not the part on that day.
 - Backups live on the same server as the database; copy them off-server when possible.

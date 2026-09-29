@@ -7,10 +7,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="TEMPO_", extra="ignore")
 
     database_url: str
-    session_ttl_days: int = 14
+    session_idle_days: int = 90
     session_cookie_name: str = "tempo_session"
     cookie_secure: bool = True
     log_level: str = "INFO"
+    enable_api_docs: bool = False
 
 
 @lru_cache

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Base
 from app.domain.ids import TimeEntryId, UserId, new_uuid
+from app.domain.sessions import AuthSession
 from app.domain.time_entries import TimeEntry
 from app.domain.users import Role, User
 from app.domain.value_objects import DateRange, EmailAddress
@@ -96,3 +97,19 @@ def test_list_overlapping_skips_deleted_entries(sql_repositories: Repositories) 
 
     period = DateRange(NOW - timedelta(days=1), NOW + timedelta(days=1))
     assert sql_repositories.time_entries.list_overlapping(user.id, period) == [kept]
+
+
+def test_session_refresh_and_expired_cleanup(sql_repositories: Repositories) -> None:
+    user = make_user(sql_repositories)
+    active = AuthSession("a" * 64, user.id, NOW, NOW + timedelta(days=1))
+    expired = AuthSession("b" * 64, user.id, NOW, NOW - timedelta(seconds=1))
+    sql_repositories.sessions.add(active)
+    sql_repositories.sessions.add(expired)
+
+    sql_repositories.sessions.save(active.refreshed(NOW, timedelta(days=90)))
+    sql_repositories.sessions.delete_expired(NOW)
+
+    stored = sql_repositories.sessions.get(active.token_hash)
+    assert stored is not None
+    assert stored.expires_at == NOW + timedelta(days=90)
+    assert sql_repositories.sessions.get(expired.token_hash) is None

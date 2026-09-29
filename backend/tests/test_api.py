@@ -1,34 +1,8 @@
-from collections.abc import Iterator
+from datetime import timedelta
 
-import pytest
 from fastapi.testclient import TestClient
 
-from app.api.deps import get_clock, get_password_hasher, get_repositories
-from app.config import Settings
-from app.domain.users import Role
-from app.domain.value_objects import EmailAddress
-from app.main import create_app
-from app.services.users import NewUser, UserService
-from tests.fakes import FakeClock, FakePasswordHasher, build_in_memory_repositories
-
-
-@pytest.fixture
-def api_client() -> Iterator[TestClient]:
-    settings = Settings(
-        database_url="postgresql+psycopg://unused:unused@localhost/unused", cookie_secure=False
-    )
-    app = create_app(settings)
-    repositories = build_in_memory_repositories()
-    clock = FakeClock()
-    hasher = FakePasswordHasher()
-    UserService(repositories.users, repositories.sessions, hasher, clock).bootstrap_admin(
-        NewUser(EmailAddress("admin@eidos.ai"), "Admin", "admin-password", Role.ADMIN)
-    )
-    app.dependency_overrides[get_repositories] = lambda: repositories
-    app.dependency_overrides[get_clock] = lambda: clock
-    app.dependency_overrides[get_password_hasher] = lambda: hasher
-    with TestClient(app) as client:
-        yield client
+from tests.fakes import FakeClock
 
 
 def login(client: TestClient) -> None:
@@ -85,3 +59,14 @@ def test_logout_ends_session(api_client: TestClient) -> None:
     login(api_client)
     assert api_client.post("/api/auth/logout").status_code == 204
     assert api_client.get("/api/me").status_code == 401
+
+
+def test_active_session_cookie_is_renewed(api_client: TestClient, api_clock: FakeClock) -> None:
+    login(api_client)
+
+    assert "set-cookie" not in api_client.get("/api/me").headers
+
+    api_clock.advance(timedelta(days=2))
+    renewed = api_client.get("/api/me")
+    assert renewed.status_code == 200
+    assert "tempo_session=" in renewed.headers["set-cookie"]

@@ -82,8 +82,19 @@ Dependencies point inward only: `api → services → repositories (protocols) �
   (`lock_user_entries`) taken at the start of every timer mutation. Keep both.
 - All times are timezone-aware and stored in UTC; the browser converts to local time.
 - Migrations are additive. Removing or renaming a column takes two releases and a backup.
-- Password resets and deactivation must revoke the user's sessions.
+- Sessions slide: `AuthService.authenticate` extends them (at most once a day) and `get_current_user`
+  re-sends the cookie. Password resets and deactivation must revoke the user's sessions.
 - Never commit `.env` files; secrets go only in `.env`.
+
+## Security rules (the server has a public IP)
+
+- Every new route must be added to exactly one of `PUBLIC_ROUTES`, `MEMBER_ROUTES` or `ADMIN_ROUTES`
+  in `tests/test_endpoint_protection.py`; the test fails otherwise. Public routes need a strong reason.
+- Protected routes take `CurrentUser`; admin rules are enforced in services with `require_admin`.
+- Users may only touch their own time entries; return 404 (not 403) for other users' entries.
+- Keep login constant-time (`verify_dummy` for unknown emails) and keep the nginx login rate limit.
+- API docs stay off in production (`TEMPO_ENABLE_API_DOCS=false`).
+- Don't add CORS, don't publish the database or backend ports, don't weaken the CSP in `frontend/nginx.conf`.
 
 ## Deployment facts
 

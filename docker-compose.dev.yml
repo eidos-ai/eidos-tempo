@@ -9,6 +9,6 @@ services:
       POSTGRES_PASSWORD: tempo
       POSTGRES_DB: tempo
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - ./.dev-data/pgdata:/var/lib/postgresql/data

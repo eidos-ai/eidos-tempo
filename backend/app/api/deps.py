@@ -2,9 +2,10 @@ from collections.abc import Iterator
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends, Request, Response
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.api.session_cookie import set_session_cookie
 from app.auth.passwords import Argon2PasswordHasher, PasswordHasher
 from app.config import Settings
 from app.domain.clock import Clock, SystemClock
@@ -60,7 +61,7 @@ def get_auth_service(
         sessions=repositories.sessions,
         hasher=hasher,
         clock=clock,
-        session_ttl=timedelta(days=settings.session_ttl_days),
+        idle_timeout=timedelta(days=settings.session_idle_days),
     )
 
 
@@ -93,11 +94,16 @@ ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]
 TimeEntryServiceDep = Annotated[TimeEntryService, Depends(get_time_entry_service)]
 
 
-def get_current_user(request: Request, auth: AuthServiceDep, settings: SettingsDep) -> User:
+def get_current_user(
+    request: Request, response: Response, auth: AuthServiceDep, settings: SettingsDep
+) -> User:
     token = request.cookies.get(settings.session_cookie_name)
     if not token:
         raise AuthenticationError("Not logged in")
-    return auth.authenticate(token)
+    authenticated = auth.authenticate(token)
+    if authenticated.was_refreshed:
+        set_session_cookie(response, token, authenticated.expires_at, settings)
+    return authenticated.user
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]

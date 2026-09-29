@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Response, status
 
 from app.api.deps import AuthServiceDep, SettingsDep
 from app.api.schemas.users import LoginIn, UserOut
+from app.api.session_cookie import set_session_cookie
 from app.domain.value_objects import EmailAddress
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -12,14 +13,7 @@ def login(
     body: LoginIn, response: Response, auth: AuthServiceDep, settings: SettingsDep
 ) -> UserOut:
     result = auth.login(EmailAddress(body.email), body.password)
-    response.set_cookie(
-        key=settings.session_cookie_name,
-        value=result.token,
-        expires=result.expires_at,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-    )
+    set_session_cookie(response, result.token, result.expires_at, settings)
     return UserOut.from_domain(result.user)
 
 

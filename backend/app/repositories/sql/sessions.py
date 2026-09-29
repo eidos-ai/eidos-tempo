@@ -1,4 +1,6 @@
-from sqlalchemy import delete
+from datetime import datetime
+
+from sqlalchemy import delete, update
 from sqlalchemy.orm import Session
 
 from app.db.models import AuthSessionRow
@@ -31,6 +33,16 @@ class SqlSessionRepository:
             )
         )
         self._session.flush()
+
+    def save(self, auth_session: AuthSession) -> None:
+        self._session.execute(
+            update(AuthSessionRow)
+            .where(AuthSessionRow.token_hash == auth_session.token_hash)
+            .values(expires_at=auth_session.expires_at)
+        )
+
+    def delete_expired(self, now: datetime) -> None:
+        self._session.execute(delete(AuthSessionRow).where(AuthSessionRow.expires_at <= now))
 
     def delete(self, token_hash: str) -> None:
         self._session.execute(delete(AuthSessionRow).where(AuthSessionRow.token_hash == token_hash))

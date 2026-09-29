@@ -9,6 +9,7 @@ FastAPI + PostgreSQL backend, React frontend, deployed with Docker Compose on a 
 - **Calendar view**: week grid (5 or 7 days) with zoom, drag or click to create entries, click to edit, day and week totals.
 - **List view**: entries grouped by day with totals; continue, edit or delete an entry.
 - **Preferences**: view, days shown and zoom are saved per user on the server.
+- **Stay logged in**: sessions renew automatically while you use the app; you only log in again after 90 days without using it.
 - **Admin**: manage members (roles, deactivation, password reset), clients and billable projects; archive instead of delete.
 - **Data safety**: users only see their own time, deleted entries are kept (soft delete), daily backups with a restore script.
 
@@ -65,7 +66,7 @@ npm install
 npm run dev
 ```
 
-The dev login credentials are defined in `backend/scripts/seed_dev.py`.
+The dev login credentials are defined in `backend/scripts/seed_dev.py`. API docs: http://localhost:8000/api/docs (development only).
 
 | Service | Dev port |
 |---|---|
@@ -103,9 +104,10 @@ Backend (`backend/.env` in development, set by `docker-compose.yml` in productio
 |---|---|---|
 | `TEMPO_DATABASE_URL` | required | SQLAlchemy URL, e.g. `postgresql+psycopg://user:pass@host:5432/tempo` |
 | `TEMPO_COOKIE_SECURE` | `true` | Send the session cookie only over HTTPS |
-| `TEMPO_SESSION_TTL_DAYS` | `14` | Session lifetime |
+| `TEMPO_SESSION_IDLE_DAYS` | `90` | Days without using the app before a user must log in again; each day of use renews the session |
 | `TEMPO_SESSION_COOKIE_NAME` | `tempo_session` | Session cookie name |
 | `TEMPO_LOG_LEVEL` | `INFO` | Log level |
+| `TEMPO_ENABLE_API_DOCS` | `false` | Serve interactive API docs at `/api/docs` (enabled in `backend/.env.example` for development) |
 | `TEMPO_TEST_DATABASE_URL` | unset | Enables Postgres integration tests |
 
 Deployment (root `.env`, see `.env.example`):
@@ -116,6 +118,7 @@ Deployment (root `.env`, see `.env.example`):
 | `TEMPO_DATA_DIR` | Host folder for database files and backups, e.g. `/srv/eidos-tempo` |
 | `TEMPO_HTTP_PORT` | Port nginx listens on |
 | `TEMPO_COOKIE_SECURE` | `true` behind HTTPS, `false` only for plain-HTTP internal access |
+| `TEMPO_SESSION_IDLE_DAYS` | Days of inactivity before logout (default 90) |
 | `BACKUP_TIME`, `BACKUP_RETENTION_DAYS`, `TZ` | Daily backup time (in `TZ`) and days to keep |
 
 ## Deployment
@@ -141,6 +144,17 @@ Logs: `docker compose logs -f backend` (also `web`, `db`, `backup`).
 - Restore: `scripts/restore.sh` lists backups; `scripts/restore.sh <file>` asks for confirmation, takes a safety backup and restores.
 - Backups are on the same server as the database. Copy `${TEMPO_DATA_DIR}/backups` elsewhere for disaster recovery.
 - Never run `docker compose down -v`, and never upgrade the Postgres major version by only changing the image tag (dump and restore instead).
+
+## Security
+
+The server is reachable from the internet, so:
+
+- **HTTPS is mandatory.** Without it, passwords and session cookies travel in plain text. Terminate TLS in front of nginx and keep `TEMPO_COOKIE_SECURE=true`.
+- **Firewall**: expose only 80/443 (and SSH restricted to key-based login). The database and backend are never published; only the `web` container has a port.
+- **Every API endpoint requires a session** except `POST /api/auth/login`, `POST /api/auth/logout` and `GET /api/health`. Admin endpoints return 403 to members. `backend/tests/test_endpoint_protection.py` enforces this for every route.
+- **Login brute force**: nginx allows 5 login attempts per minute per IP (burst 10), then returns 429. Login takes the same time for unknown and existing emails, so accounts can't be discovered.
+- **Browser protections**: CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, no CORS, `SameSite=Lax` HttpOnly cookies, no server version in headers.
+- **Behind a TLS proxy** (Caddy, a load balancer), configure nginx's `real_ip` module to trust the proxy, otherwise all users share one login rate limit.
 
 ## Troubleshooting
 

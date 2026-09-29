@@ -21,6 +21,13 @@ class LoginResult:
     expires_at: datetime
 
 
+@dataclass(frozen=True)
+class AuthenticatedSession:
+    user: User
+    expires_at: datetime
+    was_refreshed: bool
+
+
 class AuthService:
     def __init__(
         self,
@@ -28,17 +35,18 @@ class AuthService:
         sessions: SessionRepository,
         hasher: PasswordHasher,
         clock: Clock,
-        session_ttl: timedelta,
+        idle_timeout: timedelta,
     ) -> None:
         self._users = users
         self._sessions = sessions
         self._hasher = hasher
         self._clock = clock
-        self._session_ttl = session_ttl
+        self._idle_timeout = idle_timeout
 
     def login(self, email: EmailAddress, password: str) -> LoginResult:
         user = self._users.get_by_email(email)
         if user is None or not user.is_active:
+            self._hasher.verify_dummy(password)
             logger.info("Rejected login for %s: unknown or inactive user", email)
             raise AuthenticationError("Invalid email or password")
         if not self._hasher.verify(user.password_hash, password):
@@ -47,24 +55,33 @@ class AuthService:
 
         token = generate_session_token()
         now = self._clock.now()
+        self._sessions.delete_expired(now)
         session = AuthSession(
             token_hash=hash_token(token),
             user_id=user.id,
             created_at=now,
-            expires_at=now + self._session_ttl,
+            expires_at=now + self._idle_timeout,
         )
         self._sessions.add(session)
         logger.info("User %s logged in", user.email)
         return LoginResult(user=user, token=token, expires_at=session.expires_at)
 
-    def authenticate(self, token: str) -> User:
+    def authenticate(self, token: str) -> AuthenticatedSession:
+        now = self._clock.now()
         session = self._sessions.get(hash_token(token))
-        if session is None or session.is_expired(self._clock.now()):
+        if session is None or session.is_expired(now):
             raise AuthenticationError("Session is invalid or expired")
         user = self._users.get(session.user_id)
         if user is None or not user.is_active:
             raise AuthenticationError("User is inactive")
-        return user
+
+        was_refreshed = session.needs_refresh(now, self._idle_timeout)
+        if was_refreshed:
+            session = session.refreshed(now, self._idle_timeout)
+            self._sessions.save(session)
+        return AuthenticatedSession(
+            user=user, expires_at=session.expires_at, was_refreshed=was_refreshed
+        )
 
     def logout(self, token: str) -> None:
         self._sessions.delete(hash_token(token))
