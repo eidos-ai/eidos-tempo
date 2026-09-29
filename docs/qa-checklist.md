@@ -1,6 +1,6 @@
 # QA checklist
 
-Usage context: ~30 Eidos people track time every workday, often with a timer running for hours,
+Usage context: the Eidos team tracks time every workday, often with a timer running for hours,
 from one or more browser tabs/devices. Admins manage members, clients and projects. Time records
 are billing data and must never be lost. Run this list before each release.
 
@@ -94,12 +94,12 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 
 ## 11. Multiple users at the same time
 - [x] Two users tracking simultaneously don't affect each other
-- [x] 30 users working concurrently: no errors, median 58 ms, p95 ~100 ms, one running timer each
+- [x] Load test, 30 simulated users working concurrently (more than the team): no errors, median 58 ms, p95 ~100 ms, one running timer each
 - [!] Same user concurrent stops / edit-vs-stop race (were not serialized; per-user row lock added, 20/20 races safe)
 - [x] Same user concurrent starts: never two running timers
 - [x] Same user in two tabs: starting in a stale tab stops the other tab's timer cleanly
 - [!] Stale tab picks up changes made elsewhere (background sync every 30 s added; verified tab caught up)
-- [x] Admin edits a project while 30 members start timers on it
+- [x] Admin edits a project while 30 simulated members start timers on it
 
 ## 12. Durability (server down and up)
 - [x] Backend restart: data, sessions and running timer intact
@@ -117,7 +117,7 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Pre-deploy backup via `scripts/deploy.sh`
 - [x] Retention deletes backups older than BACKUP_RETENTION_DAYS, keeps newer and unrelated files
 - [x] `scripts/restore.sh` end to end: safety backup first, data restored with identical checksum
-- [x] Backup size with a year for 30 users (78k entries): 2.4 MB
+- [x] Backup size with a year of simulated data for 30 users (78k entries): 2.4 MB
 
 ## 14. Deployment
 - [x] `scripts/deploy.sh` on a fresh host folder
@@ -127,7 +127,7 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 
 ## 15. Data correctness and scale
 - [x] Times stored in UTC, shown in browser local time
-- [x] Week query 5–17 ms end to end with a year of data for 30 users (index used)
+- [x] Week query 5–17 ms end to end with a year of simulated data for 30 users (index used)
 - [x] Description with HTML/script is shown as text (no XSS)
 
 ## Known follow-ups (not bugs, not blocking v1)

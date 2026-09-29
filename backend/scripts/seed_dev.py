@@ -37,6 +37,9 @@ def seed() -> None:
     session_factory = create_session_factory(get_settings().database_url)
     with session_factory.begin() as session:
         repositories = build_sql_repositories(session)
+        if repositories.users.get_by_email(EmailAddress(DEV_ADMIN_EMAIL)) is not None:
+            logger.info("Dev data already seeded; nothing to do")
+            return
         users = UserService(
             repositories.users, repositories.sessions, Argon2PasswordHasher(), clock
         )

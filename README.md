@@ -1,64 +1,150 @@
 # Eidos Tempo
 
-Internal time tracker for Eidos (Toggl-style). FastAPI + PostgreSQL backend, React frontend.
+Internal time tracker for Eidos, built to replace Toggl with a familiar layout.
+FastAPI + PostgreSQL backend, React frontend, deployed with Docker Compose on a single server.
+
+## Features
+
+- **Timer**: start/stop from the top bar, edit description and project while running, one running timer per user, billable indicator from the project.
+- **Calendar view**: week grid (5 or 7 days) with zoom, drag or click to create entries, click to edit, day and week totals.
+- **List view**: entries grouped by day with totals; continue, edit or delete an entry.
+- **Preferences**: view, days shown and zoom are saved per user on the server.
+- **Admin**: manage members (roles, deactivation, password reset), clients and billable projects; archive instead of delete.
+- **Data safety**: users only see their own time, deleted entries are kept (soft delete), daily backups with a restore script.
+
+The full verified behavior list is in [docs/qa-checklist.md](docs/qa-checklist.md).
 
 ## Architecture
 
 ```
-frontend (React, TS, Vite, TanStack Query, Tailwind)
-   │  /api (JSON, cookie session)
-backend/app
-   api/           HTTP layer: routes, Pydantic schemas, dependencies, error mapping
-   services/      Business rules (timer, projects, clients, users, auth)
-   domain/        Dataclasses and value objects, no framework imports
-   repositories/  Protocols + SQLAlchemy implementations
-   db/            ORM tables and session factory (Alembic migrations in backend/alembic)
+Browser (React SPA) ──► nginx ──/api──► FastAPI backend ──► PostgreSQL
+                                                              ▲
+                                                 backup container (daily pg_dump)
 ```
 
-Adding a feature: domain dataclass → repository protocol + SQL implementation → service → API route → Alembic migration → frontend feature folder.
+```
+backend/app/
+  domain/        Dataclasses, enums and value objects; no framework imports
+  services/      Business rules (auth, users, clients, projects, time entries)
+  repositories/  Protocols (protocols.py) + SQLAlchemy implementations (sql/)
+  api/           FastAPI routes, Pydantic schemas, dependencies, error mapping
+  db/            ORM tables and session factory
+  auth/          Password hashing and session tokens
+backend/alembic/ Database migrations
+backend/tests/   Service, API (in-memory fakes) and Postgres integration tests
+frontend/src/
+  api/           Typed HTTP client, endpoints, types, query keys
+  features/      One folder per feature (timer, calendar, list, projects, ...)
+  components/    Shared UI (buttons, modal, sidebar, ...)
+  lib/           Time helpers, query client, toasts
+scripts/         Deploy, backup, restore and create-admin scripts
+```
 
-Rules that protect data:
-- Time entries are soft-deleted (`deleted_at`); rows are never removed.
-- Foreign keys use `RESTRICT`, so projects, clients and users with time entries can't be deleted.
-- A partial unique index guarantees one running timer per user.
-- Migrations must be additive. Never drop a column or table that holds data without a backup.
+The frontend is a pure client of the JSON API, so the planned reports API and Chrome extension reuse the same services.
 
 ## Local development
 
-```bash
-docker compose -f docker-compose.dev.yml up -d      # Postgres on localhost:5433
+Requirements: Docker with Compose v2, [uv](https://docs.astral.sh/uv/), Node 22+.
 
+```bash
+# 1. Database (Postgres on localhost:5433)
+docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml exec db psql -U tempo -c "CREATE DATABASE tempo_test"   # once, for integration tests
+
+# 2. Backend (http://localhost:8000, API docs at /api/docs)
 cd backend
 cp .env.example .env
 uv sync
 uv run alembic upgrade head
-uv run python -m scripts.seed_dev                   # dev admin + sample data (see scripts/seed_dev.py)
+uv run python -m scripts.seed_dev        # dev admin, member and sample data; safe to re-run
 uv run uvicorn app.main:create_app --factory --reload
 
+# 3. Frontend (http://localhost:5173, proxies /api to the backend), in another terminal
 cd frontend
 npm install
-npm run dev                                         # http://localhost:5173
+npm run dev
 ```
 
-Checks:
+The dev login credentials are defined in `backend/scripts/seed_dev.py`.
+
+| Service | Dev port |
+|---|---|
+| Frontend (Vite) | 5173 |
+| Backend (uvicorn) | 8000 |
+| PostgreSQL | 5433 |
+
+### Checks
+
+Run before every commit:
 
 ```bash
-cd backend && uv run pytest && uv run ruff check . && uv run mypy app
+cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check . && uv run mypy app scripts
 cd frontend && npm run lint && npm run build
 ```
 
-`TEMPO_TEST_DATABASE_URL` in `backend/.env` enables the Postgres integration tests.
+Postgres integration tests run when `TEMPO_TEST_DATABASE_URL` is set in `backend/.env` (it is in `.env.example`) and are skipped otherwise.
 
-## Server deployment
+### Database migrations
 
 ```bash
-cp .env.example .env                 # set a strong POSTGRES_PASSWORD, TEMPO_DATA_DIR, TZ
-scripts/deploy.sh                    # pre-deploy backup (if running) + build + start; migrations run on startup
-scripts/create-admin.sh you@eidos.ai "Your Name"
+cd backend
+uv run alembic revision --autogenerate -m "add hourly rate to projects"
+# review the generated file in alembic/versions/, then:
+uv run alembic upgrade head
 ```
 
-- Data: `${TEMPO_DATA_DIR}/pgdata` (a host folder, so it survives container rebuilds).
-- Backups: `${TEMPO_DATA_DIR}/backups`, daily at `BACKUP_TIME`, kept `BACKUP_RETENTION_DAYS` days.
-- Restore: `scripts/restore.sh <file>` (takes a safety backup first).
-- `TEMPO_COOKIE_SECURE=true` requires HTTPS in front of the app. Set it to `false` only for plain-HTTP internal access.
-- Never run `docker compose down -v`, and never upgrade the Postgres major version by just changing the image tag.
+Migrations must be additive. Never drop or rename a column or table that holds data in a single step.
+
+## Configuration
+
+Backend (`backend/.env` in development, set by `docker-compose.yml` in production):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `TEMPO_DATABASE_URL` | required | SQLAlchemy URL, e.g. `postgresql+psycopg://user:pass@host:5432/tempo` |
+| `TEMPO_COOKIE_SECURE` | `true` | Send the session cookie only over HTTPS |
+| `TEMPO_SESSION_TTL_DAYS` | `14` | Session lifetime |
+| `TEMPO_SESSION_COOKIE_NAME` | `tempo_session` | Session cookie name |
+| `TEMPO_LOG_LEVEL` | `INFO` | Log level |
+| `TEMPO_TEST_DATABASE_URL` | unset | Enables Postgres integration tests |
+
+Deployment (root `.env`, see `.env.example`):
+
+| Variable | Purpose |
+|---|---|
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Database credentials (use a strong password) |
+| `TEMPO_DATA_DIR` | Host folder for database files and backups, e.g. `/srv/eidos-tempo` |
+| `TEMPO_HTTP_PORT` | Port nginx listens on |
+| `TEMPO_COOKIE_SECURE` | `true` behind HTTPS, `false` only for plain-HTTP internal access |
+| `BACKUP_TIME`, `BACKUP_RETENTION_DAYS`, `TZ` | Daily backup time (in `TZ`) and days to keep |
+
+## Deployment
+
+First install on the server:
+
+```bash
+cp .env.example .env                              # edit values
+scripts/deploy.sh                                 # build and start; migrations run on startup
+scripts/create-admin.sh you@eidos.ai "Your Name"  # first admin; admins create everyone else
+```
+
+Updating: `git pull && scripts/deploy.sh`. The script takes a pre-deploy backup when the stack is running.
+
+HTTPS: put a TLS-terminating reverse proxy (e.g. Caddy or nginx with a certificate) in front of `TEMPO_HTTP_PORT` and keep `TEMPO_COOKIE_SECURE=true`. Over plain HTTP with `true`, browsers drop the session cookie and the login page explains the problem.
+
+Logs: `docker compose logs -f backend` (also `web`, `db`, `backup`).
+
+### Data and backups
+
+- Database files live in `${TEMPO_DATA_DIR}/pgdata`, a host folder that survives container rebuilds and restarts.
+- Backups are written to `${TEMPO_DATA_DIR}/backups` daily at `BACKUP_TIME`, before every deploy and before every restore, and are deleted after `BACKUP_RETENTION_DAYS`. Backups are small: a few MB even with years of data.
+- Restore: `scripts/restore.sh` lists backups; `scripts/restore.sh <file>` asks for confirmation, takes a safety backup and restores.
+- Backups are on the same server as the database. Copy `${TEMPO_DATA_DIR}/backups` elsewhere for disaster recovery.
+- Never run `docker compose down -v`, and never upgrade the Postgres major version by only changing the image tag (dump and restore instead).
+
+## Troubleshooting
+
+- **Port 5432 already in use**: the dev database uses 5433 on purpose.
+- **Login succeeds but returns to the login page**: the site is served over plain HTTP with `TEMPO_COOKIE_SECURE=true`.
+- **"Can't reach the server" screen**: the backend is down or restarting; the page retries automatically.
+- **Docker commands return `Internal Server Error`** (Docker Desktop): fully quit Docker Desktop and start it again.

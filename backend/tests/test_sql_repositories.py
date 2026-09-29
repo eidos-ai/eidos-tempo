@@ -1,8 +1,8 @@
-import os
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -15,7 +15,14 @@ from app.domain.value_objects import DateRange, EmailAddress
 from app.repositories.protocols import Repositories
 from app.repositories.sql import build_sql_repositories
 
-TEST_DATABASE_URL = os.environ.get("TEMPO_TEST_DATABASE_URL")
+
+class IntegrationSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="TEMPO_", extra="ignore")
+
+    test_database_url: str | None = None
+
+
+TEST_DATABASE_URL = IntegrationSettings().test_database_url
 NOW = datetime(2026, 9, 28, 9, 0, tzinfo=UTC)
 
 pytestmark = pytest.mark.skipif(
