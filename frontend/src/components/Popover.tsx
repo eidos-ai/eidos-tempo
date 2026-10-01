@@ -32,6 +32,14 @@ function popoverPosition(anchor: DOMRect, width: number, height: number, viewpor
   }
 }
 
+function swallowNextClick(): void {
+  const swallow = (event: MouseEvent) => event.stopPropagation()
+  window.addEventListener('click', swallow, { capture: true, once: true })
+  window.addEventListener('mouseup', () => setTimeout(() => window.removeEventListener('click', swallow, true)), {
+    once: true,
+  })
+}
+
 export function Popover({ anchor, label, onClose, children }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState<Position | null>(null)
@@ -47,13 +55,17 @@ export function Popover({ anchor, label, onClose, children }: PopoverProps) {
       if (event.key === 'Escape') onClose()
     }
     const handleMouseDown = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) onClose()
+      if (ref.current?.contains(event.target as Node)) return
+      event.stopPropagation()
+      event.preventDefault()
+      swallowNextClick()
+      onClose()
     }
     window.addEventListener('keydown', handleKey)
-    document.addEventListener('mousedown', handleMouseDown)
+    window.addEventListener('mousedown', handleMouseDown, true)
     return () => {
       window.removeEventListener('keydown', handleKey)
-      document.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('mousedown', handleMouseDown, true)
     }
   }, [onClose])
 
