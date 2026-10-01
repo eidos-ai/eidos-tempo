@@ -42,6 +42,7 @@ interface CalendarViewProps {
   onSelect: (entry: TimeEntry, anchor: DOMRect) => void
   onContinue: (entry: TimeEntry) => void
   onReschedule: (entry: TimeEntry, start: Date, stop: Date) => void
+  pendingRange: { start: Date; stop: Date } | null
 }
 
 type EntryDragMode = 'move' | 'resize-start' | 'resize-end'
@@ -62,7 +63,7 @@ interface DragState {
 }
 
 export function CalendarView(props: CalendarViewProps) {
-  const { weekStart, daysShown, entries, now, zoom, onZoomChange, onCreate, onSelect, onContinue, onReschedule } = props
+  const { weekStart, daysShown, entries, now, zoom, onZoomChange, onCreate, onSelect, onContinue, onReschedule, pendingRange } = props
   const hourHeight = HOUR_HEIGHT_BY_ZOOM[zoom]
   const snapMinutes = SNAP_MINUTES_BY_ZOOM[zoom]
   const days = Array.from({ length: daysShown }, (_, index) => addDays(weekStart, index))
@@ -235,7 +236,20 @@ export function CalendarView(props: CalendarViewProps) {
                   onContinue={onContinue}
                 />
               ))}
-              {drag?.dayIndex === dayIndex && <DragGhost drag={drag} hourHeight={hourHeight} />}
+              {drag?.dayIndex === dayIndex && (
+                <RangeGhost
+                  startMinute={Math.min(drag.anchorMinute, drag.currentMinute)}
+                  endMinute={Math.max(drag.anchorMinute, drag.currentMinute)}
+                  hourHeight={hourHeight}
+                />
+              )}
+              {!drag && pendingRange && isSameDay(pendingRange.start, day) && (
+                <RangeGhost
+                  startMinute={minutesSinceStartOfDay(pendingRange.start)}
+                  endMinute={Math.min(MINUTES_PER_DAY, (pendingRange.stop.getTime() - day.getTime()) / 60_000)}
+                  hourHeight={hourHeight}
+                />
+              )}
               {isSameDay(day, clock) && <NowLine minute={minutesSinceStartOfDay(clock)} hourHeight={hourHeight} />}
             </div>
           ))}
@@ -354,14 +368,15 @@ function ResizeHandle({ edge, onMouseDown }: { edge: 'start' | 'end'; onMouseDow
   )
 }
 
-function DragGhost({ drag, hourHeight }: { drag: DragState; hourHeight: number }) {
-  const startMinute = Math.min(drag.anchorMinute, drag.currentMinute)
-  const endMinute = Math.max(drag.anchorMinute, drag.currentMinute)
+function RangeGhost({ startMinute, endMinute, hourHeight }: { startMinute: number; endMinute: number; hourHeight: number }) {
+  const height = Math.max(2, ((endMinute - startMinute) / 60) * hourHeight)
   return (
     <div
-      className="pointer-events-none absolute inset-x-1 rounded-md border border-dashed border-primary bg-primary/10"
-      style={{ top: (startMinute / 60) * hourHeight, height: Math.max(2, ((endMinute - startMinute) / 60) * hourHeight) }}
-    />
+      className="pointer-events-none absolute inset-x-1 overflow-hidden rounded-md border border-dashed border-primary bg-primary/10 px-2 text-[11px] text-accent tabular-nums"
+      style={{ top: (startMinute / 60) * hourHeight, height }}
+    >
+      {height >= 16 && formatDuration((endMinute - startMinute) * 60)}
+    </div>
   )
 }
 

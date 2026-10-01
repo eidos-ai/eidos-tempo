@@ -164,7 +164,7 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
           <span className="ml-auto text-sm font-medium text-ink tabular-nums">
             {durationSeconds !== null && formatDuration(Math.floor(durationSeconds))}
           </span>
-          <Button type="submit">Save</Button>
+          <Button type="submit">{existing ? 'Save' : 'Add'}</Button>
         </div>
 
         {validationError && <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">{validationError}</p>}

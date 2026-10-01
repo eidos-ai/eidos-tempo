@@ -65,6 +65,7 @@ export function TimerPage() {
           onSelect={selectEntry}
           onContinue={continueEntry}
           onReschedule={rescheduleEntry}
+          pendingRange={editorTarget?.kind === 'create' ? editorTarget : null}
         />
       ) : (
         <ListView
