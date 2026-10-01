@@ -25,7 +25,7 @@ export function TimerPage() {
   const weekEnd = addDays(weekStart, 7)
   const weekTotalSeconds = entries.reduce((sum, entry) => sum + secondsWithin(entry, weekStart, weekEnd, now), 0)
 
-  const selectEntry = (entry: TimeEntry) => setEditorTarget({ kind: 'edit', entry })
+  const selectEntry = (entry: TimeEntry, anchor: DOMRect) => setEditorTarget({ kind: 'edit', entry, anchor })
   const continueEntry = (entry: TimeEntry) =>
     startTimer.mutate({ description: entry.description, project_id: entry.project_id })
 
@@ -49,7 +49,7 @@ export function TimerPage() {
           now={now}
           zoom={preferences.calendar_zoom}
           onZoomChange={(zoom) => setPreference('calendar_zoom', zoom)}
-          onCreate={(start, stop) => setEditorTarget({ kind: 'create', start, stop })}
+          onCreate={(start, stop, anchor) => setEditorTarget({ kind: 'create', start, stop, anchor })}
           onSelect={selectEntry}
         />
       ) : (

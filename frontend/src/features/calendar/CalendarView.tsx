@@ -35,8 +35,8 @@ interface CalendarViewProps {
   now: Date
   zoom: CalendarZoom
   onZoomChange: (zoom: CalendarZoom) => void
-  onCreate: (start: Date, stop: Date) => void
-  onSelect: (entry: TimeEntry) => void
+  onCreate: (start: Date, stop: Date, anchor: DOMRect) => void
+  onSelect: (entry: TimeEntry, anchor: DOMRect) => void
 }
 
 interface DragState {
@@ -86,7 +86,14 @@ export function CalendarView(props: CalendarViewProps) {
       const startMinute = isClick ? anchorMinute : Math.min(anchorMinute, releaseMinute)
       const draggedEnd = Math.max(anchorMinute, releaseMinute, startMinute + snapMinutes)
       const endMinute = Math.min(MINUTES_PER_DAY, isClick ? anchorMinute + CLICK_ENTRY_MINUTES : draggedEnd)
-      onCreate(addMinutes(day, startMinute), addMinutes(day, endMinute))
+      const columnRect = column.getBoundingClientRect()
+      const anchor = new DOMRect(
+        columnRect.left,
+        columnRect.top + (startMinute / 60) * hourHeight,
+        columnRect.width,
+        ((endMinute - startMinute) / 60) * hourHeight,
+      )
+      onCreate(addMinutes(day, startMinute), addMinutes(day, endMinute), anchor)
     }
     window.addEventListener('mousemove', handleMove)
     window.addEventListener('mouseup', handleUp, { once: true })
@@ -186,7 +193,7 @@ function DayHeader({ day, entries, now, isToday }: { day: Date; entries: TimeEnt
   )
 }
 
-function EntryBlock({ segment, hourHeight, now, onSelect }: { segment: DaySegment; hourHeight: number; now: Date; onSelect: (entry: TimeEntry) => void }) {
+function EntryBlock({ segment, hourHeight, now, onSelect }: { segment: DaySegment; hourHeight: number; now: Date; onSelect: (entry: TimeEntry, anchor: DOMRect) => void }) {
   const projects = useProjectLookup()
   const { entry } = segment
   const project = entry.project_id ? projects.get(entry.project_id) : undefined
@@ -199,7 +206,7 @@ function EntryBlock({ segment, hourHeight, now, onSelect }: { segment: DaySegmen
   return (
     <button
       onMouseDown={(event) => event.stopPropagation()}
-      onClick={() => !isOptimistic(entry) && onSelect(entry)}
+      onClick={(event) => !isOptimistic(entry) && onSelect(entry, event.currentTarget.getBoundingClientRect())}
       className={`absolute flex flex-col justify-start overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-left text-xs transition-shadow hover:shadow-md ${isRunning ? 'ring-1 ring-primary/40' : ''}`}
       style={{
         top: top + 1,

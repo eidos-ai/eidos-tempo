@@ -17,7 +17,7 @@ import { isOptimistic } from '../time-entries/useTimeEntries'
 interface ListViewProps {
   entries: TimeEntry[]
   now: Date
-  onSelect: (entry: TimeEntry) => void
+  onSelect: (entry: TimeEntry, anchor: DOMRect) => void
   onContinue: (entry: TimeEntry) => void
   onDelete: (entry: TimeEntry) => void
 }
@@ -89,7 +89,7 @@ function EntryRow({ entry, now, onSelect, onContinue, onDelete }: { entry: TimeE
   return (
     <li
       className={`group flex cursor-pointer items-center gap-4 px-5 py-3 text-sm hover:bg-canvas/60 ${isPending ? 'opacity-60' : ''}`}
-      onClick={() => !isPending && onSelect(entry)}
+      onClick={(event) => !isPending && onSelect(entry, event.currentTarget.getBoundingClientRect())}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <span className={`truncate ${entry.description ? '' : 'text-muted'}`}>{entry.description || '(no description)'}</span>
