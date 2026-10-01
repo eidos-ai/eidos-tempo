@@ -51,6 +51,7 @@ export function TimerPage() {
           onZoomChange={(zoom) => setPreference('calendar_zoom', zoom)}
           onCreate={(start, stop, anchor) => setEditorTarget({ kind: 'create', start, stop, anchor })}
           onSelect={selectEntry}
+          onContinue={continueEntry}
         />
       ) : (
         <ListView

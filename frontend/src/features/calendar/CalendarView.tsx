@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import type { CalendarZoom, DaysShown, TimeEntry } from '../../api/types'
-import { MinusIcon, PlusIcon } from '../../components/icons'
+import { MinusIcon, PlayIcon, PlusIcon } from '../../components/icons'
 import { NO_PROJECT_COLOR, projectTextColor, projectTint } from '../../lib/colors'
 import {
   addDays,
@@ -26,6 +26,7 @@ const DEFAULT_SCROLL_HOUR = 8
 const CLICK_ENTRY_MINUTES = 30
 const CLICK_TOLERANCE_PX = 4
 const MIN_BLOCK_HEIGHT = 12
+const MIN_PLAY_BLOCK_HEIGHT = 24
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
 
 interface CalendarViewProps {
@@ -37,6 +38,7 @@ interface CalendarViewProps {
   onZoomChange: (zoom: CalendarZoom) => void
   onCreate: (start: Date, stop: Date, anchor: DOMRect) => void
   onSelect: (entry: TimeEntry, anchor: DOMRect) => void
+  onContinue: (entry: TimeEntry) => void
 }
 
 interface DragState {
@@ -46,7 +48,7 @@ interface DragState {
 }
 
 export function CalendarView(props: CalendarViewProps) {
-  const { weekStart, daysShown, entries, now, zoom, onZoomChange, onCreate, onSelect } = props
+  const { weekStart, daysShown, entries, now, zoom, onZoomChange, onCreate, onSelect, onContinue } = props
   const hourHeight = HOUR_HEIGHT_BY_ZOOM[zoom]
   const snapMinutes = SNAP_MINUTES_BY_ZOOM[zoom]
   const days = Array.from({ length: daysShown }, (_, index) => addDays(weekStart, index))
@@ -148,7 +150,14 @@ export function CalendarView(props: CalendarViewProps) {
               }}
             >
               {segmentsForDay(entries, day, now).map((segment) => (
-                <EntryBlock key={segment.entry.id} segment={segment} hourHeight={hourHeight} now={now} onSelect={onSelect} />
+                <EntryBlock
+                  key={segment.entry.id}
+                  segment={segment}
+                  hourHeight={hourHeight}
+                  now={now}
+                  onSelect={onSelect}
+                  onContinue={onContinue}
+                />
               ))}
               {drag?.dayIndex === dayIndex && <DragGhost drag={drag} hourHeight={hourHeight} />}
               {isSameDay(day, clock) && <NowLine minute={minutesSinceStartOfDay(clock)} hourHeight={hourHeight} />}
@@ -193,7 +202,15 @@ function DayHeader({ day, entries, now, isToday }: { day: Date; entries: TimeEnt
   )
 }
 
-function EntryBlock({ segment, hourHeight, now, onSelect }: { segment: DaySegment; hourHeight: number; now: Date; onSelect: (entry: TimeEntry, anchor: DOMRect) => void }) {
+interface EntryBlockProps {
+  segment: DaySegment
+  hourHeight: number
+  now: Date
+  onSelect: (entry: TimeEntry, anchor: DOMRect) => void
+  onContinue: (entry: TimeEntry) => void
+}
+
+function EntryBlock({ segment, hourHeight, now, onSelect, onContinue }: EntryBlockProps) {
   const projects = useProjectLookup()
   const { entry } = segment
   const project = entry.project_id ? projects.get(entry.project_id) : undefined
@@ -202,12 +219,17 @@ function EntryBlock({ segment, hourHeight, now, onSelect }: { segment: DaySegmen
   const durationMinutes = (segment.end.getTime() - segment.start.getTime()) / 60_000
   const height = Math.max(MIN_BLOCK_HEIGHT, (durationMinutes / 60) * hourHeight - 2)
   const isRunning = entry.stop === null
+  const isPending = isOptimistic(entry)
+  const select = (element: HTMLElement) => !isPending && onSelect(entry, element.getBoundingClientRect())
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onMouseDown={(event) => event.stopPropagation()}
-      onClick={(event) => !isOptimistic(entry) && onSelect(entry, event.currentTarget.getBoundingClientRect())}
-      className={`absolute flex flex-col justify-start overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-left text-xs transition-shadow hover:shadow-md ${isRunning ? 'ring-1 ring-primary/40' : ''}`}
+      onClick={(event) => select(event.currentTarget)}
+      onKeyDown={(event) => event.key === 'Enter' && select(event.currentTarget)}
+      className={`group absolute flex cursor-pointer flex-col justify-start overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-left text-xs transition-shadow hover:shadow-md ${isRunning ? 'ring-1 ring-primary/40' : ''}`}
       style={{
         top: top + 1,
         height,
@@ -220,7 +242,21 @@ function EntryBlock({ segment, hourHeight, now, onSelect }: { segment: DaySegmen
       {height >= 20 && <p className="truncate font-medium text-ink">{entry.description || '(no description)'}</p>}
       {height >= 36 && project && <p className="truncate" style={{ color: projectTextColor(color) }}>{project.name}</p>}
       {height >= 52 && <p className="mt-0.5 text-ink-soft tabular-nums">{formatDuration(entrySeconds(entry, now))}</p>}
-    </button>
+      {!isRunning && !isPending && height >= MIN_PLAY_BLOCK_HEIGHT && (
+        <button
+          title="Continue"
+          aria-label="Continue this entry"
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation()
+            onContinue(entry)
+          }}
+          className="absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-primary text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:bg-primary-strong focus-visible:opacity-100"
+        >
+          <PlayIcon width={10} height={10} />
+        </button>
+      )}
+    </div>
   )
 }
 
