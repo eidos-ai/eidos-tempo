@@ -28,6 +28,7 @@ const CLICK_ENTRY_MINUTES = 30
 const CLICK_TOLERANCE_PX = 4
 const MIN_BLOCK_HEIGHT = 12
 const MIN_PLAY_BLOCK_HEIGHT = 24
+const MIN_RESIZE_BLOCK_HEIGHT = 20
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
 
 interface CalendarViewProps {
@@ -42,6 +43,10 @@ interface CalendarViewProps {
   onContinue: (entry: TimeEntry) => void
   onReschedule: (entry: TimeEntry, start: Date, stop: Date) => void
 }
+
+type EntryDragMode = 'move' | 'resize-start' | 'resize-end'
+
+const DRAG_CURSOR: Record<EntryDragMode, string> = { move: 'grabbing', 'resize-start': 'ns-resize', 'resize-end': 'ns-resize' }
 
 interface EntryPreview {
   entryId: string
@@ -122,33 +127,48 @@ export function CalendarView(props: CalendarViewProps) {
     return index === -1 ? columns.length - 1 : index
   }
 
-  const handleEntryMouseDown = (event: ReactMouseEvent<HTMLElement>, entry: TimeEntry, dayIndex: number) => {
+  const handleEntryMouseDown = (event: ReactMouseEvent<HTMLElement>, entry: TimeEntry, dayIndex: number, mode: EntryDragMode) => {
     if (event.button !== 0) return
     event.stopPropagation()
     if (isOptimistic(entry)) return
-    const element = event.currentTarget
+    const block = event.currentTarget.closest<HTMLElement>('[data-entry-id]')
+    const column = block?.parentElement
+    if (!block || !column) return
     const pressX = event.clientX
     const pressY = event.clientY
     const originalStart = new Date(entry.start)
     const originalStop = entry.stop ? new Date(entry.stop) : null
     let moved: { start: Date; stop: Date } | null = null
 
+    const draggedTimes = (moveEvent: MouseEvent, start: Date, stop: Date) => {
+      const minSpan = snapMinutes * 60_000
+      if (mode === 'move') {
+        const deltaMinutes = Math.round(((moveEvent.clientY - pressY) / hourHeight) * 60 / snapMinutes) * snapMinutes
+        const deltaDays = dayIndexAt(moveEvent.clientX) - dayIndex
+        return {
+          start: addMinutes(shiftDays(start, deltaDays), deltaMinutes),
+          stop: addMinutes(shiftDays(stop, deltaDays), deltaMinutes),
+        }
+      }
+      const edge = addMinutes(days[dayIndex], minuteFromEvent(moveEvent, column, Math.round)).getTime()
+      if (mode === 'resize-start') return { start: new Date(Math.min(edge, stop.getTime() - minSpan)), stop }
+      return { start, stop: new Date(Math.max(edge, start.getTime() + minSpan)) }
+    }
+
     const handleMove = (moveEvent: MouseEvent) => {
       if (!originalStop) return
       if (!moved && Math.hypot(moveEvent.clientX - pressX, moveEvent.clientY - pressY) < CLICK_TOLERANCE_PX) return
-      const deltaMinutes = Math.round(((moveEvent.clientY - pressY) / hourHeight) * 60 / snapMinutes) * snapMinutes
-      const deltaDays = dayIndexAt(moveEvent.clientX) - dayIndex
-      const start = addMinutes(shiftDays(originalStart, deltaDays), deltaMinutes)
-      const stop = addMinutes(shiftDays(originalStop, deltaDays), deltaMinutes)
-      moved = { start, stop }
-      document.body.style.cursor = 'grabbing'
+      moved = draggedTimes(moveEvent, originalStart, originalStop)
+      const { start, stop } = moved
+      document.body.style.cursor = DRAG_CURSOR[mode]
       setPreview({ entryId: entry.id, start: start.toISOString(), stop: stop.toISOString(), baseEntries: entries })
     }
     const handleUp = () => {
       window.removeEventListener('mousemove', handleMove)
       document.body.style.cursor = ''
-      if (!moved) return onSelect(entry, element.getBoundingClientRect())
-      if (moved.start.getTime() === originalStart.getTime()) return setPreview(null)
+      if (!moved) return onSelect(entry, block.getBoundingClientRect())
+      const unchanged = moved.start.getTime() === originalStart.getTime() && moved.stop.getTime() === originalStop?.getTime()
+      if (unchanged) return setPreview(null)
       onReschedule(entry, moved.start, moved.stop)
     }
     window.addEventListener('mousemove', handleMove)
@@ -210,7 +230,7 @@ export function CalendarView(props: CalendarViewProps) {
                   hourHeight={hourHeight}
                   now={now}
                   isDragged={segment.entry.id === activePreview?.entryId}
-                  onMouseDown={(event) => handleEntryMouseDown(event, segment.entry, dayIndex)}
+                  onMouseDown={(event, mode) => handleEntryMouseDown(event, segment.entry, dayIndex, mode)}
                   onSelect={onSelect}
                   onContinue={onContinue}
                 />
@@ -263,7 +283,7 @@ interface EntryBlockProps {
   hourHeight: number
   now: Date
   isDragged: boolean
-  onMouseDown: (event: ReactMouseEvent<HTMLElement>) => void
+  onMouseDown: (event: ReactMouseEvent<HTMLElement>, mode: EntryDragMode) => void
   onSelect: (entry: TimeEntry, anchor: DOMRect) => void
   onContinue: (entry: TimeEntry) => void
 }
@@ -278,12 +298,16 @@ function EntryBlock({ segment, hourHeight, now, isDragged, onMouseDown, onSelect
   const height = Math.max(MIN_BLOCK_HEIGHT, (durationMinutes / 60) * hourHeight - 2)
   const isRunning = entry.stop === null
   const isPending = isOptimistic(entry)
+  const canResize = !isRunning && !isPending && height >= MIN_RESIZE_BLOCK_HEIGHT
+  const startsHere = segment.start.getTime() === new Date(entry.start).getTime()
+  const endsHere = entry.stop !== null && segment.end.getTime() === new Date(entry.stop).getTime()
 
   return (
     <div
       role="button"
       tabIndex={0}
-      onMouseDown={onMouseDown}
+      data-entry-id={entry.id}
+      onMouseDown={(event) => onMouseDown(event, 'move')}
       onKeyDown={(event) => event.key === 'Enter' && !isPending && onSelect(entry, event.currentTarget.getBoundingClientRect())}
       className={`group absolute flex cursor-pointer flex-col justify-start overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-left text-xs transition-shadow hover:shadow-md ${isRunning ? 'ring-1 ring-primary/40' : ''} ${isDragged ? 'z-20 shadow-lg' : ''}`}
       style={{
@@ -298,6 +322,8 @@ function EntryBlock({ segment, hourHeight, now, isDragged, onMouseDown, onSelect
       {height >= 20 && <p className="truncate font-medium text-ink">{entry.description || '(no description)'}</p>}
       {height >= 36 && project && <p className="truncate" style={{ color: projectTextColor(color) }}>{project.name}</p>}
       {height >= 52 && <p className="mt-0.5 text-ink-soft tabular-nums">{formatDuration(entrySeconds(entry, now))}</p>}
+      {canResize && startsHere && <ResizeHandle edge="start" onMouseDown={(event) => onMouseDown(event, 'resize-start')} />}
+      {canResize && endsHere && <ResizeHandle edge="end" onMouseDown={(event) => onMouseDown(event, 'resize-end')} />}
       {!isRunning && !isPending && height >= MIN_PLAY_BLOCK_HEIGHT && (
         <button
           title="Continue"
@@ -312,6 +338,18 @@ function EntryBlock({ segment, hourHeight, now, isDragged, onMouseDown, onSelect
           <PlayIcon width={10} height={10} />
         </button>
       )}
+    </div>
+  )
+}
+
+function ResizeHandle({ edge, onMouseDown }: { edge: 'start' | 'end'; onMouseDown: (event: ReactMouseEvent<HTMLElement>) => void }) {
+  return (
+    <div
+      aria-hidden="true"
+      onMouseDown={onMouseDown}
+      className={`absolute inset-x-0 flex h-2 cursor-ns-resize items-center justify-center ${edge === 'start' ? 'top-0' : 'bottom-0'}`}
+    >
+      <span className="h-[3px] w-3 border-y border-ink-soft opacity-0 transition-opacity group-hover:opacity-70" />
     </div>
   )
 }
