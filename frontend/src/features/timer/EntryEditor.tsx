@@ -3,12 +3,13 @@ import type { TimeEntry, TimeEntryInput } from '../../api/types'
 import { Button } from '../../components/Button'
 import { CloseIcon, DollarIcon, FolderIcon, PlayIcon, TrashIcon } from '../../components/icons'
 import { Popover } from '../../components/Popover'
-import { formatDuration, fromDateTimeInputValue, toDateTimeInputValue } from '../../lib/time'
+import { formatDuration, shiftDays, toTimeInputValue, withTimeOfDay } from '../../lib/time'
 import { ProjectLabel } from '../projects/ProjectLabel'
 import { ProjectPicker } from '../projects/ProjectPicker'
 import { useProjectLookup } from '../projects/useProjects'
 import { DescriptionInput } from '../time-entries/DescriptionInput'
 import { useCreateEntry, useDeleteEntry, useStartTimer, useUpdateEntry } from '../time-entries/useTimeEntries'
+import { TimeField } from './TimeField'
 import { MAX_DESCRIPTION_LENGTH } from './TimerBar'
 
 export type EditorTarget =
@@ -20,8 +21,16 @@ interface EntryEditorProps {
   onClose: () => void
 }
 
-const TIME_INPUT_CLASSES =
-  'h-9 min-w-0 flex-1 rounded-lg border border-line-strong bg-surface px-2 text-sm tabular-nums outline-none focus:border-primary focus:ring-2 focus:ring-primary/20'
+function resolveStart(initialStart: Date, startTime: string): Date | null {
+  return startTime === toTimeInputValue(initialStart) ? initialStart : withTimeOfDay(initialStart, startTime)
+}
+
+function resolveStop(initialStop: Date, stopTime: string, start: Date | null): Date | null {
+  if (stopTime === toTimeInputValue(initialStop)) return initialStop
+  const stop = start && withTimeOfDay(start, stopTime)
+  if (!start || !stop) return null
+  return stop < start ? shiftDays(stop, 1) : stop
+}
 
 export function EntryEditor({ target, onClose }: EntryEditorProps) {
   const createEntry = useCreateEntry()
@@ -37,12 +46,12 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
 
   const [description, setDescription] = useState(existing?.description ?? '')
   const [projectId, setProjectId] = useState<string | null>(existing?.project_id ?? null)
-  const [startValue, setStartValue] = useState(toDateTimeInputValue(initialStart))
-  const [stopValue, setStopValue] = useState(initialStop ? toDateTimeInputValue(initialStop) : '')
+  const [startTime, setStartTime] = useState(toTimeInputValue(initialStart))
+  const [stopTime, setStopTime] = useState(initialStop ? toTimeInputValue(initialStop) : '')
   const [validationError, setValidationError] = useState<string | null>(null)
 
-  const start = fromDateTimeInputValue(startValue)
-  const stop = isRunning ? null : fromDateTimeInputValue(stopValue)
+  const start = resolveStart(initialStart, startTime)
+  const stop = initialStop ? resolveStop(initialStop, stopTime, start) : null
   const durationSeconds = start && stop ? Math.max(0, (stop.getTime() - start.getTime()) / 1000) : null
   const selectedProject = projectId ? projects.get(projectId) : undefined
 
@@ -145,37 +154,20 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <input
-            type="datetime-local"
-            aria-label="Start"
-            value={startValue}
-            onChange={(e) => setStartValue(e.target.value)}
-            className={TIME_INPUT_CLASSES}
-            required
-          />
+          <TimeField label="Start" value={startTime} onChange={setStartTime} />
           <span className="text-muted">→</span>
           {isRunning ? (
-            <span className="flex h-9 items-center pr-2 text-sm text-primary">Running</span>
+            <span className="text-sm text-primary">Running</span>
           ) : (
-            <input
-              type="datetime-local"
-              aria-label="Stop"
-              value={stopValue}
-              onChange={(e) => setStopValue(e.target.value)}
-              className={TIME_INPUT_CLASSES}
-              required
-            />
+            <TimeField label="Stop" value={stopTime} onChange={setStopTime} />
           )}
-        </div>
-
-        {validationError && <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">{validationError}</p>}
-
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-ink tabular-nums">
+          <span className="ml-auto text-sm font-medium text-ink tabular-nums">
             {durationSeconds !== null && formatDuration(Math.floor(durationSeconds))}
           </span>
           <Button type="submit">Save</Button>
         </div>
+
+        {validationError && <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">{validationError}</p>}
       </form>
     </Popover>
   )

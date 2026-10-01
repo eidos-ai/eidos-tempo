@@ -81,12 +81,39 @@ export function formatShortDate(date: Date): string {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
-export function toDateTimeInputValue(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+export function toTimeInputValue(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-export function fromDateTimeInputValue(value: string): Date | null {
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? null : date
+export function withTimeOfDay(date: Date, value: string): Date | null {
+  const match = /^(\d{2}):(\d{2})$/.exec(value)
+  if (!match) return null
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), Number(match[1]), Number(match[2]))
+}
+
+export type Meridiem = 'AM' | 'PM'
+
+export interface ClockTime {
+  value: string
+  meridiem: Meridiem
+}
+
+export function toTwelveHour(value: string): { text: string; meridiem: Meridiem } {
+  const match = /^(\d{2}):(\d{2})$/.exec(value)
+  if (!match) return { text: '', meridiem: 'AM' }
+  const hours = Number(match[1])
+  return { text: `${hours % 12 || 12}:${match[2]}`, meridiem: hours >= 12 ? 'PM' : 'AM' }
+}
+
+export function parseClockText(text: string, meridiem: Meridiem): ClockTime | null {
+  const match = /^(\d{1,2}):?(\d{2})?\s*([ap])?m?$/i.exec(text.trim())
+  if (!match) return null
+  const hours = Number(match[1])
+  const minutes = Number(match[2] ?? 0)
+  if (hours > 23 || minutes > 59) return null
+  const isTwentyFourHour = hours === 0 || hours > 12
+  const suffix = match[3]?.toUpperCase()
+  const chosen: Meridiem = isTwentyFourHour ? (hours >= 12 ? 'PM' : 'AM') : suffix ? (suffix === 'A' ? 'AM' : 'PM') : meridiem
+  const hours24 = isTwentyFourHour ? hours : (hours % 12) + (chosen === 'PM' ? 12 : 0)
+  return { value: `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`, meridiem: chosen }
 }
