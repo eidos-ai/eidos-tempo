@@ -11,6 +11,7 @@ import {
   isSameDay,
   minutesSinceStartOfDay,
   secondsWithin,
+  shiftDays,
 } from '../../lib/time'
 import { useNow } from '../../lib/useNow'
 import { useProjectLookup } from '../projects/useProjects'
@@ -39,6 +40,14 @@ interface CalendarViewProps {
   onCreate: (start: Date, stop: Date, anchor: DOMRect) => void
   onSelect: (entry: TimeEntry, anchor: DOMRect) => void
   onContinue: (entry: TimeEntry) => void
+  onReschedule: (entry: TimeEntry, start: Date, stop: Date) => void
+}
+
+interface EntryPreview {
+  entryId: string
+  start: string
+  stop: string
+  baseEntries: TimeEntry[]
 }
 
 interface DragState {
@@ -48,7 +57,7 @@ interface DragState {
 }
 
 export function CalendarView(props: CalendarViewProps) {
-  const { weekStart, daysShown, entries, now, zoom, onZoomChange, onCreate, onSelect, onContinue } = props
+  const { weekStart, daysShown, entries, now, zoom, onZoomChange, onCreate, onSelect, onContinue, onReschedule } = props
   const hourHeight = HOUR_HEIGHT_BY_ZOOM[zoom]
   const snapMinutes = SNAP_MINUTES_BY_ZOOM[zoom]
   const days = Array.from({ length: daysShown }, (_, index) => addDays(weekStart, index))
@@ -57,6 +66,12 @@ export function CalendarView(props: CalendarViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const topMinuteRef = useRef(DEFAULT_SCROLL_HOUR * 60)
   const [drag, setDrag] = useState<DragState | null>(null)
+  const [preview, setPreview] = useState<EntryPreview | null>(null)
+
+  const activePreview = preview?.baseEntries === entries ? preview : null
+  const shownEntries = activePreview
+    ? entries.map((entry) => (entry.id === activePreview.entryId ? { ...entry, start: activePreview.start, stop: activePreview.stop } : entry))
+    : entries
 
   useLayoutEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = (topMinuteRef.current / 60) * hourHeight
@@ -101,6 +116,45 @@ export function CalendarView(props: CalendarViewProps) {
     window.addEventListener('mouseup', handleUp, { once: true })
   }
 
+  const dayIndexAt = (clientX: number) => {
+    const columns = [...(scrollRef.current?.querySelectorAll<HTMLElement>('[data-day-index]') ?? [])]
+    const index = columns.findIndex((column) => clientX < column.getBoundingClientRect().right)
+    return index === -1 ? columns.length - 1 : index
+  }
+
+  const handleEntryMouseDown = (event: ReactMouseEvent<HTMLElement>, entry: TimeEntry, dayIndex: number) => {
+    if (event.button !== 0) return
+    event.stopPropagation()
+    if (isOptimistic(entry)) return
+    const element = event.currentTarget
+    const pressX = event.clientX
+    const pressY = event.clientY
+    const originalStart = new Date(entry.start)
+    const originalStop = entry.stop ? new Date(entry.stop) : null
+    let moved: { start: Date; stop: Date } | null = null
+
+    const handleMove = (moveEvent: MouseEvent) => {
+      if (!originalStop) return
+      if (!moved && Math.hypot(moveEvent.clientX - pressX, moveEvent.clientY - pressY) < CLICK_TOLERANCE_PX) return
+      const deltaMinutes = Math.round(((moveEvent.clientY - pressY) / hourHeight) * 60 / snapMinutes) * snapMinutes
+      const deltaDays = dayIndexAt(moveEvent.clientX) - dayIndex
+      const start = addMinutes(shiftDays(originalStart, deltaDays), deltaMinutes)
+      const stop = addMinutes(shiftDays(originalStop, deltaDays), deltaMinutes)
+      moved = { start, stop }
+      document.body.style.cursor = 'grabbing'
+      setPreview({ entryId: entry.id, start: start.toISOString(), stop: stop.toISOString(), baseEntries: entries })
+    }
+    const handleUp = () => {
+      window.removeEventListener('mousemove', handleMove)
+      document.body.style.cursor = ''
+      if (!moved) return onSelect(entry, element.getBoundingClientRect())
+      if (moved.start.getTime() === originalStart.getTime()) return setPreview(null)
+      onReschedule(entry, moved.start, moved.stop)
+    }
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp, { once: true })
+  }
+
   const gridTemplate = { gridTemplateColumns: `72px repeat(${daysShown}, minmax(0, 1fr))` }
 
   return (
@@ -115,7 +169,7 @@ export function CalendarView(props: CalendarViewProps) {
           </ZoomButton>
         </div>
         {days.map((day) => (
-          <DayHeader key={day.toISOString()} day={day} entries={entries} now={now} isToday={isSameDay(day, clock)} />
+          <DayHeader key={day.toISOString()} day={day} entries={shownEntries} now={now} isToday={isSameDay(day, clock)} />
         ))}
       </div>
 
@@ -149,12 +203,14 @@ export function CalendarView(props: CalendarViewProps) {
                 backgroundSize: `100% ${hourHeight}px`,
               }}
             >
-              {segmentsForDay(entries, day, now).map((segment) => (
+              {segmentsForDay(shownEntries, day, now).map((segment) => (
                 <EntryBlock
                   key={segment.entry.id}
                   segment={segment}
                   hourHeight={hourHeight}
                   now={now}
+                  isDragged={segment.entry.id === activePreview?.entryId}
+                  onMouseDown={(event) => handleEntryMouseDown(event, segment.entry, dayIndex)}
                   onSelect={onSelect}
                   onContinue={onContinue}
                 />
@@ -206,11 +262,13 @@ interface EntryBlockProps {
   segment: DaySegment
   hourHeight: number
   now: Date
+  isDragged: boolean
+  onMouseDown: (event: ReactMouseEvent<HTMLElement>) => void
   onSelect: (entry: TimeEntry, anchor: DOMRect) => void
   onContinue: (entry: TimeEntry) => void
 }
 
-function EntryBlock({ segment, hourHeight, now, onSelect, onContinue }: EntryBlockProps) {
+function EntryBlock({ segment, hourHeight, now, isDragged, onMouseDown, onSelect, onContinue }: EntryBlockProps) {
   const projects = useProjectLookup()
   const { entry } = segment
   const project = entry.project_id ? projects.get(entry.project_id) : undefined
@@ -220,16 +278,14 @@ function EntryBlock({ segment, hourHeight, now, onSelect, onContinue }: EntryBlo
   const height = Math.max(MIN_BLOCK_HEIGHT, (durationMinutes / 60) * hourHeight - 2)
   const isRunning = entry.stop === null
   const isPending = isOptimistic(entry)
-  const select = (element: HTMLElement) => !isPending && onSelect(entry, element.getBoundingClientRect())
 
   return (
     <div
       role="button"
       tabIndex={0}
-      onMouseDown={(event) => event.stopPropagation()}
-      onClick={(event) => select(event.currentTarget)}
-      onKeyDown={(event) => event.key === 'Enter' && select(event.currentTarget)}
-      className={`group absolute flex cursor-pointer flex-col justify-start overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-left text-xs transition-shadow hover:shadow-md ${isRunning ? 'ring-1 ring-primary/40' : ''}`}
+      onMouseDown={onMouseDown}
+      onKeyDown={(event) => event.key === 'Enter' && !isPending && onSelect(entry, event.currentTarget.getBoundingClientRect())}
+      className={`group absolute flex cursor-pointer flex-col justify-start overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-left text-xs transition-shadow hover:shadow-md ${isRunning ? 'ring-1 ring-primary/40' : ''} ${isDragged ? 'z-20 shadow-lg' : ''}`}
       style={{
         top: top + 1,
         height,
