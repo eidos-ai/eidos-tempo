@@ -2,9 +2,11 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 from app.domain.clients import Client
-from app.domain.ids import ClientId, ProjectId, TimeEntryId, UserId
+from app.domain.ids import ClientId, ProjectId, TagId, TimeEntryId, UserId
+from app.domain.import_links import ImportedEntity, ImportLink, ImportSource
 from app.domain.projects import Project
 from app.domain.sessions import AuthSession
+from app.domain.tags import Tag
 from app.domain.time_entries import EntrySuggestion, TimeEntry
 from app.domain.users import User
 from app.domain.value_objects import DateRange, EmailAddress
@@ -120,6 +122,43 @@ class InMemoryProjectRepository:
         self.items[project.id] = replace(project)
 
 
+class InMemoryTagRepository:
+    def __init__(self) -> None:
+        self.items: dict[TagId, Tag] = {}
+
+    def get(self, tag_id: TagId) -> Tag | None:
+        tag = self.items.get(tag_id)
+        return replace(tag) if tag else None
+
+    def get_by_name(self, name: str) -> Tag | None:
+        return next(
+            (replace(t) for t in self.items.values() if t.name.lower() == name.lower()), None
+        )
+
+    def list_all(self, include_archived: bool) -> list[Tag]:
+        tags = [t for t in self.items.values() if include_archived or not t.is_archived]
+        return sorted((replace(t) for t in tags), key=lambda t: t.name)
+
+    def add(self, tag: Tag) -> None:
+        self.items[tag.id] = replace(tag)
+
+    def save(self, tag: Tag) -> None:
+        self.items[tag.id] = replace(tag)
+
+
+class InMemoryImportLinkRepository:
+    def __init__(self) -> None:
+        self.items: dict[tuple[ImportSource, ImportedEntity, str], ImportLink] = {}
+
+    def find(
+        self, source: ImportSource, entity: ImportedEntity, external_id: str
+    ) -> ImportLink | None:
+        return self.items.get((source, entity, external_id))
+
+    def add(self, link: ImportLink) -> None:
+        self.items[(link.source, link.entity, link.external_id)] = link
+
+
 class InMemoryTimeEntryRepository:
     def __init__(self) -> None:
         self.items: dict[TimeEntryId, TimeEntry] = {}
@@ -178,5 +217,7 @@ def build_in_memory_repositories() -> Repositories:
         sessions=InMemorySessionRepository(),
         clients=InMemoryClientRepository(),
         projects=InMemoryProjectRepository(),
+        tags=InMemoryTagRepository(),
         time_entries=InMemoryTimeEntryRepository(),
+        import_links=InMemoryImportLinkRepository(),
     )

@@ -3,11 +3,11 @@ from datetime import datetime
 
 from app.domain.clock import Clock
 from app.domain.errors import ConflictError, InvalidValueError, NotFoundError
-from app.domain.ids import ProjectId, TimeEntryId, new_uuid
+from app.domain.ids import ProjectId, TagId, TimeEntryId, new_uuid
 from app.domain.time_entries import EntrySuggestion, TimeEntry, ensure_valid_period
 from app.domain.users import User
 from app.domain.value_objects import DateRange
-from app.repositories.protocols import ProjectRepository, TimeEntryRepository
+from app.repositories.protocols import ProjectRepository, TagRepository, TimeEntryRepository
 
 MAX_DESCRIPTION_LENGTH = 500
 MAX_SUGGESTIONS = 300
@@ -17,6 +17,8 @@ MAX_SUGGESTIONS = 300
 class TimerStart:
     description: str
     project_id: ProjectId | None
+    is_billable: bool | None = None
+    tag_ids: tuple[TagId, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -25,14 +27,21 @@ class TimeEntryDraft:
     project_id: ProjectId | None
     start: datetime
     stop: datetime | None
+    is_billable: bool | None = None
+    tag_ids: tuple[TagId, ...] = ()
 
 
 class TimeEntryService:
     def __init__(
-        self, time_entries: TimeEntryRepository, projects: ProjectRepository, clock: Clock
+        self,
+        time_entries: TimeEntryRepository,
+        projects: ProjectRepository,
+        tags: TagRepository,
+        clock: Clock,
     ) -> None:
         self._entries = time_entries
         self._projects = projects
+        self._tags = tags
         self._clock = clock
 
     def list_entries(self, actor: User, period: DateRange) -> list[TimeEntry]:
@@ -53,6 +62,7 @@ class TimeEntryService:
 
     def start_timer(self, actor: User, timer: TimerStart) -> TimeEntry:
         self._ensure_project_usable(timer.project_id, current=None)
+        tag_ids = self._usable_tags(timer.tag_ids, current=())
         self._entries.lock_user_entries(actor.id)
         now = self._clock.now()
         running = self._entries.get_running(actor.id)
@@ -67,6 +77,8 @@ class TimeEntryService:
             start=now,
             stop=None,
             created_at=now,
+            is_billable=self._billable(timer.is_billable, timer.project_id),
+            tag_ids=tag_ids,
         )
         self._entries.add(entry)
         return entry
@@ -85,6 +97,7 @@ class TimeEntryService:
             raise InvalidValueError("Manual entries need a stop time; start a timer instead")
         ensure_valid_period(draft.start, draft.stop)
         self._ensure_project_usable(draft.project_id, current=None)
+        tag_ids = self._usable_tags(draft.tag_ids, current=())
         entry = TimeEntry(
             id=TimeEntryId(new_uuid()),
             user_id=actor.id,
@@ -93,6 +106,8 @@ class TimeEntryService:
             start=draft.start,
             stop=draft.stop,
             created_at=self._clock.now(),
+            is_billable=self._billable(draft.is_billable, draft.project_id),
+            tag_ids=tag_ids,
         )
         self._entries.add(entry)
         return entry
@@ -105,6 +120,8 @@ class TimeEntryService:
             raise InvalidValueError("A running entry cannot start in the future")
         ensure_valid_period(draft.start, draft.stop)
         self._ensure_project_usable(draft.project_id, current=entry.project_id)
+        entry.tag_ids = self._usable_tags(draft.tag_ids, current=entry.tag_ids)
+        entry.is_billable = self._billable(draft.is_billable, draft.project_id)
         entry.description = clean_description(draft.description)
         entry.project_id = draft.project_id
         entry.start = draft.start
@@ -134,6 +151,26 @@ class TimeEntryService:
             raise NotFoundError("Project", project_id)
         if project.is_archived:
             raise InvalidValueError(f"Project {project.name!r} is archived")
+
+    def _billable(self, requested: bool | None, project_id: ProjectId | None) -> bool:
+        if requested is not None:
+            return requested
+        project = self._projects.get(project_id) if project_id else None
+        return project.is_billable if project else False
+
+    def _usable_tags(
+        self, tag_ids: tuple[TagId, ...], current: tuple[TagId, ...]
+    ) -> tuple[TagId, ...]:
+        unique_ids = tuple(dict.fromkeys(tag_ids))
+        for tag_id in unique_ids:
+            if tag_id in current:
+                continue
+            tag = self._tags.get(tag_id)
+            if tag is None:
+                raise NotFoundError("Tag", tag_id)
+            if tag.is_archived:
+                raise InvalidValueError(f"Tag {tag.name!r} is archived")
+        return unique_ids
 
 
 def clean_description(description: str) -> str:

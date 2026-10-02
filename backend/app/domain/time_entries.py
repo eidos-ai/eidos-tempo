@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from app.domain.errors import ConflictError, InvalidValueError
-from app.domain.ids import ProjectId, TimeEntryId, UserId
+from app.domain.ids import ProjectId, TagId, TimeEntryId, UserId
 
 
 @dataclass
@@ -14,6 +14,8 @@ class TimeEntry:
     start: datetime
     stop: datetime | None
     created_at: datetime
+    is_billable: bool = False
+    tag_ids: tuple[TagId, ...] = ()
     deleted_at: datetime | None = None
 
     def __post_init__(self) -> None:

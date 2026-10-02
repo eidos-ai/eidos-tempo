@@ -3,6 +3,7 @@ export const queryKeys = {
   users: ['users'] as const,
   clients: ['clients'] as const,
   projects: ['projects'] as const,
+  tags: ['tags'] as const,
   timeEntries: ['time-entries'] as const,
   runningEntry: ['time-entries', 'running'] as const,
   entrySuggestions: ['time-entries', 'suggestions'] as const,

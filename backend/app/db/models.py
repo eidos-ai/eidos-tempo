@@ -2,16 +2,19 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
+    Column,
     DateTime,
     ForeignKey,
     Index,
     MetaData,
     SmallInteger,
     String,
+    Table,
+    false,
     func,
     text,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 NAMING_CONVENTION = {
     "ix": "ix_%(column_0_label)s",
@@ -75,6 +78,24 @@ class ProjectRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class TagRow(Base):
+    __tablename__ = "tags"
+    __table_args__ = (Index("uq_tags_name_lower", func.lower(text("name")), unique=True),)
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(60))
+    is_archived: Mapped[bool]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+time_entry_tags = Table(
+    "time_entry_tags",
+    Base.metadata,
+    Column("time_entry_id", ForeignKey("time_entries.id", ondelete="RESTRICT"), primary_key=True),
+    Column("tag_id", ForeignKey("tags.id", ondelete="RESTRICT"), primary_key=True, index=True),
+)
+
+
 class TimeEntryRow(Base):
     __tablename__ = "time_entries"
     __table_args__ = (
@@ -93,6 +114,7 @@ class TimeEntryRow(Base):
         ForeignKey("projects.id", ondelete="RESTRICT"), index=True
     )
     description: Mapped[str] = mapped_column(String(500))
+    is_billable: Mapped[bool] = mapped_column(server_default=false())
     start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     stop: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -100,3 +122,13 @@ class TimeEntryRow(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    tags: Mapped[list[TagRow]] = relationship(secondary=time_entry_tags, lazy="selectin")
+
+
+class ImportLinkRow(Base):
+    __tablename__ = "import_links"
+
+    source: Mapped[str] = mapped_column(String(20), primary_key=True)
+    entity: Mapped[str] = mapped_column(String(20), primary_key=True)
+    external_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    internal_id: Mapped[UUID]

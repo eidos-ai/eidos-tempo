@@ -16,6 +16,8 @@ MEMBER_ROUTES = {
     ("PUT", "/api/me/password"),
     ("GET", "/api/clients"),
     ("GET", "/api/projects"),
+    ("GET", "/api/tags"),
+    ("POST", "/api/tags"),
     ("GET", "/api/time-entries"),
     ("GET", "/api/time-entries/running"),
     ("GET", "/api/time-entries/suggestions"),
@@ -34,6 +36,7 @@ ADMIN_ROUTES = {
     ("PUT", "/api/clients/{client_id}"),
     ("POST", "/api/projects"),
     ("PUT", "/api/projects/{project_id}"),
+    ("PUT", "/api/tags/{tag_id}"),
 }
 VALID_BODIES = {
     ("POST", "/api/users"): {
@@ -48,6 +51,7 @@ VALID_BODIES = {
     ("PUT", "/api/clients/{client_id}"): {"name": "X", "is_archived": False},
     ("POST", "/api/projects"): {"name": "X", "color": "#7B4DE7"},
     ("PUT", "/api/projects/{project_id}"): {"name": "X", "color": "#7B4DE7"},
+    ("PUT", "/api/tags/{tag_id}"): {"name": "X"},
 }
 WEEK = {"start": "2026-09-28T00:00:00Z", "end": "2026-10-05T00:00:00Z"}
 
@@ -58,7 +62,9 @@ def registered_routes() -> set[tuple[str, str]]:
 
 
 def call(client: TestClient, method: str, path: str) -> int:
-    url = path.format(entry_id=uuid4(), user_id=uuid4(), client_id=uuid4(), project_id=uuid4())
+    url = path.format(
+        entry_id=uuid4(), user_id=uuid4(), client_id=uuid4(), project_id=uuid4(), tag_id=uuid4()
+    )
     body = VALID_BODIES.get((method, path), {})
     params = WEEK if path == "/api/time-entries" and method == "GET" else None
     status_code: int = client.request(method, url, json=body, params=params).status_code

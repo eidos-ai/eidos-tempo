@@ -23,6 +23,8 @@ export interface TimeEntry {
   id: string
   description: string
   project_id: string | null
+  is_billable: boolean
+  tag_ids: string[]
   start: string
   stop: string | null
 }
@@ -30,6 +32,8 @@ export interface TimeEntry {
 export interface TimeEntryInput {
   description: string
   project_id: string | null
+  is_billable: boolean
+  tag_ids: string[]
   start: string
   stop: string | null
 }
@@ -42,4 +46,6 @@ export interface EntrySuggestion {
 export interface TimerStartInput {
   description: string
   project_id: string | null
+  is_billable?: boolean
+  tag_ids?: string[]
 }

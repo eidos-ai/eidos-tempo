@@ -1,23 +1,45 @@
 import type { TimeEntry } from '../../api/types'
 import { addDays, entryEnd } from '../../lib/time'
 
+const OVERLAP_TOLERANCE_MS = 60_000
+const MS_PER_MINUTE = 60_000
+
 export interface DaySegment {
   entry: TimeEntry
   start: Date
   end: Date
+  startsHere: boolean
+  endsHere: boolean
   lane: number
   laneCount: number
+}
+
+function floorToMinute(date: Date): Date {
+  return new Date(Math.floor(date.getTime() / MS_PER_MINUTE) * MS_PER_MINUTE)
 }
 
 export function segmentsForDay(entries: TimeEntry[], day: Date, now: Date): DaySegment[] {
   const dayEnd = addDays(day, 1)
   const segments = entries
-    .map((entry) => {
-      const start = new Date(Math.max(new Date(entry.start).getTime(), day.getTime()))
-      const end = new Date(Math.min(entryEnd(entry, now).getTime(), dayEnd.getTime()))
-      return { entry, start, end, lane: 0, laneCount: 1 }
+    .filter((entry) => {
+      const start = new Date(entry.start)
+      const end = entryEnd(entry, now)
+      const isVisibleRunning = entry.stop === null && start < dayEnd && start >= day
+      return (end > day && start < dayEnd && end > start) || isVisibleRunning
     })
-    .filter((segment) => segment.end > segment.start || (segment.entry.stop === null && segment.start < dayEnd && segment.start >= day))
+    .map((entry) => {
+      const start = new Date(entry.start)
+      const end = entryEnd(entry, now)
+      return {
+        entry,
+        start: floorToMinute(new Date(Math.max(start.getTime(), day.getTime()))),
+        end: floorToMinute(new Date(Math.min(end.getTime(), dayEnd.getTime()))),
+        startsHere: start >= day,
+        endsHere: entry.stop !== null && end <= dayEnd,
+        lane: 0,
+        laneCount: 1,
+      }
+    })
     .sort((a, b) => a.start.getTime() - b.start.getTime() || b.end.getTime() - a.end.getTime())
 
   assignLanes(segments)
@@ -37,8 +59,8 @@ function assignLanes(segments: DaySegment[]): void {
 
   for (const segment of segments) {
     const start = segment.start.getTime()
-    if (start >= clusterEnd) closeCluster()
-    const freeLane = laneEnds.findIndex((end) => end <= start)
+    if (start >= clusterEnd - OVERLAP_TOLERANCE_MS) closeCluster()
+    const freeLane = laneEnds.findIndex((end) => end - OVERLAP_TOLERANCE_MS <= start)
     segment.lane = freeLane === -1 ? laneEnds.length : freeLane
     laneEnds[segment.lane] = segment.end.getTime()
     clusterEnd = Math.max(clusterEnd, segment.end.getTime())

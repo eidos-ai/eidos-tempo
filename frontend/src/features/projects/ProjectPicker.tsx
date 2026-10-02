@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Project } from '../../api/types'
 import { SearchIcon } from '../../components/icons'
+import { shouldOpenUpward } from '../../lib/dropdown'
 import { useClientLookup } from '../clients/useClients'
 import { ProjectLabel } from './ProjectLabel'
 import { useProjectLookup, useProjects } from './useProjects'
@@ -19,8 +20,11 @@ interface ProjectGroup {
 
 const NO_CLIENT = 'No client'
 
+const DROPDOWN_HEIGHT = 380
+
 export function ProjectPicker({ value, onChange, renderTrigger, align = 'left' }: ProjectPickerProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [opensUpward, setOpensUpward] = useState(false)
   const [search, setSearch] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
   const { data: projects = [] } = useProjects()
@@ -60,12 +64,15 @@ export function ProjectPicker({ value, onChange, renderTrigger, align = 'left' }
 
   return (
     <div ref={containerRef} className="relative">
-      <button type="button" className="flex max-w-full items-center" onClick={() => setIsOpen((open) => !open)}>
+      <button type="button" className="flex max-w-full items-center" onClick={(event) => {
+          setOpensUpward(shouldOpenUpward(event.currentTarget, DROPDOWN_HEIGHT))
+          setIsOpen((open) => !open)
+        }}>
         {renderTrigger(value ? projectLookup.get(value) : undefined)}
       </button>
       {isOpen && (
         <div
-          className={`absolute top-full z-40 mt-2 w-80 rounded-xl border border-line bg-surface shadow-xl ${align === 'right' ? 'right-0' : 'left-0'}`}
+          className={`absolute z-40 ${opensUpward ? 'bottom-full mb-2' : 'top-full mt-2'} w-80 rounded-xl border border-line bg-surface shadow-xl ${align === 'right' ? 'right-0' : 'left-0'}`}
         >
           <div className="flex items-center gap-2 border-b border-line px-3 py-2 text-muted">
             <SearchIcon />

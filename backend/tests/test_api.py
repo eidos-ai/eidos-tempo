@@ -81,3 +81,29 @@ def test_suggestions_endpoint(api_client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json() == [{"description": "Deep work", "project_id": None}]
+
+
+def test_entries_carry_billable_and_tags(api_client: TestClient) -> None:
+    login(api_client)
+    project_id = api_client.post(
+        "/api/projects", json={"name": "Vision", "color": "#7B4DE7", "is_billable": True}
+    ).json()["id"]
+    tag_id = api_client.post("/api/tags", json={"name": "research"}).json()["id"]
+
+    started = api_client.post(
+        "/api/time-entries/start", json={"project_id": project_id, "tag_ids": [tag_id]}
+    ).json()
+    assert started["is_billable"] is True
+    assert started["tag_ids"] == [tag_id]
+
+    without_tags = {"description": "x", "project_id": project_id, "start": started["start"]}
+    assert (
+        api_client.put(f"/api/time-entries/{started['id']}", json=without_tags).status_code == 422
+    )
+
+    updated = api_client.put(
+        f"/api/time-entries/{started['id']}",
+        json={**without_tags, "is_billable": False, "tag_ids": []},
+    ).json()
+    assert updated["is_billable"] is False
+    assert updated["tag_ids"] == []

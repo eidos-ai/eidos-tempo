@@ -1,14 +1,16 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import type { TimeEntry, TimeEntryInput } from '../../api/types'
 import { Button } from '../../components/Button'
-import { CloseIcon, DollarIcon, FolderIcon, PlayIcon, TrashIcon } from '../../components/icons'
+import { CloseIcon, FolderIcon, PlayIcon, TagIcon, TrashIcon } from '../../components/icons'
 import { Popover } from '../../components/Popover'
 import { formatDuration, shiftDays, toTimeInputValue, withTimeOfDay } from '../../lib/time'
 import { ProjectLabel } from '../projects/ProjectLabel'
 import { ProjectPicker } from '../projects/ProjectPicker'
 import { useProjectLookup } from '../projects/useProjects'
+import { TagList, TagPicker } from '../tags/TagPicker'
 import { DescriptionInput } from '../time-entries/DescriptionInput'
 import { useCreateEntry, useDeleteEntry, useStartTimer, useUpdateEntry } from '../time-entries/useTimeEntries'
+import { BillableToggle } from './BillableToggle'
 import { TimeField } from './TimeField'
 import { MAX_DESCRIPTION_LENGTH } from './TimerBar'
 
@@ -46,6 +48,8 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
 
   const [description, setDescription] = useState(existing?.description ?? '')
   const [projectId, setProjectId] = useState<string | null>(existing?.project_id ?? null)
+  const [isBillable, setIsBillable] = useState(existing?.is_billable ?? false)
+  const [tagIds, setTagIds] = useState<string[]>(existing?.tag_ids ?? [])
   const [startTime, setStartTime] = useState(toTimeInputValue(initialStart))
   const [stopTime, setStopTime] = useState(initialStop ? toTimeInputValue(initialStop) : '')
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -54,7 +58,10 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
   const start = resolveStart(initialStart, startTime)
   const stop = initialStop ? resolveStop(initialStop, stopTime, start) : null
   const durationSeconds = start && stop ? Math.max(0, (stop.getTime() - start.getTime()) / 1000) : null
-  const selectedProject = projectId ? projects.get(projectId) : undefined
+  const chooseProject = (nextProjectId: string | null) => {
+    setProjectId(nextProjectId)
+    setIsBillable(nextProjectId ? (projects.get(nextProjectId)?.is_billable ?? false) : false)
+  }
 
   const handleKeyDownCapture = (event: KeyboardEvent) => {
     if (event.key !== 'Enter') return
@@ -75,6 +82,8 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
     const input: TimeEntryInput = {
       description,
       project_id: projectId,
+      is_billable: isBillable,
+      tag_ids: tagIds,
       start: start.toISOString(),
       stop: stop ? stop.toISOString() : null,
     }
@@ -85,7 +94,12 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
 
   const handleContinue = () => {
     if (!existing) return
-    startTimer.mutate({ description: existing.description, project_id: existing.project_id })
+    startTimer.mutate({
+      description: existing.description,
+      project_id: existing.project_id,
+      is_billable: existing.is_billable,
+      tag_ids: existing.tag_ids,
+    })
     onClose()
   }
 
@@ -137,9 +151,9 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
           onChange={setDescription}
           onSelect={(suggestion) => {
             setDescription(suggestion.description)
-            setProjectId(suggestion.project_id)
+            chooseProject(suggestion.project_id)
           }}
-          onSelectProject={setProjectId}
+          onSelectProject={chooseProject}
           placeholder="(no description)"
           className="h-10 w-full bg-transparent text-lg outline-none placeholder:text-muted"
           autoFocus
@@ -148,7 +162,7 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
         <div className="flex items-center gap-2">
           <ProjectPicker
             value={projectId}
-            onChange={setProjectId}
+            onChange={chooseProject}
             renderTrigger={(project) =>
               project ? (
                 <span className="rounded-lg px-2 py-1 text-sm hover:bg-canvas">
@@ -161,12 +175,22 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
               )
             }
           />
-          <span
-            title={selectedProject?.is_billable ? 'Billable project' : 'Non-billable'}
-            className={selectedProject?.is_billable ? 'text-primary' : 'text-line-strong'}
-          >
-            <DollarIcon />
-          </span>
+          <TagPicker
+            value={tagIds}
+            onChange={setTagIds}
+            renderTrigger={(tags) =>
+              tags.length > 0 ? (
+                <span className="rounded-lg px-1.5 py-1 hover:bg-canvas">
+                  <TagList tags={tags} />
+                </span>
+              ) : (
+                <span className="rounded-lg p-1.5 text-muted hover:bg-canvas hover:text-primary" title="Add tags">
+                  <TagIcon />
+                </span>
+              )
+            }
+          />
+          <BillableToggle value={isBillable} onChange={setIsBillable} />
         </div>
 
         <div className="flex items-center gap-2">

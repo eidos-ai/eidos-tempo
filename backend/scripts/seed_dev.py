@@ -54,7 +54,9 @@ def seed() -> None:
         )
         clients = ClientService(repositories.clients, clock)
         projects = ProjectService(repositories.projects, repositories.clients, clock)
-        entries = TimeEntryService(repositories.time_entries, repositories.projects, clock)
+        entries = TimeEntryService(
+            repositories.time_entries, repositories.projects, repositories.tags, clock
+        )
 
         project_ids: list[ProjectId] = []
         for client_name, client_projects in CLIENT_PROJECTS:

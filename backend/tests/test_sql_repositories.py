@@ -8,8 +8,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import Base
-from app.domain.ids import TimeEntryId, UserId, new_uuid
+from app.domain.ids import TagId, TimeEntryId, UserId, new_uuid
 from app.domain.sessions import AuthSession
+from app.domain.tags import Tag
 from app.domain.time_entries import TimeEntry
 from app.domain.users import Role, User
 from app.domain.value_objects import DateRange, EmailAddress
@@ -145,3 +146,22 @@ def test_suggestions_group_by_description_and_project(sql_repositories: Reposito
         ("Review", NOW + timedelta(hours=3)),
         ("Planning", NOW + timedelta(hours=2)),
     ]
+
+
+def test_entry_tags_and_billable_round_trip(sql_repositories: Repositories) -> None:
+    user = make_user(sql_repositories)
+    research = Tag(id=TagId(new_uuid()), name="Research", created_at=NOW)
+    sql_repositories.tags.add(research)
+    entry = make_entry(user, NOW, NOW + timedelta(hours=1))
+    entry.is_billable = True
+    entry.tag_ids = (research.id,)
+    sql_repositories.time_entries.add(entry)
+
+    stored = sql_repositories.time_entries.get(entry.id)
+    assert stored is not None and stored.is_billable and stored.tag_ids == (research.id,)
+    assert sql_repositories.tags.get_by_name("research") == research
+
+    entry.tag_ids = ()
+    sql_repositories.time_entries.save(entry)
+    cleared = sql_repositories.time_entries.get(entry.id)
+    assert cleared is not None and cleared.tag_ids == ()

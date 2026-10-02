@@ -11,6 +11,7 @@ from app.main import create_app
 from app.repositories.protocols import Repositories
 from app.services.clients import ClientService
 from app.services.projects import ProjectService
+from app.services.tags import TagService
 from app.services.time_entries import TimeEntryService
 from app.services.users import NewUser, UserService
 from tests.fakes import FakeClock, FakePasswordHasher, build_in_memory_repositories
@@ -47,9 +48,17 @@ def project_service(repositories: Repositories, clock: FakeClock) -> ProjectServ
 
 
 @pytest.fixture
+def tag_service(repositories: Repositories, clock: FakeClock) -> TagService:
+    return TagService(tags=repositories.tags, clock=clock)
+
+
+@pytest.fixture
 def time_entry_service(repositories: Repositories, clock: FakeClock) -> TimeEntryService:
     return TimeEntryService(
-        time_entries=repositories.time_entries, projects=repositories.projects, clock=clock
+        time_entries=repositories.time_entries,
+        projects=repositories.projects,
+        tags=repositories.tags,
+        clock=clock,
     )
 
 

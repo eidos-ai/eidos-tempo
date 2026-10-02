@@ -16,6 +16,7 @@ from app.repositories.sql import build_sql_repositories
 from app.services.auth import AuthService
 from app.services.clients import ClientService
 from app.services.projects import ProjectService
+from app.services.tags import TagService
 from app.services.time_entries import TimeEntryService
 from app.services.users import UserService
 
@@ -81,9 +82,16 @@ def get_project_service(repositories: RepositoriesDep, clock: ClockDep) -> Proje
     return ProjectService(projects=repositories.projects, clients=repositories.clients, clock=clock)
 
 
+def get_tag_service(repositories: RepositoriesDep, clock: ClockDep) -> TagService:
+    return TagService(tags=repositories.tags, clock=clock)
+
+
 def get_time_entry_service(repositories: RepositoriesDep, clock: ClockDep) -> TimeEntryService:
     return TimeEntryService(
-        time_entries=repositories.time_entries, projects=repositories.projects, clock=clock
+        time_entries=repositories.time_entries,
+        projects=repositories.projects,
+        tags=repositories.tags,
+        clock=clock,
     )
 
 
@@ -91,6 +99,7 @@ AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 ClientServiceDep = Annotated[ClientService, Depends(get_client_service)]
 ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]
+TagServiceDep = Annotated[TagService, Depends(get_tag_service)]
 TimeEntryServiceDep = Annotated[TimeEntryService, Depends(get_time_entry_service)]
 
 

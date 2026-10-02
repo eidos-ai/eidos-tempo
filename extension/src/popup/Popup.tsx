@@ -67,7 +67,14 @@ export function Popup() {
             entries={data.recent}
             lookups={lookups}
             isBusy={tempo.isBusy}
-            onContinue={(entry) => void tempo.start({ description: entry.description, project_id: entry.project_id })}
+            onContinue={(entry) =>
+              void tempo.start({
+                description: entry.description,
+                project_id: entry.project_id,
+                is_billable: entry.is_billable,
+                tag_ids: entry.tag_ids,
+              })
+            }
           />
         </>
       )}

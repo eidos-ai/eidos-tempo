@@ -1,4 +1,4 @@
-import type { TimeEntry } from '../../api/types'
+import type { Tag, TimeEntry } from '../../api/types'
 import { DollarIcon, PlayIcon, TrashIcon } from '../../components/icons'
 import {
   addDays,
@@ -12,6 +12,8 @@ import {
 } from '../../lib/time'
 import { ProjectLabel } from '../projects/ProjectLabel'
 import { useProjectLookup } from '../projects/useProjects'
+import { TagList } from '../tags/TagPicker'
+import { useTagLookup } from '../tags/useTags'
 import { isOptimistic } from '../time-entries/useTimeEntries'
 
 interface ListViewProps {
@@ -82,6 +84,7 @@ export function ListView({ entries, now, onSelect, onContinue, onDelete }: ListV
 
 function EntryRow({ entry, now, onSelect, onContinue, onDelete }: { entry: TimeEntry; now: Date } & Omit<ListViewProps, 'entries' | 'now'>) {
   const projects = useProjectLookup()
+  const tags = useTagLookup()
   const project = entry.project_id ? projects.get(entry.project_id) : undefined
   const isRunning = entry.stop === null
   const isPending = isOptimistic(entry)
@@ -94,8 +97,9 @@ function EntryRow({ entry, now, onSelect, onContinue, onDelete }: { entry: TimeE
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <span className={`truncate ${entry.description ? '' : 'text-muted'}`}>{entry.description || '(no description)'}</span>
         {project && <ProjectLabel project={project} />}
+        <TagList tags={entry.tag_ids.map((id) => tags.get(id)).filter((tag): tag is Tag => tag !== undefined)} />
       </div>
-      <DollarIcon className={project?.is_billable ? 'text-primary' : 'text-line-strong'} />
+      <DollarIcon className={entry.is_billable ? 'text-primary' : 'text-line-strong'} />
       <span className="w-40 text-right text-ink-soft tabular-nums">
         {formatClockTime(new Date(entry.start))} – {isRunning ? 'now' : formatClockTime(entryEnd(entry, now))}
       </span>

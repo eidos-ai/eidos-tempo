@@ -3,9 +3,11 @@ from datetime import datetime
 from typing import Protocol
 
 from app.domain.clients import Client
-from app.domain.ids import ClientId, ProjectId, TimeEntryId, UserId
+from app.domain.ids import ClientId, ProjectId, TagId, TimeEntryId, UserId
+from app.domain.import_links import ImportedEntity, ImportLink, ImportSource
 from app.domain.projects import Project
 from app.domain.sessions import AuthSession
+from app.domain.tags import Tag
 from app.domain.time_entries import EntrySuggestion, TimeEntry
 from app.domain.users import User
 from app.domain.value_objects import DateRange, EmailAddress
@@ -43,6 +45,21 @@ class ProjectRepository(Protocol):
     def save(self, project: Project) -> None: ...
 
 
+class TagRepository(Protocol):
+    def get(self, tag_id: TagId) -> Tag | None: ...
+    def get_by_name(self, name: str) -> Tag | None: ...
+    def list_all(self, include_archived: bool) -> list[Tag]: ...
+    def add(self, tag: Tag) -> None: ...
+    def save(self, tag: Tag) -> None: ...
+
+
+class ImportLinkRepository(Protocol):
+    def find(
+        self, source: ImportSource, entity: ImportedEntity, external_id: str
+    ) -> ImportLink | None: ...
+    def add(self, link: ImportLink) -> None: ...
+
+
 class TimeEntryRepository(Protocol):
     def get(self, entry_id: TimeEntryId) -> TimeEntry | None: ...
     def get_running(self, user_id: UserId) -> TimeEntry | None: ...
@@ -59,4 +76,6 @@ class Repositories:
     sessions: SessionRepository
     clients: ClientRepository
     projects: ProjectRepository
+    tags: TagRepository
     time_entries: TimeEntryRepository
+    import_links: ImportLinkRepository

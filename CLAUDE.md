@@ -100,6 +100,8 @@ Dependencies point inward only: `api → services → repositories (protocols) �
 ## Data safety rules (do not break)
 
 - Time entries are soft-deleted (`deleted_at`); never hard-delete rows.
+- Saving an entry requires `tag_ids` and `is_billable` (full replacement); every client must send the
+  entry's current values so an update never wipes tags. Starting a timer may omit them.
 - Foreign keys use `RESTRICT`; archive projects, clients and users instead of deleting them.
 - One running timer per user is enforced by a partial unique index **and** a per-user row lock
   (`lock_user_entries`) taken at the start of every timer mutation. Keep both.
@@ -127,6 +129,9 @@ Dependencies point inward only: `api → services → repositories (protocols) �
   backend container causes 502s.
 - The backend container `exec`s uvicorn after `alembic upgrade head` so it shuts down gracefully.
 - Backups: `scripts/backup.sh`, `scripts/backup-loop.sh`, `scripts/restore.sh`, `scripts/deploy.sh`.
+- Toggl import: `backend/scripts/import_toggl.py` (logic in `app/importers/`, writes through the services;
+  `import_links` maps Toggl ids so re-runs update instead of duplicating). Toggl's report cursor stops after
+  ~100 entries, so the client fetches one big page per month and checks totals against Toggl's summary.
 
 ## Testing and QA
 

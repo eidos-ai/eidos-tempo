@@ -51,6 +51,8 @@ export function TimerBar({ running, suggestions, lookups, isBusy, onStart, onSto
   }
 
   const selectedProject = projectId ? lookups.projects.get(projectId) : undefined
+  const isBillable =
+    running && running.project_id === projectId ? running.is_billable : (selectedProject?.is_billable ?? false)
 
   return (
     <div className="border-b border-line px-4 pt-3 pb-2">
@@ -108,8 +110,8 @@ export function TimerBar({ running, suggestions, lookups, isBusy, onStart, onSto
           }
         />
         <span
-          title={selectedProject?.is_billable ? 'Billable project' : 'Non-billable'}
-          className={`ml-auto ${selectedProject?.is_billable ? 'text-primary' : 'text-line-strong'}`}
+          title={isBillable ? 'Billable' : 'Non-billable'}
+          className={`ml-auto ${isBillable ? 'text-primary' : 'text-line-strong'}`}
         >
           <DollarIcon width={16} height={16} />
         </span>

@@ -108,7 +108,19 @@ export function useTempo() {
     dismissError: () => setError(null),
     start: (input: TimerStartInput) => act('Starting the timer', () => tempoApi.start(input)),
     stop: () => act('Stopping the timer', tempoApi.stop),
-    updateRunning: (entry: TimeEntry, input: TimerStartInput) =>
-      act('Updating the timer', () => tempoApi.update(entry.id, { ...input, start: entry.start, stop: null })),
+    updateRunning: (entry: TimeEntry, input: TimerStartInput) => {
+      const project = data?.projects.find((candidate) => candidate.id === input.project_id)
+      const isBillable = input.project_id === entry.project_id ? entry.is_billable : (project?.is_billable ?? false)
+      return act('Updating the timer', () =>
+        tempoApi.update(entry.id, {
+          description: input.description,
+          project_id: input.project_id,
+          is_billable: isBillable,
+          tag_ids: entry.tag_ids,
+          start: entry.start,
+          stop: null,
+        }),
+      )
+    },
   }
 }

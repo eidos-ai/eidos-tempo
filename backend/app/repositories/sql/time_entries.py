@@ -1,9 +1,9 @@
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.db.models import TimeEntryRow, UserRow
+from app.db.models import TagRow, TimeEntryRow, UserRow
 from app.domain.errors import NotFoundError
-from app.domain.ids import ProjectId, TimeEntryId, UserId
+from app.domain.ids import ProjectId, TagId, TimeEntryId, UserId
 from app.domain.time_entries import EntrySuggestion, TimeEntry
 from app.domain.value_objects import DateRange
 
@@ -66,7 +66,7 @@ class SqlTimeEntryRepository:
 
     def add(self, entry: TimeEntry) -> None:
         row = TimeEntryRow(id=entry.id)
-        apply_time_entry(row, entry)
+        self._apply(row, entry)
         self._session.add(row)
         self._session.flush()
 
@@ -74,8 +74,16 @@ class SqlTimeEntryRepository:
         row = self._session.get(TimeEntryRow, entry.id)
         if row is None:
             raise NotFoundError("Time entry", entry.id)
-        apply_time_entry(row, entry)
+        self._apply(row, entry)
         self._session.flush()
+
+    def _apply(self, row: TimeEntryRow, entry: TimeEntry) -> None:
+        apply_time_entry(row, entry)
+        tags = self._session.scalars(select(TagRow).where(TagRow.id.in_(entry.tag_ids))).all()
+        if len(tags) != len(entry.tag_ids):
+            missing = set(entry.tag_ids) - {TagId(tag.id) for tag in tags}
+            raise NotFoundError("Tag", next(iter(missing)))
+        row.tags = list(tags)
 
 
 def to_time_entry(row: TimeEntryRow) -> TimeEntry:
@@ -87,6 +95,8 @@ def to_time_entry(row: TimeEntryRow) -> TimeEntry:
         start=row.start,
         stop=row.stop,
         created_at=row.created_at,
+        is_billable=row.is_billable,
+        tag_ids=tuple(TagId(tag.id) for tag in row.tags),
         deleted_at=row.deleted_at,
     )
 
@@ -95,6 +105,7 @@ def apply_time_entry(row: TimeEntryRow, entry: TimeEntry) -> None:
     row.user_id = entry.user_id
     row.project_id = entry.project_id
     row.description = entry.description
+    row.is_billable = entry.is_billable
     row.start = entry.start
     row.stop = entry.stop
     row.created_at = entry.created_at

@@ -313,8 +313,7 @@ function EntryBlock({ segment, hourHeight, now, isDragged, onMouseDown, onSelect
   const isRunning = entry.stop === null
   const isPending = isOptimistic(entry)
   const canResize = !isRunning && !isPending && height >= MIN_RESIZE_BLOCK_HEIGHT
-  const startsHere = segment.start.getTime() === new Date(entry.start).getTime()
-  const endsHere = entry.stop !== null && segment.end.getTime() === new Date(entry.stop).getTime()
+  const { startsHere, endsHere } = segment
 
   return (
     <div

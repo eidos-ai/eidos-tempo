@@ -113,7 +113,15 @@ export function useStartTimer() {
     if (running) {
       updateWeeks(queryClient, (entries) => entries.map((e) => (e.id === running.id ? { ...e, stop: now } : e)))
     }
-    const entry: TimeEntry = { id: `${OPTIMISTIC_ID_PREFIX}${now}`, ...input, start: now, stop: null }
+    const entry: TimeEntry = {
+      id: `${OPTIMISTIC_ID_PREFIX}${now}`,
+      description: input.description,
+      project_id: input.project_id,
+      is_billable: input.is_billable ?? false,
+      tag_ids: input.tag_ids ?? [],
+      start: now,
+      stop: null,
+    }
     queryClient.setQueryData(queryKeys.runningEntry, entry)
     insertIntoWeeks(queryClient, entry)
   })

@@ -45,6 +45,13 @@ export const DollarIcon = (props: IconProps) => (
   </Icon>
 )
 
+export const TagIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9Z" />
+    <circle cx="7.5" cy="7.5" r="1.5" />
+  </Icon>
+)
+
 export const ChevronLeftIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="m15 18-6-6 6-6" />

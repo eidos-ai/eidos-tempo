@@ -166,7 +166,20 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Week query 5–17 ms end to end with a year of simulated data for 30 users (index used)
 - [x] Description with HTML/script is shown as text (no XSS)
 
-## 17. Chrome extension
+## 17. Tags, billable per entry and Toggl import
+- [x] Create a tag from the editor's tag picker (Enter on a new name); it is selected right away
+- [x] Billable `$` toggles per entry; changing the project resets it to the project's default
+- [x] Calendar drag/resize and continue keep the entry's tags and billable
+- [x] Saving an entry without `tag_ids`/`is_billable` is rejected (422), so old clients can't wipe tags
+- [!] Project and tag pickers opened off-screen near the bottom of the window; they now open upward
+- [!] Toggl's detailed report stopped paging after ~100 entries per period (first dry run had half the hours); fixed, and the import now verifies yearly totals against Toggl's summary
+- [x] Toggl import into an empty database: 12,837 entries, hours per year identical to Toggl (2022–2026)
+- [x] Re-running the import changes nothing (all unchanged)
+- [!] Back-to-back Toggl entries overlapping by seconds (e.g. stop 15:36:36, next start 15:36:00) were drawn side by side; overlaps under a minute now stack in one column like Toggl (times are kept exact)
+- [!] Gaps between back-to-back entries varied by a pixel or two because blocks were drawn to the second; blocks are now drawn to the minute like Toggl (stored times, durations and resize handles unchanged)
+- [x] Active Toggl members are active; former members are imported deactivated; `--admin` people are admins
+
+## 18. Chrome extension
 - [x] Uses the browser's Tempo login with no extra setup (verified loading unpacked)
 - [x] Logged out: popup explains it and links to the web app; icon shows a red `!`
 - [x] Toolbar icon is a simplified three-ring logo, crisp at 16 and 32 px; purple while a timer runs, gray when idle (no time on the icon)

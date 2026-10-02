@@ -2,11 +2,17 @@ from datetime import timedelta
 
 import pytest
 
-from app.domain.errors import ConflictError, InvalidValueError, NotFoundError
-from app.domain.ids import ProjectId
+from app.domain.errors import (
+    ConflictError,
+    InvalidValueError,
+    NotFoundError,
+    PermissionDeniedError,
+)
+from app.domain.ids import ProjectId, TagId, new_uuid
 from app.domain.users import User
 from app.domain.value_objects import DateRange, HexColor
 from app.services.projects import ProjectDraft, ProjectService
+from app.services.tags import TagDraft, TagService
 from app.services.time_entries import TimeEntryDraft, TimeEntryService, TimerStart
 from tests.fakes import FakeClock
 
@@ -169,3 +175,72 @@ def test_suggestions_are_distinct_recent_first_and_exclude_unusable_entries(
         ("Model training", active.id),
         ("Standup", None),
     ]
+
+
+def test_billable_defaults_from_project_and_can_be_overridden(
+    time_entry_service: TimeEntryService,
+    project_service: ProjectService,
+    admin: User,
+    member: User,
+    clock: FakeClock,
+) -> None:
+    project = project_service.create_project(
+        admin, ProjectDraft("Vision", HexColor("#7b4de7"), None, True)
+    )
+    defaulted = time_entry_service.start_timer(member, TimerStart("x", project.id))
+    assert defaulted.is_billable
+
+    start = clock.now() - timedelta(hours=2)
+    overridden = time_entry_service.create_entry(
+        member,
+        TimeEntryDraft("y", project.id, start, start + timedelta(hours=1), is_billable=False),
+    )
+    assert not overridden.is_billable
+
+    no_project = time_entry_service.create_entry(
+        member, TimeEntryDraft("z", None, start, start + timedelta(minutes=30))
+    )
+    assert not no_project.is_billable
+
+
+def test_tags_must_exist_and_be_active_but_existing_ones_are_kept(
+    time_entry_service: TimeEntryService,
+    tag_service: TagService,
+    admin: User,
+    member: User,
+    clock: FakeClock,
+) -> None:
+    research = tag_service.create_tag(member, TagDraft("research"))
+    meeting = tag_service.create_tag(member, TagDraft("meeting"))
+    start = clock.now() - timedelta(hours=1)
+
+    entry = time_entry_service.create_entry(
+        member,
+        TimeEntryDraft(
+            "x", None, start, clock.now(), tag_ids=(research.id, meeting.id, research.id)
+        ),
+    )
+    assert entry.tag_ids == (research.id, meeting.id)
+
+    tag_service.update_tag(admin, research.id, TagDraft("research", is_archived=True))
+    kept = time_entry_service.update_entry(
+        member, entry.id, TimeEntryDraft("x", None, start, clock.now(), tag_ids=(research.id,))
+    )
+    assert kept.tag_ids == (research.id,)
+
+    with pytest.raises(InvalidValueError):
+        time_entry_service.start_timer(member, TimerStart("y", None, tag_ids=(research.id,)))
+    with pytest.raises(NotFoundError):
+        time_entry_service.start_timer(member, TimerStart("y", None, tag_ids=(TagId(new_uuid()),)))
+
+
+def test_tag_names_are_unique_and_only_admins_rename(
+    tag_service: TagService, admin: User, member: User
+) -> None:
+    tag = tag_service.create_tag(member, TagDraft("Research"))
+
+    with pytest.raises(ConflictError):
+        tag_service.create_tag(member, TagDraft("research"))
+    with pytest.raises(PermissionDeniedError):
+        tag_service.update_tag(member, tag.id, TagDraft("Renamed"))
+    assert tag_service.update_tag(admin, tag.id, TagDraft("Renamed")).name == "Renamed"

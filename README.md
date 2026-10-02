@@ -5,7 +5,8 @@ FastAPI + PostgreSQL backend, React frontend, deployed with Docker Compose on a 
 
 ## Features
 
-- **Timer**: start/stop from the top bar, edit description and project while running, one running timer per user, billable indicator from the project.
+- **Timer**: start/stop from the top bar, edit description, project, tags and billable while running, one running timer per user.
+- **Tags and billable**: tag entries (create tags on the fly, like Toggl); billable is per entry, defaulting from the project.
 - **Description suggestions**: typing a description suggests your previous entries (no time limit) and matching projects; picking one fills in the description, project and client, like Toggl.
 - **Calendar view**: week grid (5 or 7 days) with zoom, drag or click to create entries, click to edit, day and week totals.
 - **List view**: entries grouped by day with totals; continue, edit or delete an entry.
@@ -149,6 +150,32 @@ Deployment (root `.env`, see `.env.example`):
 | `TEMPO_COOKIE_SECURE` | `true` behind HTTPS, `false` only for plain-HTTP internal access |
 | `TEMPO_SESSION_IDLE_DAYS` | Days of inactivity before logout (default 90) |
 | `BACKUP_TIME`, `BACKUP_RETENTION_DAYS`, `TZ` | Daily backup time (in `TZ`) and days to keep |
+
+## Importing from Toggl
+
+`backend/scripts/import_toggl.py` copies members, clients, projects, tags and time entries from Toggl Track.
+It reads Toggl with a personal API token (Toggl → Profile settings), so any member who can see the team's
+reports can run it. It is safe to run again: everything is linked to its Toggl id, so a second run only
+updates changed entries. It refuses to import if the fetched hours differ from Toggl's own summary.
+
+- People are matched by email. New members get an account without a usable password (set one with
+  `--set-password` or from Members → reset password); people inactive in Toggl are created deactivated.
+- `--admin <email>` (repeatable) makes those people admins. Everyone else is a member.
+- `--dry-run` does everything and rolls back; `--cache <file>` saves Toggl's data (personal data: keep it
+  out of git) so later runs don't fetch again.
+
+Local: put `TEMPO_TOGGL_API_TOKEN` and `TEMPO_TOGGL_WORKSPACE_ID` in `backend/.env`, then
+`uv run python -m scripts.import_toggl --admin you@eidos.ai --dry-run`.
+
+On the server (after deploying), pass the token from your shell so it never lands in a file:
+
+```bash
+export TEMPO_TOGGL_API_TOKEN=...   # your Toggl token
+docker compose exec -e TEMPO_TOGGL_API_TOKEN -e TEMPO_TOGGL_WORKSPACE_ID=6043217 backend \
+  python -m scripts.import_toggl --admin ortegatron@eidos.ai --dry-run
+```
+
+Run it again without `--dry-run`, and once more on switch-over day to pick up the last entries.
 
 ## Deployment
 

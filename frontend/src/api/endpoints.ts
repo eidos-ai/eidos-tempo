@@ -7,6 +7,8 @@ import type {
   Project,
   ProjectInput,
   TimeEntry,
+  Tag,
+  TagInput,
   TimeEntryInput,
   TimerStartInput,
   User,
@@ -47,6 +49,12 @@ export const projectsApi = {
   list: () => http.get<Project[]>('/projects?include_archived=true'),
   create: (input: ProjectInput) => http.post<Project>('/projects', input),
   update: (id: string, input: ProjectInput) => http.put<Project>(`/projects/${id}`, input),
+}
+
+export const tagsApi = {
+  list: () => http.get<Tag[]>('/tags?include_archived=true'),
+  create: (input: TagInput) => http.post<Tag>('/tags', input),
+  update: (id: string, input: TagInput) => http.put<Tag>(`/tags/${id}`, input),
 }
 
 export const timeEntriesApi = {

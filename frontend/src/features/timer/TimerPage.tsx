@@ -39,11 +39,23 @@ export function TimerPage() {
   }
   const selectEntry = (entry: TimeEntry, anchor: DOMRect) => openEditor({ kind: 'edit', entry, anchor })
   const continueEntry = (entry: TimeEntry) =>
-    startTimer.mutate({ description: entry.description, project_id: entry.project_id })
+    startTimer.mutate({
+      description: entry.description,
+      project_id: entry.project_id,
+      is_billable: entry.is_billable,
+      tag_ids: entry.tag_ids,
+    })
   const rescheduleEntry = (entry: TimeEntry, start: Date, stop: Date) =>
     updateEntry.mutate({
       id: entry.id,
-      input: { description: entry.description, project_id: entry.project_id, start: start.toISOString(), stop: stop.toISOString() },
+      input: {
+        description: entry.description,
+        project_id: entry.project_id,
+        is_billable: entry.is_billable,
+        tag_ids: entry.tag_ids,
+        start: start.toISOString(),
+        stop: stop.toISOString(),
+      },
     })
 
   return (
