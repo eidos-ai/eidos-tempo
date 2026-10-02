@@ -78,12 +78,13 @@ is in the extension's Options (right-click the icon).
 Copies members, clients, projects, tags and time entries. Safe to re-run: a second run only updates what changed.
 It refuses to import if the hours fetched differ from Toggl's summary.
 
-Add `TEMPO_TOGGL_API_TOKEN` (Toggl → Profile settings) and `TEMPO_TOGGL_WORKSPACE_ID` to `backend/.env`, then:
+Add `TEMPO_TOGGL_API_TOKEN` (Toggl → Profile settings) and `TEMPO_TOGGL_WORKSPACE_ID` (the number in
+Toggl's URL, e.g. `track.toggl.com/<workspace-id>/...`) to `backend/.env`, then:
 
 ```bash
 cd backend
-uv run python -m scripts.import_toggl --admin you@eidos.ai --dry-run   # check the report
-uv run python -m scripts.import_toggl --admin you@eidos.ai
+uv run python -m scripts.import_toggl --admin admin@eidos.ai --dry-run   # check the report
+uv run python -m scripts.import_toggl --admin admin@eidos.ai
 ```
 
 - `--admin EMAIL` (repeatable): who becomes admin; everyone else is a member.
@@ -94,8 +95,8 @@ On the server, pass the token from your shell so it never lands in a file:
 
 ```bash
 export TEMPO_TOGGL_API_TOKEN=...
-docker compose exec -e TEMPO_TOGGL_API_TOKEN -e TEMPO_TOGGL_WORKSPACE_ID=6043217 backend \
-  python -m scripts.import_toggl --admin ortegatron@eidos.ai --dry-run
+docker compose exec -e TEMPO_TOGGL_API_TOKEN -e TEMPO_TOGGL_WORKSPACE_ID=<workspace-id> backend \
+  python -m scripts.import_toggl --admin admin@eidos.ai --dry-run
 ```
 
 ## Deployment
@@ -105,7 +106,7 @@ First install on the server:
 ```bash
 cp .env.example .env                              # set a strong POSTGRES_PASSWORD and TEMPO_DATA_DIR
 scripts/deploy.sh                                 # builds and starts; migrations run on startup
-scripts/create-admin.sh you@eidos.ai "Your Name"  # first admin
+scripts/create-admin.sh admin@eidos.ai "Your Name"  # first admin
 ```
 
 Update: `git pull && scripts/deploy.sh` (takes a backup first). Logs: `docker compose logs -f backend`.

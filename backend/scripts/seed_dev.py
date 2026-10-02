@@ -3,6 +3,8 @@
 import logging
 from datetime import datetime, timedelta
 
+from sqlalchemy import make_url
+
 from app.auth.passwords import Argon2PasswordHasher
 from app.config import get_settings
 from app.db.session import create_session_factory
@@ -20,6 +22,7 @@ from app.services.users import NewUser, UserService
 
 logger = logging.getLogger(__name__)
 
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 DEV_ADMIN_EMAIL = "admin@eidos.local"
 DEV_ADMIN_PASSWORD = "tempo-dev-admin"
 DEV_MEMBER_EMAIL = "member@eidos.local"
@@ -34,8 +37,10 @@ CLIENT_PROJECTS: tuple[tuple[str, tuple[tuple[str, str, bool], ...]], ...] = (
 
 
 def seed() -> None:
+    database_url = get_settings().database_url
+    ensure_local_database(database_url)
     clock = SystemClock()
-    session_factory = create_session_factory(get_settings().database_url)
+    session_factory = create_session_factory(database_url)
     with session_factory.begin() as session:
         repositories = build_sql_repositories(session)
         users = UserService(
@@ -71,6 +76,13 @@ def seed() -> None:
             add_entry(entries, admin, day, 13.5, 16, "Dataset review", project_ids[1])
             add_entry(entries, admin, day, 16, 17, "Team sync", project_ids[3])
         logger.info("Seeded dev data; admin login is %s", DEV_ADMIN_EMAIL)
+
+
+def ensure_local_database(database_url: str) -> None:
+    """The dev logins are public in this file, so never create them outside a local database."""
+    host = make_url(database_url).host
+    if host not in LOCAL_HOSTS:
+        raise SystemExit(f"Refusing to seed: database host {host!r} is not local")
 
 
 def dev_member() -> NewUser:
