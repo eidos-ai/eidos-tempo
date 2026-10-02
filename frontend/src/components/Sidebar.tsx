@@ -59,7 +59,7 @@ export function Sidebar() {
       <div className="px-5 py-5 select-none" onClick={tapLogo}>
         <Logo
           key={spinKey}
-          height={28}
+          height={40}
           isotypeClassName={spinKey > 0 ? 'animate-logo-spin motion-reduce:animate-none' : ''}
         />
       </div>
