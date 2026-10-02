@@ -33,16 +33,16 @@
   color-scheme: dark;
   --project-text-strength: 55%;
 
-  --color-ink: #f3eee6;
-  --color-ink-soft: #cfc9e3;
-  --color-muted: #9d9ac8;
-  --color-canvas: #181633;
-  --color-surface: #201d40;
-  --color-line: #2d2952;
-  --color-line-strong: #3e3970;
+  --color-ink: #f3f1ee;
+  --color-ink-soft: #c4c1cc;
+  --color-muted: #96939f;
+  --color-canvas: #121116;
+  --color-surface: #1a191f;
+  --color-line: #29272f;
+  --color-line-strong: #3a3842;
 
   --color-primary-strong: #9470ee;
-  --color-primary-soft: #2c2560;
+  --color-primary-soft: #2b2340;
   --color-accent: #c9b6f8;
 
   --color-stop: #e8806f;
@@ -55,16 +55,16 @@
     color-scheme: dark;
     --project-text-strength: 55%;
 
-    --color-ink: #f3eee6;
-    --color-ink-soft: #cfc9e3;
-    --color-muted: #9d9ac8;
-    --color-canvas: #181633;
-    --color-surface: #201d40;
-    --color-line: #2d2952;
-    --color-line-strong: #3e3970;
+    --color-ink: #f3f1ee;
+    --color-ink-soft: #c4c1cc;
+    --color-muted: #96939f;
+    --color-canvas: #121116;
+    --color-surface: #1a191f;
+    --color-line: #29272f;
+    --color-line-strong: #3a3842;
 
     --color-primary-strong: #9470ee;
-    --color-primary-soft: #2c2560;
+    --color-primary-soft: #2b2340;
     --color-accent: #c9b6f8;
 
     --color-stop: #e8806f;

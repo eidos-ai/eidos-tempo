@@ -9,6 +9,7 @@ FastAPI + PostgreSQL backend, React frontend, deployed with Docker Compose on a 
 - **Tags and billable**: tag entries (create tags on the fly, like Toggl); billable is per entry, defaulting from the project.
 - **Description suggestions**: typing a description suggests your previous entries (no time limit) and matching projects; picking one fills in the description, project and client, like Toggl.
 - **Calendar view**: week grid (5 or 7 days) with zoom, drag or click to create entries, click to edit, day and week totals.
+- **Project distribution**: a thin bar under the week toolbar shows each project's share of the week, like Toggl.
 - **List view**: entries grouped by day with totals; continue, edit or delete an entry.
 - **Preferences**: view, days shown, zoom and light/dark theme (brandbook colors, toggle in the sidebar) are saved per user on the server.
 - **Stay logged in**: sessions renew automatically while you use the app; you only log in again after 90 days without using it.

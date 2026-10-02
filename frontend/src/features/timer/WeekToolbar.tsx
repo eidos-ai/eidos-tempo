@@ -48,8 +48,8 @@ export function WeekToolbar(props: WeekToolbarProps) {
       </div>
 
       <div className="flex items-baseline gap-2">
-        <span className="text-xs font-semibold tracking-wider text-muted uppercase">Week total</span>
-        <span className="font-display text-lg font-medium tabular-nums">{formatDuration(weekTotalSeconds)}</span>
+        <span className="text-[11px] font-semibold tracking-wider text-muted uppercase">Week total</span>
+        <span className="text-sm font-semibold tabular-nums">{formatDuration(weekTotalSeconds)}</span>
       </div>
 
       <div className="ml-auto flex items-center gap-3">

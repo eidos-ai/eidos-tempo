@@ -183,11 +183,11 @@ export function TimerBar() {
         }
       />
       <BillableToggle value={fields.isBillable} onChange={(isBillable) => change({ isBillable }, true)} />
-      <span className="w-28 text-right font-display text-2xl font-medium tabular-nums">{elapsed}</span>
+      <span className="w-24 text-right font-display text-lg font-semibold tabular-nums">{elapsed}</span>
       <button
         onClick={handleStartStop}
         aria-label={running ? 'Stop timer' : 'Start timer'}
-        className={`flex size-12 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-95 ${running ? 'bg-stop hover:brightness-95' : 'bg-primary hover:bg-primary-strong'}`}
+        className={`flex size-[42px] shrink-0 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-95 ${running ? 'bg-stop hover:brightness-95' : 'bg-primary hover:bg-primary-strong'}`}
       >
         {running ? <StopIcon /> : <PlayIcon />}
       </button>

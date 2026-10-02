@@ -80,6 +80,10 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [!] Enter on the hovered ▶ continues the entry without opening the editor (fixed)
 - [!] Opening another entry with the keyboard while the editor is open shows that entry's data (kept the first entry's fields, so Save overwrote the wrong entry; fixed)
 
+- [x] Project distribution bar under the week toolbar (like Toggl): one segment per project sized by its share, label in the project color plus client, biggest first; tooltip with time and %
+- [x] Bar total equals the week total and grows with a running timer; readable in light and dark; hidden for a week without time
+- [!] Font sizes measured against Toggl: running time (24→18 px, same as the description), week total (18→14), WEEK TOTAL label and weekdays (12→11), distribution labels (11→12) now match; the rest already did
+
 ## 6. List view
 - [x] Grouped by day, newest first, day totals
 - [x] Hover action: continue

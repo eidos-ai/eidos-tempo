@@ -283,7 +283,7 @@ function DayHeader({ day, entries, now, isToday }: { day: Date; entries: TimeEnt
         {day.getDate()}
       </span>
       <div className="leading-tight">
-        <p className={`text-xs font-semibold uppercase ${isToday ? 'text-accent' : 'text-ink-soft'}`}>
+        <p className={`text-[11px] font-semibold uppercase ${isToday ? 'text-accent' : 'text-ink-soft'}`}>
           {day.toLocaleDateString([], { weekday: 'short' })}
         </p>
         <p className="text-xs text-muted tabular-nums">{formatDuration(totalSeconds)}</p>

@@ -13,6 +13,7 @@ import {
   useWeekEntries,
 } from '../time-entries/useTimeEntries'
 import { EntryEditor, type EditorTarget } from './EntryEditor'
+import { ProjectDistributionBar } from './ProjectDistributionBar'
 import { TimerBar } from './TimerBar'
 import { WeekToolbar } from './WeekToolbar'
 
@@ -70,6 +71,7 @@ export function TimerPage() {
         daysShown={preferences.days_shown}
         onDaysShownChange={(days) => setPreference('days_shown', days)}
       />
+      <ProjectDistributionBar entries={entries} rangeStart={weekStart} rangeEnd={weekEnd} now={now} />
       {preferences.default_view === 'calendar' ? (
         <CalendarView
           weekStart={weekStart}
