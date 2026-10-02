@@ -1,9 +1,11 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from app.domain.clock import Clock
 from app.domain.errors import ConflictError, InvalidValueError, NotFoundError
 from app.domain.ids import ProjectId, TagId, TimeEntryId, new_uuid
+from app.domain.story import TrackingStory, build_story
 from app.domain.time_entries import EntrySuggestion, TimeEntry, ensure_valid_period
 from app.domain.users import User
 from app.domain.value_objects import DateRange
@@ -11,6 +13,7 @@ from app.repositories.protocols import ProjectRepository, TagRepository, TimeEnt
 
 MAX_DESCRIPTION_LENGTH = 500
 MAX_SUGGESTIONS = 300
+STORY_START = datetime(2000, 1, 1, tzinfo=UTC)
 
 
 @dataclass(frozen=True)
@@ -46,6 +49,15 @@ class TimeEntryService:
 
     def list_entries(self, actor: User, period: DateRange) -> list[TimeEntry]:
         return self._entries.list_overlapping(actor.id, period)
+
+    def get_story(self, actor: User, timezone: str) -> TrackingStory:
+        try:
+            zone = ZoneInfo(timezone)
+        except (ZoneInfoNotFoundError, ValueError) as error:
+            raise InvalidValueError(f"Unknown timezone {timezone!r}") from error
+        now = self._clock.now()
+        entries = self._entries.list_overlapping(actor.id, DateRange(start=STORY_START, end=now))
+        return build_story(entries, zone, now)
 
     def list_suggestions(self, actor: User) -> list[EntrySuggestion]:
         active_projects = {

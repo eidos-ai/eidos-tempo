@@ -21,6 +21,7 @@ MEMBER_ROUTES = {
     ("GET", "/api/time-entries"),
     ("GET", "/api/time-entries/running"),
     ("GET", "/api/time-entries/suggestions"),
+    ("GET", "/api/time-entries/story"),
     ("POST", "/api/time-entries/start"),
     ("POST", "/api/time-entries/stop"),
     ("POST", "/api/time-entries"),
@@ -53,7 +54,10 @@ VALID_BODIES = {
     ("PUT", "/api/projects/{project_id}"): {"name": "X", "color": "#7B4DE7"},
     ("PUT", "/api/tags/{tag_id}"): {"name": "X"},
 }
-WEEK = {"start": "2026-09-28T00:00:00Z", "end": "2026-10-05T00:00:00Z"}
+QUERY_PARAMS = {
+    ("GET", "/api/time-entries"): {"start": "2026-09-28T00:00:00Z", "end": "2026-10-05T00:00:00Z"},
+    ("GET", "/api/time-entries/story"): {"timezone": "UTC"},
+}
 
 
 def registered_routes() -> set[tuple[str, str]]:
@@ -66,7 +70,7 @@ def call(client: TestClient, method: str, path: str) -> int:
         entry_id=uuid4(), user_id=uuid4(), client_id=uuid4(), project_id=uuid4(), tag_id=uuid4()
     )
     body = VALID_BODIES.get((method, path), {})
-    params = WEEK if path == "/api/time-entries" and method == "GET" else None
+    params = QUERY_PARAMS.get((method, path))
     status_code: int = client.request(method, url, json=body, params=params).status_code
     return status_code
 

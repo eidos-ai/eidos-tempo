@@ -77,18 +77,29 @@ export function useTempo() {
     void load()
   }, [load])
 
+  const reportFailure = async (action: string, failure: unknown) => {
+    if (failure instanceof ApiError && failure.kind === 'not-logged-in') await signOut(failure)
+    else if (failure instanceof ApiError && failure.kind === 'unreachable') await showProblem()
+    else console.error(`Eidos Tempo: ${action} failed`, failure)
+  }
+
   const act = async (action: string, call: () => Promise<unknown>) => {
     setIsBusy(true)
     setError(null)
     try {
       await call()
+    } catch (actionError) {
+      await reportFailure(action, actionError)
+      setError(`${action} was not saved. ${describe(actionError)}`)
+      setIsBusy(false)
+      return
+    }
+    try {
       const activity = await fetchActivity()
       setData((current) => (current ? { ...current, ...activity } : current))
-    } catch (actionError) {
-      if (actionError instanceof ApiError && actionError.kind === 'not-logged-in') await signOut(actionError)
-      else if (actionError instanceof ApiError && actionError.kind === 'unreachable') await showProblem()
-      else console.error(`Eidos Tempo: ${action} failed`, actionError)
-      setError(`${action} was not saved. ${describe(actionError)}`)
+    } catch (refreshError) {
+      await reportFailure('Refreshing', refreshError)
+      setError(`Saved, but the popup could not refresh. ${describe(refreshError)}`)
     } finally {
       setIsBusy(false)
     }

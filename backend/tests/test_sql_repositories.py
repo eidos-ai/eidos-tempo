@@ -3,17 +3,18 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import create_engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
 from app.db.models import Base
-from app.domain.ids import TagId, TimeEntryId, UserId, new_uuid
+from app.domain.ids import ProjectId, TagId, TimeEntryId, UserId, new_uuid
+from app.domain.projects import Project
 from app.domain.sessions import AuthSession
 from app.domain.tags import Tag
 from app.domain.time_entries import TimeEntry
 from app.domain.users import Role, User
-from app.domain.value_objects import DateRange, EmailAddress
+from app.domain.value_objects import DateRange, EmailAddress, HexColor
 from app.repositories.protocols import Repositories
 from app.repositories.sql import build_sql_repositories
 
@@ -165,3 +166,72 @@ def test_entry_tags_and_billable_round_trip(sql_repositories: Repositories) -> N
     sql_repositories.time_entries.save(entry)
     cleared = sql_repositories.time_entries.get(entry.id)
     assert cleared is not None and cleared.tag_ids == ()
+
+
+def test_deleted_running_entry_is_not_the_running_timer(sql_repositories: Repositories) -> None:
+    user = make_user(sql_repositories)
+    deleted = make_entry(user, NOW, None)
+    deleted.deleted_at = NOW
+    sql_repositories.time_entries.add(deleted)
+    assert sql_repositories.time_entries.get_running(user.id) is None
+
+    running = make_entry(user, NOW, None)
+    sql_repositories.time_entries.add(running)
+    assert sql_repositories.time_entries.get_running(user.id) == running
+
+
+def test_archived_projects_are_listed_only_on_request(sql_repositories: Repositories) -> None:
+    active = make_project("Active", is_archived=False)
+    archived = make_project("Old", is_archived=True)
+    sql_repositories.projects.add(active)
+    sql_repositories.projects.add(archived)
+
+    assert [p.id for p in sql_repositories.projects.list_all(include_archived=False)] == [active.id]
+    assert {p.id for p in sql_repositories.projects.list_all(include_archived=True)} == {
+        active.id,
+        archived.id,
+    }
+
+
+def make_project(name: str, is_archived: bool) -> Project:
+    return Project(
+        id=ProjectId(new_uuid()),
+        name=name,
+        color=HexColor("#7B4DE7"),
+        client_id=None,
+        is_billable=False,
+        created_at=NOW,
+        is_archived=is_archived,
+    )
+
+
+def test_timer_lock_blocks_a_concurrent_change_for_the_same_user(
+    sql_repositories: Repositories, session: Session
+) -> None:
+    user = make_user(sql_repositories)
+    session.commit()
+    sql_repositories.time_entries.lock_user_entries(user.id)
+
+    with Session(session.get_bind()) as other_session:
+        other_session.execute(text("SET lock_timeout = '200ms'"))
+        with pytest.raises(OperationalError, match="lock timeout"):
+            build_sql_repositories(other_session).time_entries.lock_user_entries(user.id)
+
+
+def test_list_overlapping_includes_entries_crossing_the_period_edges(
+    sql_repositories: Repositories,
+) -> None:
+    user = make_user(sql_repositories)
+    hour = timedelta(hours=1)
+    period = DateRange(NOW, NOW + 8 * hour)
+    started_before = make_entry(user, NOW - hour, NOW + hour)
+    ends_after = make_entry(user, NOW + 7 * hour, NOW + 9 * hour)
+    running = make_entry(user, NOW + 2 * hour, None)
+    ended_at_start = make_entry(user, NOW - hour, NOW)
+    starts_at_end = make_entry(user, NOW + 8 * hour, NOW + 9 * hour)
+    for entry in (started_before, ends_after, running, ended_at_start, starts_at_end):
+        sql_repositories.time_entries.add(entry)
+
+    listed = sql_repositories.time_entries.list_overlapping(user.id, period)
+
+    assert {entry.id for entry in listed} == {started_before.id, ends_after.id, running.id}

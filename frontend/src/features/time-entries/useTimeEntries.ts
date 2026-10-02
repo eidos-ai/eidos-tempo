@@ -8,6 +8,8 @@ import { showToast } from '../../lib/toast'
 
 const OPTIMISTIC_ID_PREFIX = 'optimistic-'
 const SYNC_INTERVAL_MS = 30_000
+// Entry changes reach the server in the order the user made them (e.g. save description, then stop).
+const ENTRY_MUTATION_SCOPE = { id: 'time-entries' }
 
 type EntriesUpdater = (entries: TimeEntry[]) => TimeEntry[]
 
@@ -92,6 +94,7 @@ function useEntryMutation<TVariables>(
   const queryClient = useQueryClient()
   return useMutation({
     mutationKey: queryKeys.timeEntries,
+    scope: ENTRY_MUTATION_SCOPE,
     mutationFn,
     onMutate: async (variables: TVariables) => {
       const previous = await snapshot(queryClient)

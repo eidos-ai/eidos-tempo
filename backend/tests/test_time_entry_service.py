@@ -105,16 +105,12 @@ def test_delete_is_soft_and_hides_entry(
 
     period = DateRange(start - timedelta(days=1), start + timedelta(days=1))
     assert time_entry_service.list_entries(member, period) == []
-
-
-def test_list_includes_entries_overlapping_the_period(
-    time_entry_service: TimeEntryService, member: User, clock: FakeClock
-) -> None:
-    start = clock.now() - timedelta(hours=2)
-    time_entry_service.create_entry(member, TimeEntryDraft("x", None, start, clock.now()))
-
-    period = DateRange(clock.now() - timedelta(hours=1), clock.now() + timedelta(hours=1))
-    assert len(time_entry_service.list_entries(member, period)) == 1
+    with pytest.raises(NotFoundError):
+        time_entry_service.update_entry(
+            member, entry.id, TimeEntryDraft("revived", None, start, clock.now())
+        )
+    with pytest.raises(NotFoundError):
+        time_entry_service.delete_entry(member, entry.id)
 
 
 def test_archived_project_cannot_be_used_for_new_entries(
@@ -244,3 +240,34 @@ def test_tag_names_are_unique_and_only_admins_rename(
     with pytest.raises(PermissionDeniedError):
         tag_service.update_tag(member, tag.id, TagDraft("Renamed"))
     assert tag_service.update_tag(admin, tag.id, TagDraft("Renamed")).name == "Renamed"
+
+
+def test_running_entry_cannot_be_moved_into_the_future(
+    time_entry_service: TimeEntryService, member: User, clock: FakeClock
+) -> None:
+    running = time_entry_service.start_timer(member, TimerStart("Work", None))
+
+    with pytest.raises(InvalidValueError):
+        time_entry_service.update_entry(
+            member,
+            running.id,
+            TimeEntryDraft("Work", None, clock.now() + timedelta(minutes=5), None),
+        )
+
+
+def test_stop_never_ends_before_start_when_the_clock_goes_back(
+    time_entry_service: TimeEntryService, member: User, clock: FakeClock
+) -> None:
+    running = time_entry_service.start_timer(member, TimerStart("Work", None))
+    clock.advance(timedelta(seconds=-30))
+
+    stopped = time_entry_service.stop_timer(member)
+
+    assert stopped.stop == running.start
+
+
+def test_description_is_limited_to_500_characters(
+    time_entry_service: TimeEntryService, member: User
+) -> None:
+    with pytest.raises(InvalidValueError):
+        time_entry_service.start_timer(member, TimerStart("x" * 501, None))

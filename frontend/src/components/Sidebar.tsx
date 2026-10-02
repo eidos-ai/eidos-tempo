@@ -1,6 +1,8 @@
-import type { ComponentType, SVGProps } from 'react'
+import { useState, type ComponentType, type SVGProps } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useCurrentUser, useLogout } from '../features/auth/useAuth'
+import { TempoStory } from '../features/story/TempoStory'
+import { useTapCombo } from '../features/story/useTapCombo'
 import { BriefcaseIcon, ClockIcon, FolderIcon, LogOutIcon, UserIcon, UsersIcon } from './icons'
 import { Logo } from './Logo'
 import { ThemeToggle } from './ThemeToggle'
@@ -16,6 +18,7 @@ const MANAGE_ITEMS: NavItem[] = [
   { to: '/projects', label: 'Projects', icon: FolderIcon },
   { to: '/clients', label: 'Clients', icon: BriefcaseIcon },
 ]
+const STORY_DELAY_MS = 1100
 const ADMIN_ITEMS: NavItem[] = [{ to: '/members', label: 'Members', icon: UsersIcon }]
 
 function NavSection({ title, items }: { title: string; items: NavItem[] }) {
@@ -43,11 +46,21 @@ function NavSection({ title, items }: { title: string; items: NavItem[] }) {
 export function Sidebar() {
   const user = useCurrentUser()
   const logout = useLogout()
+  const [spinKey, setSpinKey] = useState(0)
+  const [isStoryOpen, setIsStoryOpen] = useState(false)
+  const tapLogo = useTapCombo(5, () => {
+    setSpinKey((key) => key + 1)
+    window.setTimeout(() => setIsStoryOpen(true), STORY_DELAY_MS)
+  })
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-line bg-surface">
-      <div className="px-5 py-5">
-        <Logo height={28} />
+      <div className="px-5 py-5 select-none" onClick={tapLogo}>
+        <Logo
+          key={spinKey}
+          height={28}
+          isotypeClassName={spinKey > 0 ? 'animate-logo-spin motion-reduce:animate-none' : ''}
+        />
       </div>
       <nav className="flex-1 space-y-6 px-3 py-2">
         <NavSection title="Track" items={TRACK_ITEMS} />
@@ -71,6 +84,7 @@ export function Sidebar() {
           Log out
         </button>
       </div>
+      {isStoryOpen && <TempoStory onClose={() => setIsStoryOpen(false)} />}
     </aside>
   )
 }

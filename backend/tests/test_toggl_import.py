@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from app.domain.time_entries import TimeEntry
 from app.domain.users import Role, User
 from app.domain.value_objects import DateRange, EmailAddress
 from app.importers.toggl import TogglImporter
@@ -64,7 +65,7 @@ def user_by_email(repositories: Repositories, email: str) -> User:
     return user
 
 
-def all_entries(repositories: Repositories, user: User) -> list[object]:
+def all_entries(repositories: Repositories, user: User) -> list[TimeEntry]:
     period = DateRange(START - timedelta(days=1), START + timedelta(days=30))
     return list(repositories.time_entries.list_overlapping(user.id, period))
 
@@ -108,7 +109,9 @@ def test_rerun_updates_changed_entries_without_duplicates(repositories: Reposito
     )
 
     dev = user_by_email(repositories, "dev@eidos.ai")
-    assert len(all_entries(repositories, dev)) == 2
+    entries = all_entries(repositories, dev)
+    assert len(entries) == 2
+    assert "Renamed" in {entry.description for entry in entries}
     assert (report.time_entries.created, report.time_entries.updated) == (0, 1)
     assert report.time_entries.unchanged == 1
     assert report.users.created == 0 and report.projects.created == 0

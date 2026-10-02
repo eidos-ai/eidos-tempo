@@ -6,6 +6,7 @@ from app.domain.errors import AuthenticationError
 from app.domain.users import User
 from app.repositories.protocols import Repositories
 from app.services.auth import AuthService
+from app.services.users import UserService, UserUpdate
 from tests.fakes import FakeClock, FakePasswordHasher, InMemorySessionRepository
 
 IDLE_TIMEOUT = timedelta(days=90)
@@ -65,3 +66,28 @@ def test_login_removes_expired_sessions(
     sessions = repositories.sessions
     assert isinstance(sessions, InMemorySessionRepository)
     assert len(sessions.items) == 1
+
+
+def test_deactivated_user_cannot_log_in_or_keep_using_a_session(
+    auth: AuthService, user_service: UserService, admin: User, member: User
+) -> None:
+    token = auth.login(member.email, "member-password").token
+
+    user_service.update_user(admin, member.id, UserUpdate(member.full_name, member.role, False))
+
+    with pytest.raises(AuthenticationError):
+        auth.authenticate(token)
+    with pytest.raises(AuthenticationError):
+        auth.login(member.email, "member-password")
+
+
+def test_session_of_a_deactivated_user_is_rejected_even_if_not_revoked(
+    auth: AuthService, repositories: Repositories, member: User
+) -> None:
+    token = auth.login(member.email, "member-password").token
+
+    member.is_active = False
+    repositories.users.save(member)
+
+    with pytest.raises(AuthenticationError):
+        auth.authenticate(token)

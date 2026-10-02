@@ -9,6 +9,7 @@ from app.api.schemas.time_entries import (
     TimeEntryIn,
     TimeEntryOut,
     TimerStartIn,
+    TrackingStoryOut,
 )
 from app.domain.ids import TimeEntryId
 from app.domain.value_objects import DateRange
@@ -27,6 +28,11 @@ def list_entries(
 @router.get("/suggestions")
 def list_suggestions(actor: CurrentUser, entries: TimeEntryServiceDep) -> list[EntrySuggestionOut]:
     return [EntrySuggestionOut.from_domain(s) for s in entries.list_suggestions(actor)]
+
+
+@router.get("/story")
+def get_story(timezone: str, actor: CurrentUser, entries: TimeEntryServiceDep) -> TrackingStoryOut:
+    return TrackingStoryOut.from_domain(entries.get_story(actor, timezone))
 
 
 @router.get("/running")

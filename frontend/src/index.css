@@ -30,6 +30,29 @@
   --color-on-inverse: #ffffff;
   --color-overlay: rgb(24 22 51 / 0.3);
   --color-logo: #181633;
+
+  --animate-logo-spin: logo-spin 1.4s cubic-bezier(0.45, 0, 0.2, 1);
+  --animate-story-in: story-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  --animate-story-rise: story-rise 0.5s ease-out both;
+  --animate-drift: spin 40s linear infinite;
+}
+
+@keyframes logo-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  20% { transform: rotate(-25deg) scale(0.92); }
+  75% { transform: rotate(740deg) scale(1.12); }
+  88% { transform: rotate(712deg) scale(1); }
+  100% { transform: rotate(720deg) scale(1); }
+}
+
+@keyframes story-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes story-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 
 :root {

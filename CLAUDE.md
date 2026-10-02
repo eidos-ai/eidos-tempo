@@ -107,6 +107,8 @@ Dependencies point inward only: `api → services → repositories (protocols) �
   (`lock_user_entries`) taken at the start of every timer mutation. Keep both.
 - All times are timezone-aware and stored in UTC; the browser converts to local time.
 - Migrations are additive. Removing or renaming a column takes two releases and a backup.
+- `RepositoriesDep` uses `scope="function"` so the transaction commits before the response is sent;
+  keep it, or a failed commit returns 200 and the change is silently lost.
 - Sessions slide: `AuthService.authenticate` extends them (at most once a day) and `get_current_user`
   re-sends the cookie. Password resets and deactivation must revoke the user's sessions.
 - Never commit `.env` files; secrets go only in `.env`.

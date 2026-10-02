@@ -49,7 +49,8 @@ def get_password_hasher() -> PasswordHasher:
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
-RepositoriesDep = Annotated[Repositories, Depends(get_repositories)]
+# scope="function" commits before responding, so a failed commit is never reported as saved.
+RepositoriesDep = Annotated[Repositories, Depends(get_repositories, scope="function")]
 ClockDep = Annotated[Clock, Depends(get_clock)]
 HasherDep = Annotated[PasswordHasher, Depends(get_password_hasher)]
 

@@ -84,6 +84,18 @@ export interface EntrySuggestion {
   project_id: string | null
 }
 
+export interface TrackingStory {
+  first_day: string | null
+  total_seconds: number
+  entry_count: number
+  days_tracked: number
+  longest_streak: number
+  favorite_weekday: number | null
+  top_projects: { project_id: string | null; seconds: number }[]
+  busiest_day: { day: string; seconds: number } | null
+  longest_entry: { description: string; project_id: string | null; start: string; seconds: number } | null
+}
+
 export interface TimerStartInput {
   description: string
   project_id: string | null
