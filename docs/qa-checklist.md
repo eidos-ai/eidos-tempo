@@ -75,6 +75,10 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Current time line on today
 - [x] Day totals and week total update instantly, including running entry
 - [!] Entry text top-aligned in blocks (was vertically centered; fixed)
+- [!] Enter on a focused entry opens its editor (the same keypress used to submit and close it; the editor now ignores an Enter, or a held Enter, that started before it opened; fixed)
+- [!] Reopening an entry after it changed elsewhere shows its current times (the editor kept the old ones; fixed)
+- [!] Enter on the hovered ▶ continues the entry without opening the editor (fixed)
+- [!] Opening another entry with the keyboard while the editor is open shows that entry's data (kept the first entry's fields, so Save overwrote the wrong entry; fixed)
 
 ## 6. List view
 - [x] Grouped by day, newest first, day totals
@@ -161,6 +165,17 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Times stored in UTC, shown in browser local time
 - [x] Week query 5–17 ms end to end with a year of simulated data for 30 users (index used)
 - [x] Description with HTML/script is shown as text (no XSS)
+
+## 17. Chrome extension
+- [x] Uses the browser's Tempo login with no extra setup (verified loading unpacked)
+- [x] Logged out: popup explains it and links to the web app; icon shows a red `!`
+- [x] Toolbar icon is a simplified three-ring logo, crisp at 16 and 32 px; purple while a timer runs, gray when idle (no time on the icon)
+- [x] Suggestions while typing; ArrowDown + Enter picks one (description + project), Enter starts
+- [x] Running entry: description and project edits are saved; billable $ follows the project
+- [x] Project picker: search, grouped by client, "No project"
+- [x] Stop with the server unreachable: "Stopping the timer was not saved…", timer keeps running, icon shows `!`
+- [x] Stop, then the entry appears under Today with the day total; ▶ continue starts it again
+- [x] Follows the user's light/dark theme; logo readable in both
 
 ## Known follow-ups (not bugs, not blocking v1)
 - After login you always land on Timer, not the page you originally requested.

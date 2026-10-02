@@ -21,6 +21,7 @@ export function TimerPage() {
   const setPreference = usePreferenceSetter()
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null)
+  const [editorKey, setEditorKey] = useState(0)
 
   const { data: entries = [] } = useWeekEntries(weekStart)
   const { data: running } = useRunningEntry()
@@ -32,7 +33,11 @@ export function TimerPage() {
   const weekEnd = addDays(weekStart, 7)
   const weekTotalSeconds = entries.reduce((sum, entry) => sum + secondsWithin(entry, weekStart, weekEnd, now), 0)
 
-  const selectEntry = (entry: TimeEntry, anchor: DOMRect) => setEditorTarget({ kind: 'edit', entry, anchor })
+  const openEditor = (target: EditorTarget) => {
+    setEditorKey((key) => key + 1)
+    setEditorTarget(target)
+  }
+  const selectEntry = (entry: TimeEntry, anchor: DOMRect) => openEditor({ kind: 'edit', entry, anchor })
   const continueEntry = (entry: TimeEntry) =>
     startTimer.mutate({ description: entry.description, project_id: entry.project_id })
   const rescheduleEntry = (entry: TimeEntry, start: Date, stop: Date) =>
@@ -61,7 +66,7 @@ export function TimerPage() {
           now={now}
           zoom={preferences.calendar_zoom}
           onZoomChange={(zoom) => setPreference('calendar_zoom', zoom)}
-          onCreate={(start, stop, anchor) => setEditorTarget({ kind: 'create', start, stop, anchor })}
+          onCreate={(start, stop, anchor) => openEditor({ kind: 'create', start, stop, anchor })}
           onSelect={selectEntry}
           onContinue={continueEntry}
           onReschedule={rescheduleEntry}
@@ -76,7 +81,7 @@ export function TimerPage() {
           onDelete={(entry) => window.confirm('Delete this time entry?') && deleteEntry.mutate(entry.id)}
         />
       )}
-      {editorTarget && <EntryEditor target={editorTarget} onClose={() => setEditorTarget(null)} />}
+      {editorTarget && <EntryEditor key={editorKey} target={editorTarget} onClose={() => setEditorTarget(null)} />}
     </div>
   )
 }

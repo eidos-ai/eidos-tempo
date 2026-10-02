@@ -111,6 +111,20 @@ uv run alembic upgrade head
 
 Migrations must be additive. Never drop or rename a column or table that holds data in a single step.
 
+## Chrome extension
+
+`extension/` holds a Toggl-style Chrome extension: start/stop the timer, edit the running entry, pick a
+project, and continue recent entries from the toolbar.
+
+```bash
+cd extension && npm install && npm run build
+```
+
+Load it in Chrome: `chrome://extensions` → Developer mode → **Load unpacked** → `extension/dist`.
+It uses your Eidos Tempo login in the same browser, so there is nothing to configure per person.
+The address defaults to `http://localhost:5173`; change it in the extension's settings
+(right-click the icon → Options). Only `https://` addresses are accepted outside localhost.
+
 ## Configuration
 
 Backend (`backend/.env` in development, set by `docker-compose.yml` in production):

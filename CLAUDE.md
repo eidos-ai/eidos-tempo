@@ -16,6 +16,7 @@ docker compose -f docker-compose.dev.yml up -d                      # dev Postgr
 cd backend && uv run uvicorn app.main:create_app --factory --reload # API on :8000, docs at /api/docs
 cd frontend && npm run dev                                          # UI on :5173, proxies /api
 cd backend && uv run python -m scripts.seed_dev                     # dev users + sample data (idempotent)
+cd extension && npm run build                                       # Chrome extension into extension/dist
 ```
 
 Before finishing any change, all of these must pass:
@@ -23,6 +24,7 @@ Before finishing any change, all of these must pass:
 ```bash
 cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check . && uv run mypy app scripts tests
 cd frontend && npm run lint && npm run build
+cd extension && npm run lint && npm run build   # when the extension changed
 ```
 
 There is no CI, so nothing else runs these for you.
@@ -82,6 +84,18 @@ Dependencies point inward only: `api → services → repositories (protocols) �
 - Raise specific domain errors with a meaningful message; don't catch what you can't handle.
 - Use `logging` (never `print`) with context in messages.
 - Match the style of the surrounding code; one feature per folder/module.
+
+## Chrome extension (`extension/`)
+
+- Manifest V3, React + Tailwind built with Vite into `extension/dist` (load it unpacked in Chrome).
+- No separate login: it calls the same API with the browser's `tempo_session` cookie (host permission
+  for the Tempo address). Logged out → the popup links to the web app.
+- The server address is a setting (`src/config.ts`, options page). Only `https://` or `http://localhost`
+  are accepted, so moving to HTTPS is a settings change.
+- `src/api.ts` mirrors the API types by hand, like the frontend. Failed actions show "… was not saved"
+  in the popup and keep the user's input; the toolbar icon (a simplified three-ring version of the logo, drawn as vectors in `src/badge.ts` so it stays crisp at 16 px) is purple while a timer runs, gray otherwise, and shows a red `!` when not connected.
+- Agents can't open `chrome-extension://` or `chrome://` pages; to test the popup, copy `dist` under
+  `frontend/public/` temporarily and stub `chrome.storage`/`chrome.action` (remove the copy afterwards).
 
 ## Data safety rules (do not break)
 

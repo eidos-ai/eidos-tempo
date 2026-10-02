@@ -322,7 +322,10 @@ function EntryBlock({ segment, hourHeight, now, isDragged, onMouseDown, onSelect
       tabIndex={0}
       data-entry-id={entry.id}
       onMouseDown={(event) => onMouseDown(event, 'move')}
-      onKeyDown={(event) => event.key === 'Enter' && !isPending && onSelect(entry, event.currentTarget.getBoundingClientRect())}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' || event.target !== event.currentTarget || isPending) return
+        onSelect(entry, event.currentTarget.getBoundingClientRect())
+      }}
       className={`group absolute flex cursor-pointer flex-col justify-start overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-left text-xs transition-shadow hover:shadow-md ${isRunning ? 'ring-1 ring-primary/40' : ''} ${isDragged ? 'z-20 shadow-lg' : ''}`}
       style={{
         top: top + 1,

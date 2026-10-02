@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import type { TimeEntry, TimeEntryInput } from '../../api/types'
 import { Button } from '../../components/Button'
 import { CloseIcon, DollarIcon, FolderIcon, PlayIcon, TrashIcon } from '../../components/icons'
@@ -49,11 +49,22 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
   const [startTime, setStartTime] = useState(toTimeInputValue(initialStart))
   const [stopTime, setStopTime] = useState(initialStop ? toTimeInputValue(initialStop) : '')
   const [validationError, setValidationError] = useState<string | null>(null)
+  const enterPressedInside = useRef(false)
 
   const start = resolveStart(initialStart, startTime)
   const stop = initialStop ? resolveStop(initialStop, stopTime, start) : null
   const durationSeconds = start && stop ? Math.max(0, (stop.getTime() - start.getTime()) / 1000) : null
   const selectedProject = projectId ? projects.get(projectId) : undefined
+
+  const handleKeyDownCapture = (event: KeyboardEvent) => {
+    if (event.key !== 'Enter') return
+    if (event.repeat) event.preventDefault()
+    else enterPressedInside.current = true
+  }
+
+  const ignoreEnterFromBeforeOpening = (event: KeyboardEvent) => {
+    if (event.key === 'Enter' && !enterPressedInside.current) event.preventDefault()
+  }
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -86,7 +97,12 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
 
   return (
     <Popover anchor={target.anchor} label={existing ? 'Edit time entry' : 'New time entry'} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-3 p-4">
+      <form
+        onSubmit={handleSubmit}
+        onKeyDownCapture={handleKeyDownCapture}
+        onKeyPressCapture={ignoreEnterFromBeforeOpening}
+        className="space-y-3 p-4"
+      >
         <div className="flex items-center gap-1">
           {existing && !isRunning && (
             <button
