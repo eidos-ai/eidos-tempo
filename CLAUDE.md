@@ -140,3 +140,6 @@ Dependencies point inward only: `api → services → repositories (protocols) �
 - Unit tests use in-memory fakes (`tests/fakes.py`) and `FakeClock`; test through services.
 - Before a release, go through [docs/qa-checklist.md](docs/qa-checklist.md) and update it.
 - When verifying UI changes, run the app and exercise the flow in a browser, including the failure path.
+- To check the member view, run `uv run python -m scripts.seed_dev`: on a database with data it only adds the
+  test member `member@eidos.local` (password in `scripts/seed_dev.py`). Log in as them at `http://127.0.0.1:5173`,
+  a separate cookie jar, so the admin's session on `localhost:5173` is not replaced.

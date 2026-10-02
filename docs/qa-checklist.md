@@ -172,6 +172,10 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 
 ## 17. Tags, billable per entry and Toggl import
 - [x] Create a tag from the editor's tag picker (Enter on a new name); it is selected right away
+- [x] Tags page (Manage → Tags): list sorted A→Z with numbers in order (sprint2 before Sprint19), search, show archived
+- [x] Anyone can create a tag there; a duplicate name in any case ("DEV") shows "A tag named 'DEV' already exists"
+- [x] Admins rename and archive a tag; archived tags leave the list and come back with "Show archived"
+- [x] Members (tested as `member@eidos.local`) see the Tags page and can create tags, but rows don't open; a direct PUT returns 403
 - [x] Billable `$` toggles per entry; changing the project resets it to the project's default
 - [x] Calendar drag/resize and continue keep the entry's tags and billable
 - [x] Saving an entry without `tag_ids`/`is_billable` is rejected (422), so old clients can't wipe tags

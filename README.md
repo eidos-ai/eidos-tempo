@@ -7,7 +7,7 @@ Internal time tracker for Eidos. FastAPI + PostgreSQL backend, React frontend, D
 - **Timer** in the top bar with description, project, tags and billable; one running timer per user.
 - **Calendar** (week grid with zoom, drag to create) and **list** views, with day and week totals and a per-project distribution bar.
 - **Suggestions** from your previous entries and projects while typing a description.
-- **Admin**: members, clients and billable projects; archive instead of delete.
+- **Admin**: members, clients, billable projects and tags; archive instead of delete.
 - **Chrome extension** to start/stop and edit the timer from the toolbar.
 - **Data safety**: users only see their own time, soft deletes, daily backups.
 
@@ -28,7 +28,7 @@ cd backend
 cp .env.example .env
 uv sync
 uv run alembic upgrade head
-uv run python -m scripts.seed_dev   # dev users and sample data; logins are in scripts/seed_dev.py
+uv run python -m scripts.seed_dev   # dev users (+ sample data if empty); logins in scripts/seed_dev.py
 uv run uvicorn app.main:create_app --factory --reload
 ```
 

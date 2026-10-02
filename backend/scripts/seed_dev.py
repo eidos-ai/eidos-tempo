@@ -11,6 +11,7 @@ from app.domain.ids import ProjectId
 from app.domain.users import Role, User
 from app.domain.value_objects import EmailAddress, HexColor
 from app.logging_config import configure_logging
+from app.repositories.protocols import Repositories
 from app.repositories.sql import build_sql_repositories
 from app.services.clients import ClientDraft, ClientService
 from app.services.projects import ProjectDraft, ProjectService
@@ -37,21 +38,16 @@ def seed() -> None:
     session_factory = create_session_factory(get_settings().database_url)
     with session_factory.begin() as session:
         repositories = build_sql_repositories(session)
-        if repositories.users.get_by_email(EmailAddress(DEV_ADMIN_EMAIL)) is not None:
-            logger.info("Dev data already seeded; nothing to do")
-            return
         users = UserService(
             repositories.users, repositories.sessions, Argon2PasswordHasher(), clock
         )
+        if repositories.users.list_all():
+            ensure_dev_member(repositories, users)
+            return
         admin = users.bootstrap_admin(
             NewUser(EmailAddress(DEV_ADMIN_EMAIL), "Dev Admin", DEV_ADMIN_PASSWORD, Role.ADMIN)
         )
-        users.create_user(
-            admin,
-            NewUser(
-                EmailAddress(DEV_MEMBER_EMAIL), DEV_MEMBER_NAME, DEV_MEMBER_PASSWORD, Role.MEMBER
-            ),
-        )
+        users.create_user(admin, dev_member())
         clients = ClientService(repositories.clients, clock)
         projects = ProjectService(repositories.projects, repositories.clients, clock)
         entries = TimeEntryService(
@@ -75,6 +71,24 @@ def seed() -> None:
             add_entry(entries, admin, day, 13.5, 16, "Dataset review", project_ids[1])
             add_entry(entries, admin, day, 16, 17, "Team sync", project_ids[3])
         logger.info("Seeded dev data; admin login is %s", DEV_ADMIN_EMAIL)
+
+
+def dev_member() -> NewUser:
+    return NewUser(
+        EmailAddress(DEV_MEMBER_EMAIL), DEV_MEMBER_NAME, DEV_MEMBER_PASSWORD, Role.MEMBER
+    )
+
+
+def ensure_dev_member(repositories: Repositories, users: UserService) -> None:
+    """On a database with real (e.g. imported) data, only add the test member, no sample data."""
+    if repositories.users.get_by_email(EmailAddress(DEV_MEMBER_EMAIL)) is not None:
+        logger.info("Dev member %s already exists; nothing to do", DEV_MEMBER_EMAIL)
+        return
+    admin = next(user for user in repositories.users.list_all() if user.is_admin and user.is_active)
+    users.create_user(admin, dev_member())
+    logger.info(
+        "Added dev member %s; sample data is only seeded into an empty database", DEV_MEMBER_EMAIL
+    )
 
 
 def add_entry(

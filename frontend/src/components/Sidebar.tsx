@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { useCurrentUser, useLogout } from '../features/auth/useAuth'
 import { TempoStory } from '../features/story/TempoStory'
 import { useTapCombo } from '../features/story/useTapCombo'
-import { BriefcaseIcon, ClockIcon, FolderIcon, LogOutIcon, UserIcon, UsersIcon } from './icons'
+import { BriefcaseIcon, ClockIcon, FolderIcon, LogOutIcon, TagIcon, UserIcon, UsersIcon } from './icons'
 import { Logo } from './Logo'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -17,6 +17,7 @@ const TRACK_ITEMS: NavItem[] = [{ to: '/timer', label: 'Timer', icon: ClockIcon 
 const MANAGE_ITEMS: NavItem[] = [
   { to: '/projects', label: 'Projects', icon: FolderIcon },
   { to: '/clients', label: 'Clients', icon: BriefcaseIcon },
+  { to: '/tags', label: 'Tags', icon: TagIcon },
 ]
 const STORY_DELAY_MS = 1100
 const ADMIN_ITEMS: NavItem[] = [{ to: '/members', label: 'Members', icon: UsersIcon }]
