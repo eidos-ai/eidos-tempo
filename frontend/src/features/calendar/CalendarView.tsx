@@ -14,6 +14,7 @@ import {
   shiftDays,
 } from '../../lib/time'
 import { useNow } from '../../lib/useNow'
+import { useClientLookup } from '../clients/useClients'
 import { useProjectLookup } from '../projects/useProjects'
 import { isOptimistic } from '../time-entries/useTimeEntries'
 import { segmentsForDay, type DaySegment } from './layout'
@@ -304,8 +305,10 @@ interface EntryBlockProps {
 
 function EntryBlock({ segment, hourHeight, now, isDragged, onMouseDown, onSelect, onContinue }: EntryBlockProps) {
   const projects = useProjectLookup()
+  const clients = useClientLookup()
   const { entry } = segment
   const project = entry.project_id ? projects.get(entry.project_id) : undefined
+  const client = project?.client_id ? clients.get(project.client_id) : undefined
   const color = project?.color ?? NO_PROJECT_COLOR
   const top = (minutesSinceStartOfDay(segment.start) / 60) * hourHeight
   const durationMinutes = (segment.end.getTime() - segment.start.getTime()) / 60_000
@@ -335,9 +338,14 @@ function EntryBlock({ segment, hourHeight, now, isDragged, onMouseDown, onSelect
         borderLeftColor: color,
       }}
     >
-      {height >= 20 && <p className="truncate font-medium text-ink">{entry.description || '(no description)'}</p>}
-      {height >= 36 && project && <p className="truncate" style={{ color: projectTextColor(color) }}>{project.name}</p>}
-      {height >= 52 && <p className="mt-0.5 text-ink-soft tabular-nums">{formatDuration(entrySeconds(entry, now))}</p>}
+      {height >= 20 && <p className="truncate font-semibold text-ink">{entry.description || '(no description)'}</p>}
+      {height >= 36 && project && (
+        <p className="truncate text-muted">
+          <span className="font-medium" style={{ color: projectTextColor(color) }}>{project.name}</span>
+          {client && ` · ${client.name}`}
+        </p>
+      )}
+      {height >= 52 && <p className="mt-auto font-medium text-ink tabular-nums">{formatDuration(entrySeconds(entry, now))}</p>}
       {canResize && startsHere && <ResizeHandle edge="start" onMouseDown={(event) => onMouseDown(event, 'resize-start')} />}
       {canResize && endsHere && <ResizeHandle edge="end" onMouseDown={(event) => onMouseDown(event, 'resize-end')} />}
       {!isRunning && !isPending && height >= MIN_PLAY_BLOCK_HEIGHT && (

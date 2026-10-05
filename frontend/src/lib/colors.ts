@@ -16,7 +16,7 @@ export const PROJECT_COLORS = [
 export const NO_PROJECT_COLOR = '#9D9AC8'
 
 export function projectTextColor(color: string): string {
-  return `color-mix(in srgb, ${color} var(--project-text-strength), var(--color-ink))`
+  return `oklch(from ${color} max(l, var(--project-text-min-lightness)) c h)`
 }
 
 export function projectTint(color: string): string {

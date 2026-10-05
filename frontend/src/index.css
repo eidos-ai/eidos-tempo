@@ -57,14 +57,14 @@
 
 :root {
   color-scheme: light;
-  --project-text-strength: 100%;
+  --project-text-min-lightness: 0;
   --project-tint: 16%;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --project-text-strength: 55%;
-  --project-tint: 30%;
+  --project-text-min-lightness: 0.82;
+  --project-tint: 18%;
 
   --color-ink: #f3f1ee;
   --color-ink-soft: #c4c1cc;
