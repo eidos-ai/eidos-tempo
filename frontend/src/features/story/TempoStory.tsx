@@ -66,7 +66,7 @@ export function TempoStory({ onClose }: { onClose: () => void }) {
     >
       <div
         role="dialog"
-        aria-label="Your Tempo story"
+        aria-label="Your Eidos story"
         className="w-full max-w-lg animate-story-in overflow-hidden rounded-3xl bg-surface shadow-2xl motion-reduce:animate-none"
       >
         {story.data ? (
@@ -92,7 +92,7 @@ function Header({ onClose, children }: { onClose: () => void; children: ReactNod
         style={{ maskImage: 'url(/eidos-isotype.png)', maskSize: 'contain', maskRepeat: 'no-repeat' }}
       />
       <div className="relative flex items-start justify-between">
-        <p className="text-xs font-semibold tracking-[0.2em] text-white/70 uppercase">Your Tempo story</p>
+        <p className="text-xs font-semibold tracking-[0.2em] text-white/70 uppercase">Your Eidos story</p>
         <button onClick={onClose} aria-label="Close" className="-mt-1 -mr-2 rounded-full p-1 text-white/70 hover:text-white">
           <CloseIcon />
         </button>
@@ -104,6 +104,7 @@ function Header({ onClose, children }: { onClose: () => void; children: ReactNod
 
 function StoryContent({ story, onClose }: { story: TrackingStory; onClose: () => void }) {
   const projects = useProjectLookup()
+  const clients = useClientLookup()
   const hours = useCountUp(Math.round(story.total_seconds / 3600))
 
   if (story.first_day === null) {
@@ -117,6 +118,7 @@ function StoryContent({ story, onClose }: { story: TrackingStory; onClose: () =>
 
   const longest = story.longest_entry
   const longestProject = longest?.project_id ? projects.get(longest.project_id) : undefined
+  const longestClient = longestProject?.client_id ? clients.get(longestProject.client_id) : undefined
 
   return (
     <>
@@ -142,7 +144,13 @@ function StoryContent({ story, onClose }: { story: TrackingStory; onClose: () =>
         </Stat>
         {longest && (
           <Stat step={2} label="Longest entry" value={formatHoursMinutes(longest.seconds)}>
-            {longest.description || longestProject?.name || 'No description'}
+            {longest.description || 'No description'}
+            <span className="block truncate">
+              <span className="font-medium" style={{ color: projectTextColor(longestProject?.color ?? NO_PROJECT_COLOR) }}>
+                {longestProject?.name ?? 'No project'}
+              </span>
+              {longestClient && <span className="text-muted"> · {longestClient.name}</span>}
+            </span>
           </Stat>
         )}
         {story.favorite_weekday !== null && (
