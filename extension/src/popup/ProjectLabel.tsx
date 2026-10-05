@@ -6,7 +6,7 @@ interface ProjectLabelProps {
 }
 
 function projectTextColor(color: string): string {
-  return `color-mix(in srgb, ${color} var(--project-text-strength), var(--color-ink))`
+  return `oklch(from ${color} max(l, var(--project-text-min-lightness)) c h)`
 }
 
 export function ProjectLabel({ project, client }: ProjectLabelProps) {

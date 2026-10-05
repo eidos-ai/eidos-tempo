@@ -26,12 +26,12 @@
 
 :root {
   color-scheme: light;
-  --project-text-strength: 100%;
+  --project-text-min-lightness: 0;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --project-text-strength: 55%;
+  --project-text-min-lightness: 0.82;
 
   --color-ink: #f3f1ee;
   --color-ink-soft: #c4c1cc;
@@ -53,7 +53,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
-    --project-text-strength: 55%;
+    --project-text-min-lightness: 0.82;
 
     --color-ink: #f3f1ee;
     --color-ink-soft: #c4c1cc;
