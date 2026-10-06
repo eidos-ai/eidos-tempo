@@ -7,7 +7,7 @@ hand first, then adopted by the `import` block in `main.tf`). Step-by-step conte
 |---|---|
 | `modules/base/` | Service accounts `tempo-runtime` and `tempo-scheduler`, bucket `eidos-tempo` (60-day soft delete, 180-day clean-up of `backups/`, per-folder IAM conditions), Artifact Registry `tempo` |
 | `run.tf` | Cloud Run service `tempo`: web + backend + db containers, min 1 / max 1 instance, request-based billing |
-| `scheduler.tf` | `tempo-nightly-backup`: base backup + `pg_dump` at 03:00 and 15:00 Montevideo |
+| `scheduler.tf` | `tempo-nightly-backup`: base backup + `pg_dump` at 03:00 Montevideo |
 
 Not managed here (needs more than Editor, or done by hand): project IAM, public access (`allUsers` invoker),
 the `tempo.eidos.ai` domain mapping. No Cloud Monitoring alerts: uptime and backups are watched from outside.

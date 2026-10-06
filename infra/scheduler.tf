@@ -1,8 +1,8 @@
-# Base backup + pg_dump twice a day (shorter WAL chains restore faster). The backend checks the OIDC token's audience and service account.
+# Nightly base backup + pg_dump. The backend checks the OIDC token's audience and service account.
 resource "google_cloud_scheduler_job" "nightly_backup" {
   name             = "tempo-nightly-backup"
   region           = var.region
-  schedule         = "0 3,15 * * *"
+  schedule         = "0 3 * * *"
   time_zone        = "America/Montevideo"
   attempt_deadline = "600s"
 
