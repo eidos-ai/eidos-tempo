@@ -1,4 +1,4 @@
-# Base backup + pg_dump twice a day (alerts can wait at most 23.5 h for a missing backup). The backend checks the OIDC token's audience and service account.
+# Base backup + pg_dump twice a day (shorter WAL chains restore faster). The backend checks the OIDC token's audience and service account.
 resource "google_cloud_scheduler_job" "nightly_backup" {
   name             = "tempo-nightly-backup"
   region           = var.region

@@ -1,3 +1,2 @@
 # Copy to terraform.tfvars (not committed) and fill in.
-alert_email   = "cristian@eidos.ai"
 backup_prefix = "smoke"

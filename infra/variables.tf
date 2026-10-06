@@ -22,8 +22,3 @@ variable "backup_prefix" {
     error_message = "Use lowercase letters, digits and dashes, e.g. smoke or prod-2026-10-17."
   }
 }
-
-variable "alert_email" {
-  description = "Receives the uptime and backup alerts"
-  type        = string
-}

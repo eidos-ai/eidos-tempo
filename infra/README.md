@@ -8,14 +8,13 @@ hand first, then adopted by the `import` block in `main.tf`). Step-by-step conte
 | `modules/base/` | Service accounts `tempo-runtime` and `tempo-scheduler`, bucket `eidos-tempo` (60-day soft delete, 180-day clean-up of `backups/`, per-folder IAM conditions), Artifact Registry `tempo` |
 | `run.tf` | Cloud Run service `tempo`: web + backend + db containers, min 1 / max 1 instance, request-based billing |
 | `scheduler.tf` | `tempo-nightly-backup`: base backup + `pg_dump` at 03:00 and 15:00 Montevideo |
-| `monitoring.tf` | Email channel, uptime check, two alerts (site down, no backup in 23 h) |
 
 Not managed here (needs more than Editor, or done by hand): project IAM, public access (`allUsers` invoker),
-the `tempo.eidos.ai` domain mapping.
+the `tempo.eidos.ai` domain mapping. No Cloud Monitoring alerts: uptime and backups are watched from outside.
 
 ```bash
 gcloud config configurations activate eidos-tempo
-cp terraform.tfvars.example terraform.tfvars        # set alert_email and backup_prefix
+cp terraform.tfvars.example terraform.tfvars        # set backup_prefix
 terraform init
 terraform plan -target=module.base                  # first time: before any image exists
 terraform apply -target=module.base
