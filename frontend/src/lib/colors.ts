@@ -19,6 +19,6 @@ export function projectTextColor(color: string): string {
   return `oklch(from ${color} max(l, var(--project-text-min-lightness)) c h)`
 }
 
-export function projectTint(color: string): string {
-  return `color-mix(in srgb, ${color} var(--project-tint), transparent)`
+export function projectTint(color: string, strength = 1): string {
+  return `color-mix(in srgb, ${color} calc(var(--project-tint) * ${strength}), transparent)`
 }

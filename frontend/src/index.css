@@ -46,6 +46,18 @@
   --animate-story-in: story-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
   --animate-story-rise: story-rise 0.5s ease-out both;
   --animate-drift: spin 40s linear infinite;
+  --animate-popover-in: popover-in 0.15s ease-out;
+  --animate-popover-content: popover-content 0.2s linear;
+}
+
+@keyframes popover-in {
+  from { opacity: 0; transform: scale(0.1); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes popover-content {
+  0%, 66% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 @keyframes logo-spin {
@@ -70,9 +82,11 @@
   color-scheme: light;
   --project-text-min-lightness: 0;
   --project-tint: 16%;
+  --lift-shadow: 0 4px 16px rgb(24 22 51 / 0.2);
 }
 
 :root[data-theme="dark"] {
+  --lift-shadow: 0 4px 16px rgb(0 0 0 / 0.5);
   color-scheme: dark;
   --project-text-min-lightness: 0.82;
   --project-tint: 18%;

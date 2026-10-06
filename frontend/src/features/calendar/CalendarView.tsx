@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import type { CalendarZoom, DaysShown, TimeEntry } from '../../api/types'
 import { MinusIcon, PlayIcon, PlusIcon } from '../../components/icons'
 import { NO_PROJECT_COLOR, projectTextColor, projectTint } from '../../lib/colors'
@@ -74,6 +74,7 @@ export function CalendarView(props: CalendarViewProps) {
   const topMinuteRef = useRef(DEFAULT_SCROLL_HOUR * 60)
   const [drag, setDrag] = useState<DragState | null>(null)
   const [preview, setPreview] = useState<EntryPreview | null>(null)
+  const [pressedId, setPressedId] = useState<string | null>(null)
 
   const activePreview = preview?.baseEntries === entries ? preview : null
   const shownEntries = activePreview
@@ -132,6 +133,7 @@ export function CalendarView(props: CalendarViewProps) {
   const handleEntryMouseDown = (event: ReactMouseEvent<HTMLElement>, entry: TimeEntry, dayIndex: number, mode: EntryDragMode) => {
     if (event.button !== 0) return
     event.stopPropagation()
+    event.preventDefault()
     if (isOptimistic(entry)) return
     const block = event.currentTarget.closest<HTMLElement>('[data-entry-id]')
     const column = block?.parentElement
@@ -141,6 +143,7 @@ export function CalendarView(props: CalendarViewProps) {
     const originalStart = new Date(entry.start)
     const originalStop = entry.stop ? new Date(entry.stop) : null
     let moved: { start: Date; stop: Date } | null = null
+    setPressedId(entry.id)
 
     const draggedTimes = (moveEvent: MouseEvent, start: Date, stop: Date) => {
       const minSpan = snapMinutes * 60_000
@@ -168,6 +171,7 @@ export function CalendarView(props: CalendarViewProps) {
     const handleUp = () => {
       window.removeEventListener('mousemove', handleMove)
       document.body.style.cursor = ''
+      setPressedId(null)
       if (!moved) return onSelect(entry, block.getBoundingClientRect())
       const unchanged = moved.start.getTime() === originalStart.getTime() && moved.stop.getTime() === originalStop?.getTime()
       if (unchanged) return setPreview(null)
@@ -231,7 +235,7 @@ export function CalendarView(props: CalendarViewProps) {
                   segment={segment}
                   hourHeight={hourHeight}
                   now={now}
-                  isDragged={segment.entry.id === activePreview?.entryId}
+                  isLifted={segment.entry.id === pressedId || segment.entry.id === activePreview?.entryId}
                   onMouseDown={(event, mode) => handleEntryMouseDown(event, segment.entry, dayIndex, mode)}
                   onSelect={onSelect}
                   onContinue={onContinue}
@@ -297,13 +301,21 @@ interface EntryBlockProps {
   segment: DaySegment
   hourHeight: number
   now: Date
-  isDragged: boolean
+  isLifted: boolean
   onMouseDown: (event: ReactMouseEvent<HTMLElement>, mode: EntryDragMode) => void
   onSelect: (entry: TimeEntry, anchor: DOMRect) => void
   onContinue: (entry: TimeEntry) => void
 }
 
-function EntryBlock({ segment, hourHeight, now, isDragged, onMouseDown, onSelect, onContinue }: EntryBlockProps) {
+const HOVER_TINT = 1.5
+const RUNNING_TINT = 0.4
+
+function runningStripes(color: string): string {
+  const stripe = `color-mix(in srgb, ${color} 14%, transparent)`
+  return `repeating-linear-gradient(-45deg, transparent 0 7px, ${stripe} 7px 8.4px)`
+}
+
+function EntryBlock({ segment, hourHeight, now, isLifted, onMouseDown, onSelect, onContinue }: EntryBlockProps) {
   const projects = useProjectLookup()
   const clients = useClientLookup()
   const { entry } = segment
@@ -328,15 +340,19 @@ function EntryBlock({ segment, hourHeight, now, isDragged, onMouseDown, onSelect
         if (event.key !== 'Enter' || event.target !== event.currentTarget || isPending) return
         onSelect(entry, event.currentTarget.getBoundingClientRect())
       }}
-      className={`group absolute flex cursor-pointer flex-col justify-start overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-left text-xs transition-shadow hover:shadow-md ${isRunning ? 'ring-1 ring-primary/40' : ''} ${isDragged ? 'z-20 shadow-lg' : ''}`}
-      style={{
-        top: top + 1,
-        height,
-        left: `calc(${(segment.lane / segment.laneCount) * 100}% + 2px)`,
-        width: `calc(${100 / segment.laneCount}% - 4px)`,
-        backgroundColor: projectTint(color),
-        borderLeftColor: color,
-      }}
+      className={`group absolute flex cursor-pointer flex-col justify-start overflow-hidden rounded-md border-l-[3px] bg-(--tint) px-2 py-1 text-left text-xs hover:bg-(--tint-hover) hover:shadow-md ${isRunning ? 'rounded-b-none border-y border-r border-line-strong shadow-sm' : ''} ${isLifted ? 'z-20 bg-(--tint-hover) shadow-(--lift-shadow) ring-2 ring-ink/70 hover:shadow-(--lift-shadow)' : 'transition-[background-color,box-shadow] duration-150 ease-out'}`}
+      style={
+        {
+          top: top + 1,
+          height,
+          left: `calc(${(segment.lane / segment.laneCount) * 100}% + 2px)`,
+          width: `calc(${100 / segment.laneCount}% - 4px)`,
+          '--tint': isRunning ? projectTint(color, RUNNING_TINT) : projectTint(color),
+          '--tint-hover': projectTint(color, isRunning ? RUNNING_TINT * 1.5 : HOVER_TINT),
+          backgroundImage: isRunning ? runningStripes(color) : undefined,
+          borderLeftColor: color,
+        } as CSSProperties
+      }
     >
       {height >= 20 && <p className="truncate font-semibold text-ink">{entry.description || '(no description)'}</p>}
       {height >= 36 && project && (

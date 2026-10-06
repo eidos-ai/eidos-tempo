@@ -91,7 +91,7 @@ function EntryRow({ entry, now, onSelect, onContinue, onDelete }: { entry: TimeE
 
   return (
     <li
-      className={`group flex cursor-pointer items-center gap-4 px-5 py-3 text-sm hover:bg-canvas/60 ${isPending ? 'opacity-60' : ''}`}
+      className={`group flex cursor-pointer items-center gap-4 px-5 py-3 text-sm transition-colors duration-150 ease-out hover:bg-canvas/60 ${isPending ? 'opacity-60' : ''}`}
       onClick={(event) => !isPending && onSelect(entry, event.currentTarget.getBoundingClientRect())}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">

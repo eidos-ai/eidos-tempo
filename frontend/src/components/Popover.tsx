@@ -13,23 +13,27 @@ interface PopoverProps {
 interface Position {
   top: number
   left: number
+  transformOrigin: string
 }
 
 function popoverPosition(anchor: DOMRect, width: number, height: number, viewportWidth: number, viewportHeight: number): Position {
   const clampLeft = (left: number) => Math.min(Math.max(VIEWPORT_MARGIN, left), viewportWidth - width - VIEWPORT_MARGIN)
   const clampTop = (top: number) => Math.min(Math.max(VIEWPORT_MARGIN, top), viewportHeight - height - VIEWPORT_MARGIN)
+  const towardAnchorY = (top: number) => Math.min(Math.max(0, anchor.top + anchor.height / 2 - top), height)
+  const towardAnchorX = (left: number) => Math.min(Math.max(0, anchor.left + anchor.width / 2 - left), width)
 
   if (anchor.right + GAP + width <= viewportWidth - VIEWPORT_MARGIN) {
-    return { top: clampTop(anchor.top), left: anchor.right + GAP }
+    const top = clampTop(anchor.top)
+    return { top, left: anchor.right + GAP, transformOrigin: `0 ${towardAnchorY(top)}px` }
   }
   if (anchor.left - GAP - width >= VIEWPORT_MARGIN) {
-    return { top: clampTop(anchor.top), left: anchor.left - GAP - width }
+    const top = clampTop(anchor.top)
+    return { top, left: anchor.left - GAP - width, transformOrigin: `${width}px ${towardAnchorY(top)}px` }
   }
   const fitsBelow = anchor.bottom + GAP + height <= viewportHeight - VIEWPORT_MARGIN
-  return {
-    top: clampTop(fitsBelow ? anchor.bottom + GAP : anchor.top - GAP - height),
-    left: clampLeft(anchor.right - width),
-  }
+  const top = clampTop(fitsBelow ? anchor.bottom + GAP : anchor.top - GAP - height)
+  const left = clampLeft(anchor.right - width)
+  return { top, left, transformOrigin: `${towardAnchorX(left)}px ${fitsBelow ? 0 : height}px` }
 }
 
 function swallowNextClick(): void {
@@ -74,10 +78,10 @@ export function Popover({ anchor, label, onClose, children }: PopoverProps) {
       ref={ref}
       role="dialog"
       aria-label={label}
-      className="fixed z-50 w-[26rem] rounded-xl border border-line bg-surface shadow-xl"
+      className={`fixed z-50 w-[26rem] rounded-xl border border-line bg-surface shadow-xl ${position ? 'animate-popover-in motion-reduce:animate-none' : 'invisible'}`}
       style={position ?? { top: 0, left: 0 }}
     >
-      {children}
+      <div className={position ? 'animate-popover-content motion-reduce:animate-none' : ''}>{children}</div>
     </div>
   )
 }

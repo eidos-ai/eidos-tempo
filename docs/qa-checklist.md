@@ -83,6 +83,10 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Project distribution bar under the week toolbar (like Toggl): one segment per project sized by its share, label in the project color plus client, biggest first; tooltip with time and %
 - [x] Bar total equals the week total and grows with a running timer; readable in light and dark; hidden for a week without time
 - [!] Font sizes measured against Toggl: running time (24→18 px, same as the description), week total (18→14), WEEK TOTAL label and weekdays (12→11), distribution labels (11→12) now match; the rest already did
+- [x] Hovering an entry block lightens its tint (0.15 s), and the editor grows from the side facing the entry (0.15 s, content fades in), like Toggl; no animation with reduced motion
+- [x] While the mouse button is held on an entry it lifts (stronger tint, light rim, shadow) and goes back on release, like Toggl
+- [ ] Running entry editor shows a stop button top-left (like Toggl); pressing it stops the timer and closes the editor (shown, not pressed yet)
+- [x] The running entry looks different from stopped ones (faint tint, diagonal stripes, border, open bottom), in light and dark
 
 ## 6. List view
 - [x] Grouped by day, newest first, day totals

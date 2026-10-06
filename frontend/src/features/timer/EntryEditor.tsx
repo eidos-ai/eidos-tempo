@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import type { TimeEntry, TimeEntryInput } from '../../api/types'
 import { Button } from '../../components/Button'
-import { CloseIcon, FolderIcon, PlayIcon, TagIcon, TrashIcon } from '../../components/icons'
+import { CloseIcon, FolderIcon, PlayIcon, StopIcon, TagIcon, TrashIcon } from '../../components/icons'
 import { Popover } from '../../components/Popover'
 import { formatDuration, shiftDays, toTimeInputValue, withTimeOfDay } from '../../lib/time'
 import { ProjectLabel } from '../projects/ProjectLabel'
@@ -9,7 +9,7 @@ import { ProjectPicker } from '../projects/ProjectPicker'
 import { useProjectLookup } from '../projects/useProjects'
 import { TagList, TagPicker } from '../tags/TagPicker'
 import { DescriptionInput } from '../time-entries/DescriptionInput'
-import { useCreateEntry, useDeleteEntry, useStartTimer, useUpdateEntry } from '../time-entries/useTimeEntries'
+import { useCreateEntry, useDeleteEntry, useStartTimer, useStopTimer, useUpdateEntry } from '../time-entries/useTimeEntries'
 import { BillableToggle } from './BillableToggle'
 import { TimeField } from './TimeField'
 import { MAX_DESCRIPTION_LENGTH } from './TimerBar'
@@ -40,6 +40,7 @@ export function EntryEditor({ target, onClose, canContinue = true }: EntryEditor
   const updateEntry = useUpdateEntry()
   const deleteEntry = useDeleteEntry()
   const startTimer = useStartTimer()
+  const stopTimer = useStopTimer()
   const projects = useProjectLookup()
 
   const existing = target.kind === 'edit' ? target.entry : null
@@ -104,6 +105,11 @@ export function EntryEditor({ target, onClose, canContinue = true }: EntryEditor
     onClose()
   }
 
+  const handleStop = () => {
+    stopTimer.mutate()
+    onClose()
+  }
+
   const handleDelete = () => {
     if (!existing) return
     deleteEntry.mutate(existing.id)
@@ -119,6 +125,17 @@ export function EntryEditor({ target, onClose, canContinue = true }: EntryEditor
         className="space-y-3 p-4"
       >
         <div className="flex items-center gap-1">
+          {isRunning && (
+            <button
+              type="button"
+              title="Stop"
+              aria-label="Stop this entry"
+              onClick={handleStop}
+              className="flex size-8 items-center justify-center rounded-full bg-stop text-white hover:brightness-95"
+            >
+              <StopIcon width={12} height={12} />
+            </button>
+          )}
           {existing && !isRunning && canContinue && (
             <button
               type="button"
