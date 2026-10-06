@@ -10,6 +10,17 @@ export function addDays(date: Date, days: number): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days)
 }
 
+export function startOfWeek(date: Date): Date {
+  const daysSinceMonday = (date.getDay() + 6) % 7
+  return addDays(startOfDay(date), -daysSinceMonday)
+}
+
+export function secondsSince(entry: TimeEntry, rangeStart: Date, now: Date): number {
+  const start = Math.max(new Date(entry.start).getTime(), rangeStart.getTime())
+  const end = entry.stop ? new Date(entry.stop).getTime() : now.getTime()
+  return Math.max(0, Math.floor((end - start) / 1000))
+}
+
 export function entrySeconds(entry: TimeEntry, now: Date): number {
   const end = entry.stop ? new Date(entry.stop) : now
   return Math.max(0, Math.floor((end.getTime() - new Date(entry.start).getTime()) / 1000))

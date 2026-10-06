@@ -65,6 +65,7 @@ export function Popup() {
           />
           <RecentEntries
             entries={data.recent}
+            running={data.running}
             lookups={lookups}
             isBusy={tempo.isBusy}
             onContinue={(entry) =>
