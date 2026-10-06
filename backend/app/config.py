@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     enable_api_docs: bool = False
     api_timezone: str = "America/Montevideo"
 
-    # Cloud Run: every write is archived to the bucket before the response (docs/deploy-plan.md).
+    # Cloud Run: every write is archived to the bucket before the response (app/durability/).
     durable_writes: bool = False
     bucket: str = ""
     backup_prefix: str = ""

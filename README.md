@@ -132,8 +132,7 @@ Same requests and responses as Toggl, under `/api/toggl`:
 Production runs on Google Cloud Run (project `eidos-15111991`): one service `tempo` with three containers (nginx,
 backend, Postgres + WAL-G) and the database in memory, rebuilt from `gs://eidos-tempo` on every start. Every save
 is archived to the bucket before the response, and only the instance holding the lease (`lease/owner`) may write.
-Design: [docs/deploy-plan.md](docs/deploy-plan.md). Step by step: [docs/deploy-guide.md](docs/deploy-guide.md).
-Infrastructure: [infra/README.md](infra/README.md) (Terraform).
+Infrastructure and first-time setup: [infra/README.md](infra/README.md) (Terraform).
 
 | Task | Command |
 |---|---|

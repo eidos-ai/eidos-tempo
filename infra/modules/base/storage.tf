@@ -1,5 +1,5 @@
 # One bucket: backups/<prefix>/ (WAL-G and nightly dumps), lease/owner (which instance owns the database),
-# tfstate/ (Terraform). Created by hand in the guide's step A5 and adopted with the import in main.tf.
+# tfstate/ (Terraform). Created by hand before Terraform (it holds the state) and adopted with the import in main.tf.
 resource "google_storage_bucket" "tempo" {
   name                        = var.bucket
   location                    = upper(var.region)

@@ -1,7 +1,7 @@
 # infra/ — Google Cloud resources for Eidos Tempo (Terraform)
 
 Project `eidos-15111991`, region `us-central1`. State lives in `gs://eidos-tempo/tfstate/` (the bucket is created by
-hand first, then adopted by the `import` block in `main.tf`). Step-by-step context: `docs/deploy-guide.md`.
+hand first, then adopted by the `import` block in `main.tf`).
 
 | File | What |
 |---|---|
