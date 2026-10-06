@@ -8,5 +8,8 @@ export const queryKeys = {
   runningEntry: ['time-entries', 'running'] as const,
   entrySuggestions: ['time-entries', 'suggestions'] as const,
   weekEntries: ['time-entries', 'week'] as const,
+  reportEntries: ['time-entries', 'reports', 'entries'] as const,
+  reportSummary: (query: string) => ['time-entries', 'reports', 'summary', query] as const,
+  reportEntryList: (query: string) => ['time-entries', 'reports', 'entries', query] as const,
   week: (weekStart: Date) => ['time-entries', 'week', weekStart.toISOString()] as const,
 }

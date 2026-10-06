@@ -27,6 +27,10 @@ MEMBER_ROUTES = {
     ("POST", "/api/time-entries"),
     ("PUT", "/api/time-entries/{entry_id}"),
     ("DELETE", "/api/time-entries/{entry_id}"),
+    ("GET", "/api/reports/summary"),
+    ("GET", "/api/reports/entries"),
+    ("GET", "/api/reports/summary.pdf"),
+    ("GET", "/api/reports/detailed.pdf"),
 }
 ADMIN_ROUTES = {
     ("GET", "/api/users"),
@@ -54,9 +58,18 @@ VALID_BODIES = {
     ("PUT", "/api/projects/{project_id}"): {"name": "X", "color": "#7B4DE7"},
     ("PUT", "/api/tags/{tag_id}"): {"name": "X"},
 }
+REPORT_PARAMS = {
+    "start": "2026-09-01T00:00:00Z",
+    "end": "2026-10-01T00:00:00Z",
+    "timezone": "UTC",
+}
 QUERY_PARAMS = {
     ("GET", "/api/time-entries"): {"start": "2026-09-28T00:00:00Z", "end": "2026-10-05T00:00:00Z"},
     ("GET", "/api/time-entries/story"): {"timezone": "UTC"},
+    ("GET", "/api/reports/summary"): REPORT_PARAMS,
+    ("GET", "/api/reports/entries"): REPORT_PARAMS,
+    ("GET", "/api/reports/summary.pdf"): REPORT_PARAMS,
+    ("GET", "/api/reports/detailed.pdf"): REPORT_PARAMS,
 }
 
 

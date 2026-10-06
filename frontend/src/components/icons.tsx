@@ -159,3 +159,35 @@ export const MoonIcon = (props: IconProps) => (
     <path d="M17 3.5v2.4M15.8 4.7h2.4" />
   </Icon>
 )
+
+export const ChartIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+  </Icon>
+)
+
+export const DownloadIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+  </Icon>
+)
+
+export const TextIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 7V5h16v2M9 19h6M12 5v14" />
+  </Icon>
+)
+
+export const MoreIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="5" r="1" />
+    <circle cx="12" cy="12" r="1" />
+    <circle cx="12" cy="19" r="1" />
+  </Icon>
+)
+
+export const PencilIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" />
+  </Icon>
+)

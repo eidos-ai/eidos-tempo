@@ -115,3 +115,42 @@ export interface UserUpdateInput {
   role: Role
   is_active: boolean
 }
+
+export type Grouping = 'project' | 'client' | 'member' | 'description' | 'billable'
+export type Resolution = 'day' | 'week' | 'month'
+
+export interface ReportEntry extends TimeEntry {
+  user_id: string
+}
+
+export interface Duration {
+  seconds: number
+  billable_seconds: number
+}
+
+export interface SummaryGroup extends Duration {
+  key: string | null
+  subgroups: SummaryGroup[]
+}
+
+export interface Share {
+  key: string | null
+  seconds: number
+}
+
+export interface SummaryReport {
+  total: Duration
+  entry_count: number
+  days_tracked: number
+  average_daily_seconds: number
+  resolution: Resolution
+  buckets: Array<Duration & { start: string; segments: Share[] }>
+  stack_by: Grouping
+  slice_by: Grouping
+  slices: Share[]
+  group_by: Grouping
+  subgroup_by: Grouping
+  groups: SummaryGroup[]
+}
+
+export type ReportKind = 'summary' | 'detailed'

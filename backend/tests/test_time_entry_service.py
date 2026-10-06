@@ -86,13 +86,40 @@ def test_stopped_entry_cannot_be_resumed_by_update(
         time_entry_service.update_entry(member, entry.id, TimeEntryDraft("x", None, start, None))
 
 
-def test_users_cannot_touch_other_users_entries(
-    time_entry_service: TimeEntryService, member: User, admin: User
+def test_members_cannot_touch_other_users_entries(
+    time_entry_service: TimeEntryService, member: User, admin: User, clock: FakeClock
 ) -> None:
-    entry = time_entry_service.start_timer(member, TimerStart("Private", None))
+    start = clock.now() - timedelta(hours=1)
+    entry = time_entry_service.create_entry(
+        admin, TimeEntryDraft("Private", None, start, clock.now())
+    )
 
     with pytest.raises(NotFoundError):
-        time_entry_service.delete_entry(admin, entry.id)
+        time_entry_service.update_entry(
+            member, entry.id, TimeEntryDraft("Mine now", None, start, clock.now())
+        )
+    with pytest.raises(NotFoundError):
+        time_entry_service.delete_entry(member, entry.id)
+
+
+def test_admins_can_edit_and_delete_other_users_entries(
+    time_entry_service: TimeEntryService, member: User, admin: User, clock: FakeClock
+) -> None:
+    start = clock.now() - timedelta(hours=1)
+    entry = time_entry_service.create_entry(
+        member, TimeEntryDraft("Typo", None, start, clock.now())
+    )
+
+    updated = time_entry_service.update_entry(
+        admin, entry.id, TimeEntryDraft("Fixed", None, start, clock.now(), is_billable=True)
+    )
+
+    assert updated.user_id == member.id
+    assert updated.description == "Fixed"
+    assert updated.is_billable
+    time_entry_service.delete_entry(admin, entry.id)
+    period = DateRange(start - timedelta(days=1), start + timedelta(days=1))
+    assert time_entry_service.list_entries(member, period) == []
 
 
 def test_delete_is_soft_and_hides_entry(

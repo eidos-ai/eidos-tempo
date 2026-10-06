@@ -149,3 +149,102 @@ def test_saving_an_entry_requires_tags_and_billable(api_client: TestClient) -> N
     create = api_client.post("/api/time-entries", json={**partial, "stop": running["start"]})
 
     assert (update.status_code, create.status_code) == (422, 422)
+
+
+SEPTEMBER_PARAMS = {
+    "start": "2026-09-01T03:00:00Z",
+    "end": "2026-10-01T03:00:00Z",
+    "timezone": "America/Montevideo",
+}
+
+
+def add_entry(client: TestClient, description: str, start: str, stop: str) -> str:
+    response = client.post(
+        "/api/time-entries",
+        json={
+            "description": description,
+            "is_billable": True,
+            "tag_ids": [],
+            "start": start,
+            "stop": stop,
+        },
+    )
+    assert response.status_code == 201
+    entry_id: str = response.json()["id"]
+    return entry_id
+
+
+def test_report_endpoints(api_client: TestClient) -> None:
+    login(api_client)
+    add_entry(api_client, "Planning & review", "2026-09-10T12:00:00Z", "2026-09-10T14:30:00Z")
+
+    summary = api_client.get("/api/reports/summary", params=SEPTEMBER_PARAMS).json()
+    assert summary["total"] == {"seconds": 9000, "billable_seconds": 9000}
+    assert summary["days_tracked"] == 1
+    assert summary["resolution"] == "day"
+    assert summary["groups"][0]["key"] is None
+    assert summary["slices"] == [{"key": None, "seconds": 9000}]
+    assert summary["buckets"][9]["segments"] == [{"key": "billable", "seconds": 9000}]
+
+    by_member = api_client.get(
+        "/api/reports/summary",
+        params={**SEPTEMBER_PARAMS, "stack_by": "member", "slice_by": "billable"},
+    ).json()
+    assert by_member["slices"] == [{"key": "billable", "seconds": 9000}]
+    assert by_member["buckets"][9]["segments"][0]["seconds"] == 9000
+
+    with_project = api_client.get(
+        "/api/reports/entries",
+        params={**SEPTEMBER_PARAMS, "without_project": "true", "exclude_projects": "true"},
+    ).json()
+    assert with_project == []
+
+    entries = api_client.get(
+        "/api/reports/entries", params={**SEPTEMBER_PARAMS, "billable": "true"}
+    ).json()
+    assert [entry["description"] for entry in entries] == ["Planning & review"]
+    assert "user_id" in entries[0]
+
+    for kind in ("summary", "detailed"):
+        response = api_client.get(
+            f"/api/reports/{kind}.pdf", params={**SEPTEMBER_PARAMS, "period_name": "Last month"}
+        )
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/pdf"
+        assert "2026-09-01_to_2026-09-30.pdf" in response.headers["content-disposition"]
+        assert response.content.startswith(b"%PDF")
+
+
+def test_admin_can_edit_a_members_entry_from_reports(api_client: TestClient) -> None:
+    login(api_client)
+    api_client.post(
+        "/api/users",
+        json={
+            "email": "member@eidos.ai",
+            "full_name": "Member",
+            "password": "member-password",
+            "role": "member",
+        },
+    )
+    api_client.post("/api/auth/logout")
+    api_client.post(
+        "/api/auth/login", json={"email": "member@eidos.ai", "password": "member-password"}
+    )
+    entry_id = add_entry(api_client, "Typo", "2026-09-10T12:00:00Z", "2026-09-10T13:00:00Z")
+    api_client.post("/api/auth/logout")
+    login(api_client)
+
+    response = api_client.put(
+        f"/api/time-entries/{entry_id}",
+        json={
+            "description": "Fixed",
+            "is_billable": False,
+            "tag_ids": [],
+            "start": "2026-09-10T12:00:00Z",
+            "stop": "2026-09-10T13:00:00Z",
+        },
+    )
+
+    assert response.status_code == 200
+    entries = api_client.get("/api/reports/entries", params=SEPTEMBER_PARAMS).json()
+    assert [(e["description"], e["is_billable"]) for e in entries] == [("Fixed", False)]

@@ -198,7 +198,30 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Stop, then the entry appears under Today with the day total; ▶ continue starts it again
 - [x] Follows the user's light/dark theme; logo readable in both
 
+## 19. Reports
+- [x] Summary for September matches Toggl: everyone 652:43:46 total, 282:33:31 billable (43.29%), 29.67 h daily average; one member 121:26:45, 4:54:49 (4.05%), 5.52
+- [x] Summary: totals card, duration chart with Stack by (billable, members, clients, projects), donut with Slice by (adds descriptions, "Other (n)"), breakdown with "Breakdown by" / "and", sort, expand/collapse
+- [x] Date control: presets, "All shortcuts" with search, two-month range picking, ‹ › shifting by week or month
+- [x] Filters: member is / is not (admins only, Show Active/All), client and project (is, is not, is empty, is not empty), tag, billable (Add filter), description contains; chip edit, ×, clear all, Escape discards an unapplied chip; filters live in the URL
+- [x] Detailed: inline description and duration (invalid duration rejected), $ toggle, project picker (sets billable from the project), tag picker (several toggles saved once on close)
+- [x] Detailed time/date popover: start, stop, calendar date (keeps times and duration), stop before start crosses midnight, Enter and click outside save, Escape cancels
+- [x] Row menu: Duplicate (own entries only), Set as (non-)billable, Go to project, Delete
+- [x] Header sort on every column, both directions; select all, "N items selected", clear selection
+- [x] Bulk edit: description (prefilled for one, "Multiple descriptions" for several), project, add tags, remove existing tags, date, Billable Unchanged / Billable / Non-billable; Save disabled until something changes; bulk delete
+- [x] "Load more" past 100 rows; title "Time entries from <preset>"
+- [!] Several quick edits on one row: later requests stayed paused in a hidden tab (TanStack `scope`) and a second edit could overwrite the first with stale values; fixed (`inOrder` queue, row builds on its latest input)
+- [!] Bulk edit Project / Add tags fields only opened when clicking the text; the whole field is now the trigger
+- [x] Server unreachable on save or delete: toast "Your change was not saved", row rolls back; failed PDF export shows "The PDF could not be exported: …"
+- [x] Export PDF (Summary and Detailed) downloads `Tempo_<Summary|Detailed>_report_<from>_to_<to>.pdf`, title includes the preset ("Summary report (Last month)"), filters applied
+- [x] PDFs list the applied filters as chips under the dates, like Toggl ("Member is Cristian", "Project is eidos"); members never get a Member chip; custom ranges are titled "(from MM/DD/YYYY to MM/DD/YYYY)"; zero billable shows "-"; Detailed PDF has its own $ column and the title "Time entries from <preset>"
+- [x] Detailed PDF for September (Cristian) matches Toggl's export entry by entry: 53 entries, same date, time, duration, description, member, project, tags and billable marks; empty descriptions print "-", projects show a colored dot with the client on a second line
+- [x] Duration chart follows Toggl's layouts: a week has wide bars and horizontal labels, a month has thin bars, −45° day labels and vertical values (web and PDF)
+- [x] Members: no Member filter; a member filter in the URL still returns only their entries; PDFs name only them; inline, bulk edit and delete on their own entries; PUT/DELETE on others' entries return 404; no 403s in the console
+- [x] Admins edit members' entries from Detailed; the member sees the change with tags kept
+- [x] Light and dark themes
+
 ## Known follow-ups (not bugs, not blocking v1)
 - After login you always land on Timer, not the page you originally requested.
 - A calendar block split at midnight shows the whole entry's duration, not the part on that day.
 - Backups live on the same server as the database; copy them off-server when possible.
+- Reports: no CSV/XLSX export, Amount column, rounding or saved reports (Toggl has them; not used by the team so far).

@@ -6,10 +6,12 @@ Internal time tracker for Eidos. FastAPI + PostgreSQL backend, React frontend, D
 
 - **Timer** in the top bar with description, project, tags and billable; one running timer per user.
 - **Calendar** (week grid with zoom, drag to create) and **list** views, with day and week totals and a per-project distribution bar.
+- **Reports** like Toggl's: Summary (totals, hours per day, project split, breakdowns) and Detailed (every entry,
+  editable inline or in bulk), filtered by member, client, project, tag, billable and description, exported as PDF.
 - **Suggestions** from your previous entries and projects while typing a description.
 - **Admin**: members, clients, billable projects and tags; archive instead of delete.
 - **Chrome extension** to start/stop and edit the timer from the toolbar.
-- **Data safety**: users only see their own time, soft deletes, daily backups.
+- **Data safety**: members only see their own time (admins see everyone's in reports), soft deletes, daily backups.
 
 Verified behavior: [docs/qa-checklist.md](docs/qa-checklist.md). Agent guide and architecture rules: [CLAUDE.md](CLAUDE.md).
 

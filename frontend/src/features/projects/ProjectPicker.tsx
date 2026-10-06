@@ -11,6 +11,7 @@ interface ProjectPickerProps {
   onChange: (projectId: string | null) => void
   renderTrigger: (selected: Project | undefined) => ReactNode
   align?: 'left' | 'right'
+  fullWidth?: boolean
 }
 
 interface ProjectGroup {
@@ -22,7 +23,7 @@ const NO_CLIENT = 'No client'
 
 const DROPDOWN_HEIGHT = 380
 
-export function ProjectPicker({ value, onChange, renderTrigger, align = 'left' }: ProjectPickerProps) {
+export function ProjectPicker({ value, onChange, renderTrigger, align = 'left', fullWidth = false }: ProjectPickerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [opensUpward, setOpensUpward] = useState(false)
   const [search, setSearch] = useState('')
@@ -64,7 +65,7 @@ export function ProjectPicker({ value, onChange, renderTrigger, align = 'left' }
 
   return (
     <div ref={containerRef} className="relative">
-      <button type="button" className="flex max-w-full items-center" onClick={(event) => {
+      <button type="button" className={`flex max-w-full items-center ${fullWidth ? 'w-full' : ''}`} onClick={(event) => {
           setOpensUpward(shouldOpenUpward(event.currentTarget, DROPDOWN_HEIGHT))
           setIsOpen((open) => !open)
         }}>

@@ -21,6 +21,7 @@ export type EditorTarget =
 interface EntryEditorProps {
   target: EditorTarget
   onClose: () => void
+  canContinue?: boolean
 }
 
 function resolveStart(initialStart: Date, startTime: string): Date | null {
@@ -34,7 +35,7 @@ function resolveStop(initialStop: Date, stopTime: string, start: Date | null): D
   return stop < start ? shiftDays(stop, 1) : stop
 }
 
-export function EntryEditor({ target, onClose }: EntryEditorProps) {
+export function EntryEditor({ target, onClose, canContinue = true }: EntryEditorProps) {
   const createEntry = useCreateEntry()
   const updateEntry = useUpdateEntry()
   const deleteEntry = useDeleteEntry()
@@ -118,7 +119,7 @@ export function EntryEditor({ target, onClose }: EntryEditorProps) {
         className="space-y-3 p-4"
       >
         <div className="flex items-center gap-1">
-          {existing && !isRunning && (
+          {existing && !isRunning && canContinue && (
             <button
               type="button"
               title="Continue"

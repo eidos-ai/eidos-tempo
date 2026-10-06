@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -8,8 +9,10 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
 from app.db.models import Base
-from app.domain.ids import ProjectId, TagId, TimeEntryId, UserId, new_uuid
+from app.domain.clients import Client
+from app.domain.ids import ClientId, ProjectId, TagId, TimeEntryId, UserId, new_uuid
 from app.domain.projects import Project
+from app.domain.reports import Choice, ReportFilter
 from app.domain.sessions import AuthSession
 from app.domain.tags import Tag
 from app.domain.time_entries import TimeEntry
@@ -235,3 +238,46 @@ def test_list_overlapping_includes_entries_crossing_the_period_edges(
     listed = sql_repositories.time_entries.list_overlapping(user.id, period)
 
     assert {entry.id for entry in listed} == {started_before.id, ends_after.id, running.id}
+
+
+def test_report_query_applies_every_filter(sql_repositories: Repositories) -> None:
+    user = make_user(sql_repositories)
+    client = Client(id=ClientId(new_uuid()), name="BrainLogic", created_at=NOW)
+    sql_repositories.clients.add(client)
+    project = replace(make_project("Vision", is_archived=False), client_id=client.id)
+    sql_repositories.projects.add(project)
+    research = Tag(id=TagId(new_uuid()), name="Research", created_at=NOW)
+    sql_repositories.tags.add(research)
+
+    matching = make_entry(user, NOW, NOW + timedelta(hours=1))
+    matching.project_id = project.id
+    matching.is_billable = True
+    matching.tag_ids = (research.id,)
+    matching.description = "100% model training"
+    unassigned = make_entry(user, NOW + timedelta(hours=2), NOW + timedelta(hours=3))
+    running = make_entry(user, NOW + timedelta(hours=4), None)
+    deleted = make_entry(user, NOW, NOW + timedelta(hours=1))
+    deleted.deleted_at = NOW
+    for entry in (matching, unassigned, running, deleted):
+        sql_repositories.time_entries.add(entry)
+
+    everything = ReportFilter(DateRange(NOW - timedelta(days=1), NOW + timedelta(days=1)))
+
+    def ids(report_filter: ReportFilter) -> list[TimeEntryId]:
+        return [e.id for e in sql_repositories.time_entries.list_for_report(report_filter)]
+
+    assert ids(everything) == [unassigned.id, matching.id]
+    mine_for_client = replace(everything, users=Choice((user.id,)), clients=Choice((client.id,)))
+    assert ids(mine_for_client) == [matching.id]
+    assert ids(replace(everything, clients=Choice(include_none=True))) == [unassigned.id]
+    assert ids(replace(everything, clients=Choice((client.id,), negate=True))) == [unassigned.id]
+    vision_or_none = Choice((project.id,), include_none=True)
+    assert ids(replace(everything, projects=vision_or_none)) == [unassigned.id, matching.id]
+    with_project = Choice[ProjectId](include_none=True, negate=True)
+    assert ids(replace(everything, projects=with_project)) == [matching.id]
+    assert ids(replace(everything, tags=Choice((research.id,)))) == [matching.id]
+    assert ids(replace(everything, tags=Choice(include_none=True))) == [unassigned.id]
+    assert ids(replace(everything, tags=Choice((research.id,), negate=True))) == [unassigned.id]
+    assert ids(replace(everything, is_billable=False)) == [unassigned.id]
+    assert ids(replace(everything, description="100%")) == [matching.id]
+    assert ids(replace(everything, users=Choice((UserId(new_uuid()),)))) == []

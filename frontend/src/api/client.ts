@@ -44,8 +44,7 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
   }
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const response = await send(method, path, body)
+async function checked(response: Response): Promise<Response> {
   if (GATEWAY_STATUSES.has(response.status)) {
     throw new ApiError(response.status, UNREACHABLE_MESSAGE)
   }
@@ -55,13 +54,32 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (!response.ok) {
     throw new ApiError(response.status, await readErrorMessage(response))
   }
+  return response
+}
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const response = await checked(await send(method, path, body))
   if (response.status === 204) {
     return undefined as T
   }
   return (await response.json()) as T
 }
 
+export interface DownloadedFile {
+  blob: Blob
+  filename: string
+}
+
+const FILENAME_PATTERN = /filename="([^"]+)"/
+
+async function download(path: string): Promise<DownloadedFile> {
+  const response = await checked(await send('GET', path))
+  const filename = FILENAME_PATTERN.exec(response.headers.get('Content-Disposition') ?? '')?.[1] ?? 'download'
+  return { blob: await response.blob(), filename }
+}
+
 export const http = {
+  download,
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body: unknown) => request<T>('PUT', path, body),

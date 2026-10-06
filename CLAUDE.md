@@ -6,7 +6,7 @@ Guide for agents working in this repository. Read README.md for setup, configura
 
 Eidos Tempo is Eidos' internal replacement for Toggl: the team tracks time daily, admins manage
 members, clients and billable projects. Time entries are billing records, so **never lose data**.
-Planned next: reports/metrics API, personal API tokens, a Chrome extension using the same API.
+Planned next: personal API tokens.
 Not set up yet: HTTPS in front of the app, and CI/CD (images are built on the server by `scripts/deploy.sh`).
 
 ## Commands
@@ -56,6 +56,13 @@ Dependencies point inward only: `api → services → repositories (protocols) �
 5. ORM change in `db/models.py` → `uv run alembic revision --autogenerate -m "..."` → review the file.
 6. API test in `tests/test_api.py`; Postgres test in `tests/test_sql_repositories.py` if SQL behavior matters.
 
+### Reports
+
+`GET /api/reports/summary|entries|summary.pdf|detailed.pdf` (`services/reports.py`, `domain/reports.py`) mirror
+Toggl's Summary and Detailed reports: filter by member, client, project, tag, billable and description; running
+and deleted entries are left out; days are grouped in the browser's timezone. PDFs are drawn with reportlab in
+`app/exports/report_pdf.py`. The frontend keeps report filters in the URL (`features/reports/reportFilters.ts`).
+
 ## Frontend architecture (`frontend/src`)
 
 - `api/`: `client.ts` (fetch wrapper, `ApiError`, unreachable-server handling), `endpoints.ts`,
@@ -63,6 +70,10 @@ Dependencies point inward only: `api → services → repositories (protocols) �
 - `features/<name>/`: page components plus hooks (`useX.ts`) wrapping TanStack Query.
 - Time-entry mutations go through `useEntryMutation` in `features/time-entries/useTimeEntries.ts`:
   optimistic cache update → rollback + toast on error → invalidate on settle. Keep new entry actions on this path.
+  Changing many entries at once uses one mutation (`useUpdateEntries`/`useDeleteEntries`).
+  Entry requests are sent in order by `inOrder`, not a TanStack `scope`: queued scoped mutations stay paused
+  while the tab is hidden, so changes were lost. Saves are full replacements, so quick edits on one row must
+  build on the row's latest input, not on the possibly stale `entry` prop (see `EntryRow` in `DetailedTable.tsx`).
 - The current user comes from `useCurrentUser()` (context provided by `RequireAuth`); never read the
   session query directly in pages.
 - Styling: Tailwind v4 with Eidos brand tokens in `index.css` (`--color-primary`, `--color-ink`, ...).
@@ -118,7 +129,9 @@ Dependencies point inward only: `api → services → repositories (protocols) �
 - Every new route must be added to exactly one of `PUBLIC_ROUTES`, `MEMBER_ROUTES` or `ADMIN_ROUTES`
   in `tests/test_endpoint_protection.py`; the test fails otherwise. Public routes need a strong reason.
 - Protected routes take `CurrentUser`; admin rules are enforced in services with `require_admin`.
-- Users may only touch their own time entries; return 404 (not 403) for other users' entries.
+- Members may only see and touch their own time entries; return 404 (not 403) for other users' entries.
+  Admins may edit and delete anyone's entries (Detailed report); `TimeEntryService` logs each change made on
+  someone else's behalf, and `ReportService.visible_to` limits members' reports to their own entries.
 - Keep login constant-time (`verify_dummy` for unknown emails) and keep the nginx login rate limit.
 - API docs stay off in production (`TEMPO_ENABLE_API_DOCS=false`).
 - Don't add CORS, don't publish the database or backend ports, don't weaken the CSP in `frontend/nginx.conf`.

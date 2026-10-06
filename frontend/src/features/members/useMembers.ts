@@ -3,8 +3,8 @@ import { usersApi } from '../../api/endpoints'
 import { queryKeys } from '../../api/queryKeys'
 import type { UserCreateInput, UserUpdateInput } from '../../api/types'
 
-export function useMembers() {
-  return useQuery({ queryKey: queryKeys.users, queryFn: usersApi.list })
+export function useMembers(enabled = true) {
+  return useQuery({ queryKey: queryKeys.users, queryFn: usersApi.list, enabled })
 }
 
 export function useCreateMember() {

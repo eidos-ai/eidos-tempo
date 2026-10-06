@@ -1,6 +1,7 @@
 import re
 from dataclasses import dataclass
 from datetime import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from app.domain.errors import InvalidValueError
 
@@ -55,3 +56,10 @@ def require_text(value: str, field_name: str, max_length: int) -> str:
     if len(cleaned) > max_length:
         raise InvalidValueError(f"{field_name} cannot exceed {max_length} characters")
     return cleaned
+
+
+def parse_timezone(name: str) -> ZoneInfo:
+    try:
+        return ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError) as error:
+        raise InvalidValueError(f"Unknown timezone {name!r}") from error

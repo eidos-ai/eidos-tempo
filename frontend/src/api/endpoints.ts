@@ -3,6 +3,9 @@ import type {
   Client,
   EntrySuggestion,
   ClientInput,
+  ReportEntry,
+  ReportKind,
+  SummaryReport,
   Preferences,
   Project,
   ProjectInput,
@@ -71,4 +74,10 @@ export const timeEntriesApi = {
   create: (input: TimeEntryInput) => http.post<TimeEntry>('/time-entries', input),
   update: (id: string, input: TimeEntryInput) => http.put<TimeEntry>(`/time-entries/${id}`, input),
   remove: (id: string) => http.delete(`/time-entries/${id}`),
+}
+
+export const reportsApi = {
+  summary: (query: string) => http.get<SummaryReport>(`/reports/summary?${query}`),
+  entries: (query: string) => http.get<ReportEntry[]>(`/reports/entries?${query}`),
+  pdf: (kind: ReportKind, query: string) => http.download(`/reports/${kind}.pdf?${query}`),
 }

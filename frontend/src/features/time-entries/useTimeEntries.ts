@@ -2,19 +2,19 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { useEffect } from 'react'
 import { timeEntriesApi } from '../../api/endpoints'
 import { queryKeys } from '../../api/queryKeys'
-import type { TimeEntry, TimeEntryInput, TimerStartInput } from '../../api/types'
+import type { ReportEntry, TimeEntry, TimeEntryInput, TimerStartInput } from '../../api/types'
 import { addDays } from '../../lib/time'
 import { showToast } from '../../lib/toast'
 
 const OPTIMISTIC_ID_PREFIX = 'optimistic-'
 const SYNC_INTERVAL_MS = 30_000
-// Entry changes reach the server in the order the user made them (e.g. save description, then stop).
-const ENTRY_MUTATION_SCOPE = { id: 'time-entries' }
+let lastEntryChange: Promise<unknown> = Promise.resolve()
 
-type EntriesUpdater = (entries: TimeEntry[]) => TimeEntry[]
+type EntriesUpdater = <T extends TimeEntry>(entries: T[]) => T[]
 
 interface Snapshot {
   weeks: Array<[readonly unknown[], TimeEntry[] | undefined]>
+  reports: Array<[readonly unknown[], ReportEntry[] | undefined]>
   running: TimeEntry | null | undefined
 }
 
@@ -61,18 +61,22 @@ async function snapshot(queryClient: QueryClient): Promise<Snapshot> {
   await queryClient.cancelQueries({ queryKey: queryKeys.timeEntries })
   return {
     weeks: queryClient.getQueriesData<TimeEntry[]>({ queryKey: queryKeys.weekEntries }),
+    reports: queryClient.getQueriesData<ReportEntry[]>({ queryKey: queryKeys.reportEntries }),
     running: queryClient.getQueryData<TimeEntry | null>(queryKeys.runningEntry),
   }
 }
 
 function restore(queryClient: QueryClient, previous: Snapshot | undefined): void {
   if (!previous) return
-  for (const [key, data] of previous.weeks) queryClient.setQueryData(key, data)
+  for (const [key, data] of [...previous.weeks, ...previous.reports]) queryClient.setQueryData(key, data)
   queryClient.setQueryData(queryKeys.runningEntry, previous.running)
 }
 
 function updateWeeks(queryClient: QueryClient, updater: EntriesUpdater): void {
   queryClient.setQueriesData<TimeEntry[]>({ queryKey: queryKeys.weekEntries }, (entries) =>
+    entries ? updater(entries) : entries,
+  )
+  queryClient.setQueriesData<ReportEntry[]>({ queryKey: queryKeys.reportEntries }, (entries) =>
     entries ? updater(entries) : entries,
   )
 }
@@ -87,6 +91,14 @@ function insertIntoWeeks(queryClient: QueryClient, entry: TimeEntry): void {
   }
 }
 
+// Entry changes reach the server in the order the user made them (e.g. save description, then stop).
+// Not a TanStack mutation `scope`: queued scoped mutations stay paused while the tab is hidden.
+function inOrder<T>(send: () => Promise<T>): Promise<T> {
+  const result = lastEntryChange.then(send, send)
+  lastEntryChange = result.catch(() => undefined)
+  return result
+}
+
 function useEntryMutation<TVariables>(
   mutationFn: (variables: TVariables) => Promise<unknown>,
   applyOptimistic: (queryClient: QueryClient, variables: TVariables) => void,
@@ -94,8 +106,7 @@ function useEntryMutation<TVariables>(
   const queryClient = useQueryClient()
   return useMutation({
     mutationKey: queryKeys.timeEntries,
-    scope: ENTRY_MUTATION_SCOPE,
-    mutationFn,
+    mutationFn: (variables: TVariables) => inOrder(() => mutationFn(variables)),
     onMutate: async (variables: TVariables) => {
       const previous = await snapshot(queryClient)
       applyOptimistic(queryClient, variables)
@@ -105,7 +116,11 @@ function useEntryMutation<TVariables>(
       restore(queryClient, previous)
       showToast(error.message)
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries }),
+    onSettled: () => {
+      if (queryClient.isMutating({ mutationKey: queryKeys.timeEntries }) === 1) {
+        return queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries })
+      }
+    },
   })
 }
 
@@ -165,4 +180,33 @@ export function useDeleteEntry() {
     const running = queryClient.getQueryData<TimeEntry | null>(queryKeys.runningEntry)
     if (running?.id === id) queryClient.setQueryData(queryKeys.runningEntry, null)
   })
+}
+
+interface EntryUpdate {
+  id: string
+  input: TimeEntryInput
+}
+
+export function useUpdateEntries() {
+  return useEntryMutation(
+    async (updates: EntryUpdate[]) => {
+      for (const { id, input } of updates) await timeEntriesApi.update(id, input)
+    },
+    (queryClient, updates) => {
+      const inputs = new Map(updates.map(({ id, input }) => [id, input]))
+      updateWeeks(queryClient, (entries) => entries.map((e) => (inputs.has(e.id) ? { ...e, ...inputs.get(e.id) } : e)))
+    },
+  )
+}
+
+export function useDeleteEntries() {
+  return useEntryMutation(
+    async (ids: string[]) => {
+      for (const id of ids) await timeEntriesApi.remove(id)
+    },
+    (queryClient, ids) => {
+      const removed = new Set(ids)
+      updateWeeks(queryClient, (entries) => entries.filter((e) => !removed.has(e.id)))
+    },
+  )
 }

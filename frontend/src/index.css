@@ -31,6 +31,17 @@
   --color-overlay: rgb(24 22 51 / 0.3);
   --color-logo: #181633;
 
+  --color-chart-billable: #9f7fee;
+  --color-chart-non-billable: #6a3fe0;
+  --color-series-1: #2a78d6;
+  --color-series-2: #eb6834;
+  --color-series-3: #1baf7a;
+  --color-series-4: #eda100;
+  --color-series-5: #e87ba4;
+  --color-series-6: #008300;
+  --color-series-7: #4a3aa7;
+  --color-series-8: #e34948;
+
   --animate-logo-spin: logo-spin 1.4s cubic-bezier(0.45, 0, 0.2, 1);
   --animate-story-in: story-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
   --animate-story-rise: story-rise 0.5s ease-out both;
@@ -85,6 +96,17 @@
   --color-on-inverse: #121116;
   --color-overlay: rgb(0 0 0 / 0.6);
   --color-logo: #e1ccb3;
+
+  --color-chart-billable: #9c7dee;
+  --color-chart-non-billable: #7044e3;
+  --color-series-1: #3987e5;
+  --color-series-2: #d95926;
+  --color-series-3: #199e70;
+  --color-series-4: #c98500;
+  --color-series-5: #d55181;
+  --color-series-6: #008300;
+  --color-series-7: #9085e9;
+  --color-series-8: #e66767;
 }
 
 html,

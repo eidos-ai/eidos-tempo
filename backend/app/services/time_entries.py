@@ -1,6 +1,6 @@
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from app.domain.clock import Clock
 from app.domain.errors import ConflictError, InvalidValueError, NotFoundError
@@ -8,8 +8,10 @@ from app.domain.ids import ProjectId, TagId, TimeEntryId, new_uuid
 from app.domain.story import TrackingStory, build_story
 from app.domain.time_entries import EntrySuggestion, TimeEntry, ensure_valid_period
 from app.domain.users import User
-from app.domain.value_objects import DateRange
+from app.domain.value_objects import DateRange, parse_timezone
 from app.repositories.protocols import ProjectRepository, TagRepository, TimeEntryRepository
+
+logger = logging.getLogger(__name__)
 
 MAX_DESCRIPTION_LENGTH = 500
 MAX_SUGGESTIONS = 300
@@ -51,10 +53,7 @@ class TimeEntryService:
         return self._entries.list_overlapping(actor.id, period)
 
     def get_story(self, actor: User, timezone: str) -> TrackingStory:
-        try:
-            zone = ZoneInfo(timezone)
-        except (ZoneInfoNotFoundError, ValueError) as error:
-            raise InvalidValueError(f"Unknown timezone {timezone!r}") from error
+        zone = parse_timezone(timezone)
         now = self._clock.now()
         entries = self._entries.list_overlapping(actor.id, DateRange(start=STORY_START, end=now))
         return build_story(entries, zone, now)
@@ -125,7 +124,7 @@ class TimeEntryService:
         return entry
 
     def update_entry(self, actor: User, entry_id: TimeEntryId, draft: TimeEntryDraft) -> TimeEntry:
-        entry = self._get_owned(actor, entry_id)
+        entry = self._get_editable(actor, entry_id)
         if draft.stop is None and not entry.is_running:
             raise InvalidValueError("A stopped entry cannot be resumed; start a timer instead")
         if draft.stop is None and draft.start > self._clock.now():
@@ -139,17 +138,22 @@ class TimeEntryService:
         entry.start = draft.start
         entry.stop = draft.stop
         self._entries.save(entry)
+        log_if_on_behalf(actor, entry, "updated")
         return entry
 
     def delete_entry(self, actor: User, entry_id: TimeEntryId) -> None:
-        entry = self._get_owned(actor, entry_id)
+        entry = self._get_editable(actor, entry_id)
         entry.deleted_at = self._clock.now()
         self._entries.save(entry)
+        log_if_on_behalf(actor, entry, "deleted")
 
-    def _get_owned(self, actor: User, entry_id: TimeEntryId) -> TimeEntry:
-        self._entries.lock_user_entries(actor.id)
+    def _get_editable(self, actor: User, entry_id: TimeEntryId) -> TimeEntry:
+        owner = self._entries.get_owner(entry_id)
+        if owner is None or (owner != actor.id and not actor.is_admin):
+            raise NotFoundError("Time entry", entry_id)
+        self._entries.lock_user_entries(owner)
         entry = self._entries.get(entry_id)
-        if entry is None or entry.is_deleted or entry.user_id != actor.id:
+        if entry is None or entry.is_deleted:
             raise NotFoundError("Time entry", entry_id)
         return entry
 
@@ -183,6 +187,13 @@ class TimeEntryService:
             if tag.is_archived:
                 raise InvalidValueError(f"Tag {tag.name!r} is archived")
         return unique_ids
+
+
+def log_if_on_behalf(actor: User, entry: TimeEntry, action: str) -> None:
+    if entry.user_id != actor.id:
+        logger.info(
+            "Time entry %s of user %s %s by %s", entry.id, entry.user_id, action, actor.email
+        )
 
 
 def clean_description(description: str) -> str:

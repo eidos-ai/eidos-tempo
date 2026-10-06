@@ -6,6 +6,7 @@ import { ClientsPage } from './features/clients/ClientsPage'
 import { MembersPage } from './features/members/MembersPage'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { ProjectsPage } from './features/projects/ProjectsPage'
+import { ReportsPage } from './features/reports/ReportsPage'
 import { TagsPage } from './features/tags/TagsPage'
 import { TimerPage } from './features/timer/TimerPage'
 
@@ -16,6 +17,8 @@ export function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route path="/timer" element={<TimerPage />} />
+          <Route path="/reports" element={<Navigate to="/reports/summary" replace />} />
+          <Route path="/reports/:kind" element={<ReportsPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/clients" element={<ClientsPage />} />
           <Route path="/tags" element={<TagsPage />} />

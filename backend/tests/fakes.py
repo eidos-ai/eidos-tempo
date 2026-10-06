@@ -5,6 +5,7 @@ from app.domain.clients import Client
 from app.domain.ids import ClientId, ProjectId, TagId, TimeEntryId, UserId
 from app.domain.import_links import ImportedEntity, ImportLink, ImportSource
 from app.domain.projects import Project
+from app.domain.reports import ReportFilter
 from app.domain.sessions import AuthSession
 from app.domain.tags import Tag
 from app.domain.time_entries import EntrySuggestion, TimeEntry
@@ -160,12 +161,17 @@ class InMemoryImportLinkRepository:
 
 
 class InMemoryTimeEntryRepository:
-    def __init__(self) -> None:
+    def __init__(self, projects: InMemoryProjectRepository) -> None:
         self.items: dict[TimeEntryId, TimeEntry] = {}
+        self._projects = projects
 
     def get(self, entry_id: TimeEntryId) -> TimeEntry | None:
         entry = self.items.get(entry_id)
         return replace(entry) if entry else None
+
+    def get_owner(self, entry_id: TimeEntryId) -> UserId | None:
+        entry = self.items.get(entry_id)
+        return entry.user_id if entry else None
 
     def get_running(self, user_id: UserId) -> TimeEntry | None:
         return next(
@@ -204,20 +210,33 @@ class InMemoryTimeEntryRepository:
         ]
         return sorted(entries, key=lambda e: e.start, reverse=True)
 
+    def list_for_report(self, report_filter: ReportFilter) -> list[TimeEntry]:
+        entries = [
+            replace(e)
+            for e in self.items.values()
+            if report_filter.matches(e, self._client_of(e.project_id))
+        ]
+        return sorted(entries, key=lambda e: e.start, reverse=True)
+
     def add(self, entry: TimeEntry) -> None:
         self.items[entry.id] = replace(entry)
 
     def save(self, entry: TimeEntry) -> None:
         self.items[entry.id] = replace(entry)
 
+    def _client_of(self, project_id: ProjectId | None) -> ClientId | None:
+        project = self._projects.get(project_id) if project_id else None
+        return project.client_id if project else None
+
 
 def build_in_memory_repositories() -> Repositories:
+    projects = InMemoryProjectRepository()
     return Repositories(
         users=InMemoryUserRepository(),
         sessions=InMemorySessionRepository(),
         clients=InMemoryClientRepository(),
-        projects=InMemoryProjectRepository(),
+        projects=projects,
         tags=InMemoryTagRepository(),
-        time_entries=InMemoryTimeEntryRepository(),
+        time_entries=InMemoryTimeEntryRepository(projects),
         import_links=InMemoryImportLinkRepository(),
     )

@@ -1,9 +1,14 @@
-from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session
+from collections.abc import Sized
+from typing import Protocol
+from uuid import UUID
 
-from app.db.models import TagRow, TimeEntryRow, UserRow
+from sqlalchemy import ColumnElement, and_, false, func, not_, or_, select, true
+from sqlalchemy.orm import InstrumentedAttribute, Session
+
+from app.db.models import ProjectRow, TagRow, TimeEntryRow, UserRow, time_entry_tags
 from app.domain.errors import NotFoundError
-from app.domain.ids import ProjectId, TagId, TimeEntryId, UserId
+from app.domain.ids import ClientId, ProjectId, TagId, TimeEntryId, UserId
+from app.domain.reports import Choice, ReportFilter
 from app.domain.time_entries import EntrySuggestion, TimeEntry
 from app.domain.value_objects import DateRange
 
@@ -15,6 +20,12 @@ class SqlTimeEntryRepository:
     def get(self, entry_id: TimeEntryId) -> TimeEntry | None:
         row = self._session.get(TimeEntryRow, entry_id)
         return to_time_entry(row) if row else None
+
+    def get_owner(self, entry_id: TimeEntryId) -> UserId | None:
+        owner = self._session.scalar(
+            select(TimeEntryRow.user_id).where(TimeEntryRow.id == entry_id)
+        )
+        return UserId(owner) if owner else None
 
     def get_running(self, user_id: UserId) -> TimeEntry | None:
         row = self._session.scalar(
@@ -64,6 +75,37 @@ class SqlTimeEntryRepository:
             for row in self._session.execute(query)
         ]
 
+    def list_for_report(self, report_filter: ReportFilter) -> list[TimeEntry]:
+        tagged = select(time_entry_tags.c.time_entry_id).where(
+            time_entry_tags.c.tag_id.in_(report_filter.tags.ids)
+        )
+        untagged = (
+            ~select(time_entry_tags.c.time_entry_id)
+            .where(time_entry_tags.c.time_entry_id == TimeEntryRow.id)
+            .exists()
+        )
+        query = (
+            select(TimeEntryRow)
+            .outerjoin(ProjectRow, ProjectRow.id == TimeEntryRow.project_id)
+            .where(
+                TimeEntryRow.deleted_at.is_(None),
+                TimeEntryRow.stop.is_not(None),
+                TimeEntryRow.start >= report_filter.period.start,
+                TimeEntryRow.start < report_filter.period.end,
+                TimeEntryRow.description.icontains(report_filter.description, autoescape=True),
+                choice_condition(
+                    report_filter.users, TimeEntryRow.user_id.in_(report_filter.users.ids), false()
+                ),
+                column_choice(ProjectRow.client_id, report_filter.clients),
+                column_choice(TimeEntryRow.project_id, report_filter.projects),
+                choice_condition(report_filter.tags, TimeEntryRow.id.in_(tagged), untagged),
+            )
+            .order_by(TimeEntryRow.start.desc())
+        )
+        if report_filter.is_billable is not None:
+            query = query.where(TimeEntryRow.is_billable.is_(report_filter.is_billable))
+        return [to_time_entry(row) for row in self._session.scalars(query)]
+
     def add(self, entry: TimeEntry) -> None:
         row = TimeEntryRow(id=entry.id)
         self._apply(row, entry)
@@ -84,6 +126,36 @@ class SqlTimeEntryRepository:
             missing = set(entry.tag_ids) - {TagId(tag.id) for tag in tags}
             raise NotFoundError("Tag", next(iter(missing)))
         row.tags = list(tags)
+
+
+def column_choice(
+    column: InstrumentedAttribute[UUID | None], choice: Choice[ClientId] | Choice[ProjectId]
+) -> ColumnElement[bool]:
+    in_ids = and_(column.is_not(None), column.in_(choice.ids))
+    return choice_condition(choice, in_ids, column.is_(None))
+
+
+class Condition(Protocol):
+    @property
+    def ids(self) -> Sized: ...
+    @property
+    def include_none(self) -> bool: ...
+    @property
+    def negate(self) -> bool: ...
+    @property
+    def is_active(self) -> bool: ...
+
+
+def choice_condition(
+    choice: Condition, in_ids: ColumnElement[bool], is_empty: ColumnElement[bool]
+) -> ColumnElement[bool]:
+    if not choice.is_active:
+        return true()
+    matched = or_(
+        in_ids if len(choice.ids) else false(),
+        is_empty if choice.include_none else false(),
+    )
+    return not_(matched) if choice.negate else matched
 
 
 def to_time_entry(row: TimeEntryRow) -> TimeEntry:

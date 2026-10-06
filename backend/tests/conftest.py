@@ -11,6 +11,7 @@ from app.main import create_app
 from app.repositories.protocols import Repositories
 from app.services.clients import ClientService
 from app.services.projects import ProjectService
+from app.services.reports import ReportService
 from app.services.tags import TagService
 from app.services.time_entries import TimeEntryService
 from app.services.users import NewUser, UserService
@@ -114,3 +115,14 @@ def api_client(api_clock: FakeClock) -> Iterator[TestClient]:
     app.dependency_overrides[get_password_hasher] = lambda: hasher
     with TestClient(app) as client:
         yield client
+
+
+@pytest.fixture
+def report_service(repositories: Repositories) -> ReportService:
+    return ReportService(
+        time_entries=repositories.time_entries,
+        users=repositories.users,
+        projects=repositories.projects,
+        clients=repositories.clients,
+        tags=repositories.tags,
+    )

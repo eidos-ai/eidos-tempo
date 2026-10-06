@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react'
 import type { Tag } from '../../api/types'
 import { PlusIcon, SearchIcon } from '../../components/icons'
 import { shouldOpenUpward } from '../../lib/dropdown'
@@ -10,24 +10,31 @@ interface TagPickerProps {
   onChange: (tagIds: string[]) => void
   renderTrigger: (selected: Tag[]) => ReactNode
   align?: 'left' | 'right'
+  fullWidth?: boolean
+  onClose?: () => void
 }
 
 const DROPDOWN_HEIGHT = 340
 
-export function TagPicker({ value, onChange, renderTrigger, align = 'left' }: TagPickerProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export function TagPicker({ value, onChange, renderTrigger, align = 'left', fullWidth = false, onClose }: TagPickerProps) {
+  const [isOpen, setOpen] = useState(false)
   const [opensUpward, setOpensUpward] = useState(false)
   const [search, setSearch] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
   const { data: tags = [] } = useTags()
   const lookup = useTagLookup()
   const createTag = useCreateTag()
+  const setIsOpen = (open: boolean) => {
+    setOpen(open)
+    if (!open) onClose?.()
+  }
+  const closeOnOutsideClick = useEffectEvent((event: MouseEvent) => {
+    if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false)
+  })
 
   useEffect(() => {
     if (!isOpen) return
-    const handleClick = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false)
-    }
+    const handleClick = (event: MouseEvent) => closeOnOutsideClick(event)
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [isOpen])
@@ -60,9 +67,9 @@ export function TagPicker({ value, onChange, renderTrigger, align = 'left' }: Ta
 
   return (
     <div ref={containerRef} className="relative">
-      <button type="button" className="flex max-w-full items-center" onClick={(event) => {
+      <button type="button" className={`flex max-w-full items-center ${fullWidth ? 'w-full' : ''}`} onClick={(event) => {
           setOpensUpward(shouldOpenUpward(event.currentTarget, DROPDOWN_HEIGHT))
-          setIsOpen((open) => !open)
+          setIsOpen(!isOpen)
         }}>
         {renderTrigger(selected)}
       </button>

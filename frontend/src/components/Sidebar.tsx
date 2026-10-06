@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { useCurrentUser, useLogout } from '../features/auth/useAuth'
 import { TempoStory } from '../features/story/TempoStory'
 import { useTapCombo } from '../features/story/useTapCombo'
-import { BriefcaseIcon, ClockIcon, FolderIcon, LogOutIcon, TagIcon, UserIcon, UsersIcon } from './icons'
+import { BriefcaseIcon, ChartIcon, ClockIcon, FolderIcon, LogOutIcon, TagIcon, UserIcon, UsersIcon } from './icons'
 import { Logo } from './Logo'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -14,6 +14,7 @@ interface NavItem {
 }
 
 const TRACK_ITEMS: NavItem[] = [{ to: '/timer', label: 'Timer', icon: ClockIcon }]
+const ANALYZE_ITEMS: NavItem[] = [{ to: '/reports', label: 'Reports', icon: ChartIcon }]
 const MANAGE_ITEMS: NavItem[] = [
   { to: '/projects', label: 'Projects', icon: FolderIcon },
   { to: '/clients', label: 'Clients', icon: BriefcaseIcon },
@@ -65,6 +66,7 @@ export function Sidebar() {
       </div>
       <nav className="flex-1 space-y-6 px-3 py-2">
         <NavSection title="Track" items={TRACK_ITEMS} />
+        <NavSection title="Analyze" items={ANALYZE_ITEMS} />
         <NavSection title="Manage" items={MANAGE_ITEMS} />
         {user.role === 'admin' && <NavSection title="Admin" items={ADMIN_ITEMS} />}
       </nav>
