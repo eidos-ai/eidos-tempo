@@ -10,7 +10,7 @@ hand first, then adopted by the `import` block in `main.tf`).
 | `scheduler.tf` | `tempo-nightly-backup`: base backup + `pg_dump` at 03:00 Montevideo |
 
 Not managed here (needs more than Editor, or done by hand): project IAM, public access (`allUsers` invoker),
-the `tempo.eidos.ai` domain mapping. No Cloud Monitoring alerts: uptime and backups are watched from outside.
+a custom domain (the service uses its `run.app` URL). No Cloud Monitoring alerts: uptime and backups are watched from outside.
 
 Needs Terraform ≥ 1.9, Docker, the gcloud CLI and Editor on the project. Terraform and the scripts name the project
 explicitly, so your default gcloud project doesn't matter.
