@@ -12,8 +12,12 @@ hand first, then adopted by the `import` block in `main.tf`).
 Not managed here (needs more than Editor, or done by hand): project IAM, public access (`allUsers` invoker),
 the `tempo.eidos.ai` domain mapping. No Cloud Monitoring alerts: uptime and backups are watched from outside.
 
+Needs Terraform ≥ 1.9, Docker, the gcloud CLI and Editor on the project. Terraform and the scripts name the project
+explicitly, so your default gcloud project doesn't matter.
+
 ```bash
-gcloud config configurations activate eidos-tempo
+gcloud auth login && gcloud auth application-default login     # Terraform and the scripts use these credentials
+gcloud auth configure-docker us-central1-docker.pkg.dev         # lets Docker push images
 cp terraform.tfvars.example terraform.tfvars        # set backup_prefix
 terraform init
 terraform plan -target=module.base                  # first time: before any image exists
