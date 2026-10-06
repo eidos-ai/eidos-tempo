@@ -157,6 +157,18 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] SPA deep links served by nginx (/projects)
 - [x] `TEMPO_COOKIE_SECURE=true` over plain HTTP: browser drops the cookie (verified), login page explains it
 
+## 14b. Cloud Run (local simulation, docker-compose.cloudrun.yml, 2026-10-06)
+- [x] Empty bucket prefix: initdb, first base backup, migrations, app serves
+- [x] Save latency with archive-before-response: ~70 ms against the emulator
+- [x] Crash during a save loop (kill all containers, wipe in-memory volumes): 676 confirmed saves, 0 lost, ~28 s down
+- [x] Second instance started during saves: takes the lease, old instance returns 503 and stops; 132 confirmed, 0 lost,
+      1 save answered 503 but kept (the known duplicate-on-retry case)
+- [x] Two instances started at once: the one that lost the lease exits before restoring; one serves
+- [x] Nightly backup (`app.cli backup`): base backup + dump uploaded; dump restored with `pg_restore`, same row count
+- [x] Seed mode on linux/amd64 (emulated): migrations, ensure-admin (create, then promote), base backup
+- [ ] On Cloud Run: same drills (deploy during saves, restore), IAM conditions allow WAL-G and deny deletes
+- [ ] On Cloud Run: login rate limit sees the real client IP (X-Forwarded-For)
+
 ## 15. Security (public IP)
 - [x] Every API route classified public/member/admin; anonymous and forged sessions get 401 on all non-public routes (automated, mutation-tested)
 - [x] Members get 403 on every admin route (automated)

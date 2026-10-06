@@ -6,7 +6,8 @@ Guide for agents working in this repository. Read README.md for setup, configura
 
 Eidos Tempo is Eidos' internal replacement for Toggl: the team tracks time daily, admins manage
 members, clients and billable projects. Time entries are billing records, so **never lose data**.
-Not set up yet: HTTPS in front of the app, and CI/CD (images are built on the server by `scripts/deploy.sh`).
+Production: Google Cloud Run with the database inside the service (docs/deploy-plan.md, `infra/`). Not set up yet:
+CI/CD (`scripts/cloudrun-deploy.sh` builds and deploys from a Mac).
 
 ## Commands
 
@@ -147,9 +148,26 @@ these shapes, compare with Toggl again.
 
 ## Deployment facts
 
+Cloud Run (production; `db/`, `infra/`, `app/durability/`, `docker-compose.cloudrun.yml` simulates it locally):
+- The disk is in memory: the `db` container takes the GCS lease (`lease/owner`), waits a grace period, restores
+  the latest WAL-G backup and replays WAL. Restores end on a new timeline, so an old instance's late WAL never mixes in.
+- `get_repositories` commits through `Durability.committer`. On Cloud Run (`TEMPO_DURABLE_WRITES`) a transaction that
+  wrote checks the lease, commits, switches the WAL segment (1 MB segments) and waits until it is archived, then
+  checks the lease again. Never respond "saved" before that; never write to the database outside this path while
+  serving. Lease lost → 503 and the process stops; archive timeout → 503.
+- The runtime service account can create and read under `backups/` but not delete or overwrite (only WAL-G's
+  temporary `_chunks/` objects), and owns `lease/`. Keep it that way; ask before changing how data is stored or deleted.
+- `/api/internal/backup` (scheduler, OIDC) pushes a base backup and uploads a `pg_dump` to `backups/<prefix>/dumps/`.
+- nginx: `frontend/nginx/app.conf` is shared; `cloudrun.conf` (port 8080, backend on 127.0.0.1, client IP = last
+  X-Forwarded-For entry) and `compose.conf` (Docker DNS) only set the server. Build with `NGINX_SITE`.
+- Images must be built for linux/amd64 (`scripts/cloudrun-deploy.sh` does). Seed and restore scripts also use
+  amd64 so physical backups match Cloud Run's architecture.
+
+Docker Compose (previous server setup):
+
 - `docker-compose.yml` (prod) and `docker-compose.dev.yml` (dev, project `eidos-tempo-dev`) must keep
   different project names so a deploy can't replace the dev database.
-- nginx re-resolves `backend` via Docker DNS (`resolver 127.0.0.11`). Keep this, or a recreated
+- nginx (`frontend/nginx/compose.conf`) re-resolves `backend` via Docker DNS (`resolver 127.0.0.11`). Keep this, or a recreated
   backend container causes 502s.
 - The backend container `exec`s uvicorn after `alembic upgrade head` so it shuts down gracefully.
 - Backups: `scripts/backup.sh`, `scripts/backup-loop.sh`, `scripts/restore.sh`, `scripts/deploy.sh`.

@@ -1,0 +1,57 @@
+# Local simulation of the Cloud Run instance: web, backend and db share one network namespace (like
+# containers of one instance), the data volumes are in memory, and a Cloud Storage emulator stands in
+# for gs://eidos-tempo. Usage in README.md ("Cloud Run simulation").
+name: eidos-tempo-cloudrun
+
+x-instance-env: &instance-env
+  TEMPO_BUCKET: eidos-tempo
+  TEMPO_BACKUP_PREFIX: ${TEMPO_BACKUP_PREFIX:-local}
+  STORAGE_EMULATOR_HOST: http://gcs:4443
+
+services:
+  gcs:
+    image: fsouza/fake-gcs-server:1.52
+    entrypoint: ["sh", "-c", "mkdir -p /data/eidos-tempo && exec /bin/fake-gcs-server -data /data -backend filesystem -filesystem-root /storage -scheme http -port 4443 -public-host gcs:4443"]
+    volumes:
+      - gcs-storage:/storage
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NGINX_SITE: cloudrun
+    ports:
+      - "127.0.0.1:${TEMPO_SIM_PORT:-8090}:8080"
+    depends_on:
+      - gcs
+
+  db:
+    build: ./db
+    network_mode: service:web
+    environment:
+      <<: *instance-env
+      TEMPO_DB_INIT_IF_EMPTY: "true"
+      TEMPO_LEASE_GRACE_SECONDS: ${TEMPO_LEASE_GRACE_SECONDS:-5}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - run:/run/tempo
+
+  backend:
+    build: ./backend
+    command: ["./cloudrun-start.sh"]
+    network_mode: service:web
+    environment:
+      <<: *instance-env
+      TEMPO_DATABASE_URL: postgresql+psycopg://tempo@/tempo?host=/run/tempo
+      TEMPO_DURABLE_WRITES: "true"
+      TEMPO_COOKIE_SECURE: "false"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - run:/run/tempo
+
+volumes:
+  gcs-storage:
+  pgdata:
+    driver_opts: {type: tmpfs, device: tmpfs}
+  run:
+    driver_opts: {type: tmpfs, device: tmpfs}

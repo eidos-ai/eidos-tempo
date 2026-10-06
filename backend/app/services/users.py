@@ -61,6 +61,19 @@ class UserService:
         logger.info("Bootstrap admin %s created", user.email)
         return user
 
+    def promote_to_admin(self, email: EmailAddress, password: str) -> User:
+        """Command-line only: make an existing user an active admin with this password."""
+        user = self._users.get_by_email(email)
+        if user is None:
+            raise NotFoundError("User", email.value)
+        user.password_hash = self._hash_password(password)
+        user.role = Role.ADMIN
+        user.is_active = True
+        self._users.save(user)
+        self._revoke_access(user)
+        logger.info("User %s made admin from the command line", user.email)
+        return user
+
     def update_user(self, actor: User, user_id: UserId, update: UserUpdate) -> User:
         require_admin(actor)
         user = self._get(user_id)

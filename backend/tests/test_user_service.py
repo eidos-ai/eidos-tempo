@@ -2,10 +2,12 @@ from datetime import timedelta
 
 import pytest
 
+from app.domain.api_tokens import ApiToken
 from app.domain.errors import (
     AuthenticationError,
     ConflictError,
     InvalidValueError,
+    NotFoundError,
     PermissionDeniedError,
 )
 from app.domain.users import (
@@ -84,3 +86,21 @@ def test_deactivation_and_password_reset_revoke_sessions(
     user_service.update_user(admin, member.id, UserUpdate("Member", Role.MEMBER, is_active=True))
     with pytest.raises(AuthenticationError):
         auth.authenticate(token)
+
+
+def test_promote_to_admin_sets_password_and_revokes_access(
+    user_service: UserService, member: User, repositories: Repositories
+) -> None:
+    repositories.api_tokens.replace(ApiToken(member.id, "hash", member.created_at))
+
+    promoted = user_service.promote_to_admin(member.email, "new-admin-password")
+
+    assert promoted.role is Role.ADMIN
+    assert promoted.is_active
+    assert promoted.password_hash == "hashed:new-admin-password"
+    assert repositories.api_tokens.get_for_user(member.id) is None
+
+
+def test_promote_to_admin_needs_an_existing_user(user_service: UserService) -> None:
+    with pytest.raises(NotFoundError):
+        user_service.promote_to_admin(EmailAddress("nobody@eidos.ai"), "password-123")

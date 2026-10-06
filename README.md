@@ -129,6 +129,35 @@ Same requests and responses as Toggl, under `/api/toggl`:
 
 ## Deployment
 
+Production runs on Google Cloud Run (project `eidos-15111991`): one service `tempo` with three containers (nginx,
+backend, Postgres + WAL-G) and the database in memory, rebuilt from `gs://eidos-tempo` on every start. Every save
+is archived to the bucket before the response, and only the instance holding the lease (`lease/owner`) may write.
+Design: [docs/deploy-plan.md](docs/deploy-plan.md). Step by step: [docs/deploy-guide.md](docs/deploy-guide.md).
+Infrastructure: [infra/README.md](infra/README.md) (Terraform).
+
+| Task | Command |
+|---|---|
+| Deploy the current commit | `scripts/cloudrun-deploy.sh` |
+| Create a new backup set from this Mac (empty, or with `--toggl`) | `scripts/seed-bucket.sh <prefix> --admin EMAIL [--toggl]` |
+| Restore a backup set locally to inspect it (localhost:5434) | `scripts/restore-local.sh <prefix>` |
+| Switch the service to another backup set | set `backup_prefix` in `infra/terraform.tfvars`, `terraform apply` |
+
+### Cloud Run simulation
+
+`docker-compose.cloudrun.yml` runs the same three containers sharing one network namespace, with in-memory volumes
+and a Cloud Storage emulator instead of the bucket:
+
+```bash
+docker compose -f docker-compose.cloudrun.yml up -d --build      # http://127.0.0.1:8090
+docker compose -f docker-compose.cloudrun.yml exec backend python -m app.cli ensure-admin --email you@eidos.local
+docker compose -f docker-compose.cloudrun.yml exec backend python -m app.cli backup   # what the scheduler runs
+```
+
+Simulate a crash: kill `web db backend`, remove the `pgdata` and `run` volumes, `up -d` again; the database is
+restored from the emulator.
+
+### Docker Compose on a server (previous setup)
+
 First install on the server:
 
 ```bash
@@ -159,6 +188,10 @@ Backend (`backend/.env` in development):
 | `TEMPO_TEST_DATABASE_URL` | unset | Enables the Postgres integration tests |
 | `TEMPO_LOG_LEVEL` | `INFO` | Log level |
 | `TEMPO_API_TIMEZONE` | `America/Montevideo` | Timezone of days in the Toggl-compatible API |
+| `TEMPO_DURABLE_WRITES` | `false` | Cloud Run: archive each write to the bucket before responding; hold the lease |
+| `TEMPO_BUCKET` / `TEMPO_BACKUP_PREFIX` | unset | Cloud Run: backups go to `gs://<bucket>/backups/<prefix>/` |
+| `TEMPO_ARCHIVE_TIMEOUT_SECONDS` | `15` | Cloud Run: a save not archived by then returns 503 |
+| `TEMPO_BACKUP_AUDIENCE` / `TEMPO_BACKUP_CALLER_EMAIL` | unset | Cloud Run: OIDC audience and service account allowed to call `/api/internal/backup` |
 
 Server (root `.env`, see `.env.example`): database credentials, `TEMPO_DATA_DIR`, `TEMPO_HTTP_PORT`,
 `TEMPO_COOKIE_SECURE`, and the backup schedule (`BACKUP_TIME`, `BACKUP_RETENTION_DAYS`, `TZ`).

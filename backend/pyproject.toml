@@ -13,6 +13,8 @@ dependencies = [
     "pydantic-settings>=2.6",
     "argon2-cffi>=23.1",
     "reportlab>=5.0.1",
+    "google-cloud-storage>=2.18",
+    "google-auth[requests]>=2.35",
 ]
 
 [dependency-groups]
@@ -37,6 +39,11 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 [tool.mypy]
 strict = true
 plugins = ["pydantic.mypy"]
+untyped_calls_exclude = ["google"]
+
+[[tool.mypy.overrides]]
+module = ["google.cloud", "google.cloud.*"]
+ignore_missing_imports = true
 
 [tool.ruff.lint.per-file-ignores]
 "alembic/versions/*" = ["E501"]

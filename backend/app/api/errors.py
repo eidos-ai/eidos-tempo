@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
+from starlette.background import BackgroundTask
 
 from app.domain.errors import (
     AuthenticationError,
@@ -12,6 +13,8 @@ from app.domain.errors import (
     NotFoundError,
     PermissionDeniedError,
 )
+from app.durability.errors import DurabilityError, LeaseLostError
+from app.durability.runtime import Durability
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +47,19 @@ async def handle_integrity_error(request: Request, error: Exception) -> JSONResp
     )
 
 
+async def handle_durability_error(request: Request, error: Exception) -> JSONResponse:
+    logger.error("Not confirmed on %s %s: %s", request.method, request.url.path, error)
+    durability: Durability = request.app.state.durability
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": "The server could not confirm the change was saved. Try again shortly."},
+        background=(
+            BackgroundTask(durability.on_lease_lost) if isinstance(error, LeaseLostError) else None
+        ),
+    )
+
+
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(DomainError, handle_domain_error)
+    app.add_exception_handler(DurabilityError, handle_durability_error)
     app.add_exception_handler(IntegrityError, handle_integrity_error)

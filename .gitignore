@@ -11,3 +11,8 @@ __pycache__/
 .claude/settings.local.json
 toggl-snapshot*.json
 .coverage
+
+# Terraform
+infra/.terraform/
+infra/terraform.tfvars
+infra/*.tfstate*

@@ -8,11 +8,14 @@ from fastapi import Depends, Request, Response
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.session_cookie import set_session_cookie
+from app.auth.google_oidc import CallerVerifier
 from app.auth.passwords import Argon2PasswordHasher, PasswordHasher
 from app.config import Settings
 from app.domain.clock import Clock, SystemClock
 from app.domain.errors import AuthenticationError
 from app.domain.users import User
+from app.durability.backup import BackupService
+from app.durability.runtime import Durability
 from app.repositories.protocols import Repositories
 from app.repositories.sql import build_sql_repositories
 from app.services.api_tokens import ApiTokenService
@@ -36,10 +39,11 @@ def get_settings(request: Request) -> Settings:
 
 def get_repositories(request: Request) -> Iterator[Repositories]:
     session_factory: sessionmaker[Session] = request.app.state.session_factory
+    durability: Durability = request.app.state.durability
     with session_factory() as session:
         try:
             yield build_sql_repositories(session)
-            session.commit()
+            durability.committer.commit(session)
         except Exception:
             session.rollback()
             raise
@@ -183,3 +187,27 @@ def get_api_user(request: Request, api_tokens: ApiTokenServiceDep) -> User:
 
 
 ApiUser = Annotated[User, Depends(get_api_user)]
+
+
+def get_backup_service(request: Request) -> BackupService:
+    durability: Durability = request.app.state.durability
+    if durability.backups is None:
+        raise AuthenticationError("Backups are not configured on this server")
+    return durability.backups
+
+
+def get_backup_caller_verifier(request: Request) -> CallerVerifier:
+    verifier: CallerVerifier | None = request.app.state.backup_caller_verifier
+    if verifier is None:
+        raise AuthenticationError("Backups are not configured on this server")
+    return verifier
+
+
+def require_backup_caller(
+    request: Request, verifier: Annotated[CallerVerifier, Depends(get_backup_caller_verifier)]
+) -> None:
+    verifier.verify(request.headers.get("Authorization", ""))
+
+
+BackupCaller = Annotated[None, Depends(require_backup_caller)]
+BackupServiceDep = Annotated[BackupService, Depends(get_backup_service)]

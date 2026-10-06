@@ -9,6 +9,8 @@ PUBLIC_ROUTES = {
     ("POST", "/api/auth/login"),
     ("POST", "/api/auth/logout"),
     ("GET", "/api/health"),
+    # Authenticated by a Google OIDC token from the tempo-scheduler service account, not a session.
+    ("POST", "/api/internal/backup"),
 }
 MEMBER_ROUTES = {
     ("GET", "/api/me"),

@@ -20,6 +20,7 @@ from app.domain.tags import Tag
 from app.domain.time_entries import TimeEntry
 from app.domain.users import Role, User
 from app.domain.value_objects import DateRange, EmailAddress, HexColor
+from app.durability.commit import PostgresWalArchive
 from app.repositories.protocols import Repositories
 from app.repositories.sql import build_sql_repositories
 
@@ -311,3 +312,20 @@ def test_api_token_is_replaced_and_found_by_hash(sql_repositories: Repositories)
     assert tokens.get_by_hash("new-hash") == ApiToken(user.id, "new-hash", NOW)
     tokens.delete_for_user(user.id)
     assert tokens.get_for_user(user.id) is None
+
+
+def test_wal_archive_sees_writes_and_closes_segments(
+    session: Session, sql_repositories: Repositories
+) -> None:
+    wal = PostgresWalArchive()
+    assert not wal.has_written(session)
+    session.rollback()
+
+    make_user(sql_repositories)
+    session.flush()
+    assert wal.has_written(session)
+    session.commit()
+
+    segment = wal.close_segment(session)
+    assert len(segment) == 24
+    assert int(segment, 16) > 0
