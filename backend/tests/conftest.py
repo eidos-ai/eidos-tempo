@@ -33,6 +33,7 @@ def user_service(repositories: Repositories, clock: FakeClock) -> UserService:
     return UserService(
         users=repositories.users,
         sessions=repositories.sessions,
+        api_tokens=repositories.api_tokens,
         hasher=FakePasswordHasher(),
         clock=clock,
     )
@@ -107,7 +108,9 @@ def api_client(api_clock: FakeClock) -> Iterator[TestClient]:
     repositories = build_in_memory_repositories()
     clock = api_clock
     hasher = FakePasswordHasher()
-    UserService(repositories.users, repositories.sessions, hasher, clock).bootstrap_admin(
+    UserService(
+        repositories.users, repositories.sessions, repositories.api_tokens, hasher, clock
+    ).bootstrap_admin(
         NewUser(EmailAddress("admin@eidos.ai"), "Admin", "admin-password", Role.ADMIN)
     )
     app.dependency_overrides[get_repositories] = lambda: repositories

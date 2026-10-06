@@ -1,5 +1,7 @@
 import { http } from './client'
 import type {
+  ApiToken,
+  IssuedApiToken,
   Client,
   EntrySuggestion,
   ClientInput,
@@ -28,6 +30,9 @@ export const authApi = {
 export const meApi = {
   get: () => http.get<User>('/me'),
   updatePreferences: (preferences: Preferences) => http.put<User>('/me/preferences', preferences),
+  apiToken: () => http.get<ApiToken | null>('/me/api-token'),
+  issueApiToken: () => http.post<IssuedApiToken>('/me/api-token'),
+  revokeApiToken: () => http.delete('/me/api-token'),
   changePassword: (currentPassword: string, newPassword: string) =>
     http.put<void>('/me/password', {
       current_password: currentPassword,

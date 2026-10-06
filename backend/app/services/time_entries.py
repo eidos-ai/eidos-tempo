@@ -141,6 +141,9 @@ class TimeEntryService:
         log_if_on_behalf(actor, entry, "updated")
         return entry
 
+    def get_editable_entry(self, actor: User, entry_id: TimeEntryId) -> TimeEntry:
+        return self._get_editable(actor, entry_id)
+
     def delete_entry(self, actor: User, entry_id: TimeEntryId) -> None:
         entry = self._get_editable(actor, entry_id)
         entry.deleted_at = self._clock.now()

@@ -1,9 +1,12 @@
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
+from app.domain.api_tokens import ApiToken
 from app.domain.clients import Client
 from app.domain.ids import ClientId, ProjectId, TagId, TimeEntryId, UserId
 from app.domain.import_links import ImportedEntity, ImportLink, ImportSource
+from app.domain.numeric_ids import FIRST_TEMPO_NUMBER, NumberedEntity
 from app.domain.projects import Project
 from app.domain.reports import ReportFilter
 from app.domain.sessions import AuthSession
@@ -78,6 +81,41 @@ class InMemorySessionRepository:
 
     def delete_for_user(self, user_id: UserId) -> None:
         self.items = {k: s for k, s in self.items.items() if s.user_id != user_id}
+
+
+class InMemoryApiTokenRepository:
+    def __init__(self) -> None:
+        self.items: dict[UserId, ApiToken] = {}
+
+    def get_by_hash(self, token_hash: str) -> ApiToken | None:
+        return next((t for t in self.items.values() if t.token_hash == token_hash), None)
+
+    def get_for_user(self, user_id: UserId) -> ApiToken | None:
+        return self.items.get(user_id)
+
+    def replace(self, token: ApiToken) -> None:
+        self.items[token.user_id] = token
+
+    def delete_for_user(self, user_id: UserId) -> None:
+        self.items.pop(user_id, None)
+
+
+class InMemoryNumericIdRepository:
+    def __init__(self) -> None:
+        self.items: dict[tuple[NumberedEntity, UUID], int] = {}
+        self._next = FIRST_TEMPO_NUMBER
+
+    def numbers_for(self, entity: NumberedEntity, internal_ids: set[UUID]) -> dict[UUID, int]:
+        for internal_id in sorted(internal_ids - {i for e, i in self.items if e is entity}):
+            self.items[(entity, internal_id)] = self._next
+            self._next += 1
+        return {i: self.items[(entity, i)] for i in internal_ids}
+
+    def internal_id(self, entity: NumberedEntity, number: int) -> UUID | None:
+        return next((i for (e, i), n in self.items.items() if e is entity and n == number), None)
+
+    def keep(self, entity: NumberedEntity, internal_id: UUID, number: int) -> None:
+        self.items.setdefault((entity, internal_id), number)
 
 
 class InMemoryClientRepository:
@@ -239,4 +277,6 @@ def build_in_memory_repositories() -> Repositories:
         tags=InMemoryTagRepository(),
         time_entries=InMemoryTimeEntryRepository(projects),
         import_links=InMemoryImportLinkRepository(),
+        api_tokens=InMemoryApiTokenRepository(),
+        numeric_ids=InMemoryNumericIdRepository(),
     )

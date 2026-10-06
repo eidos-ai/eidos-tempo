@@ -11,6 +11,7 @@ Internal time tracker for Eidos. FastAPI + PostgreSQL backend, React frontend, D
 - **Suggestions** from your previous entries and projects while typing a description.
 - **Admin**: members, clients, billable projects and tags; archive instead of delete.
 - **Chrome extension** to start/stop and edit the timer from the toolbar.
+- **API tokens** (Profile page) and a **Toggl-compatible API** so scripts written for Toggl keep working.
 - **Data safety**: members only see their own time (admins see everyone's in reports), soft deletes, daily backups.
 
 Verified behavior: [docs/qa-checklist.md](docs/qa-checklist.md). Agent guide and architecture rules: [CLAUDE.md](CLAUDE.md).
@@ -101,6 +102,31 @@ docker compose exec -e TEMPO_TOGGL_API_TOKEN -e TEMPO_TOGGL_WORKSPACE_ID=<worksp
   python -m scripts.import_toggl --admin admin@eidos.ai --dry-run
 ```
 
+## API for scripts (Toggl-compatible)
+
+Each user can create a personal API token on the Profile page. Scripts send it like a Toggl token:
+HTTP Basic auth with `<token>:api_token`. A token acts as its user (members only see their own entries) and is
+revoked when an admin resets that user's password or deactivates them.
+
+Same requests and responses as Toggl, under `/api/toggl`:
+
+| Tempo | Toggl equivalent |
+|---|---|
+| `GET /api/toggl/me` | `GET /api/v9/me` |
+| `GET /api/toggl/projects` | `GET /api/v9/workspaces/{ws}/projects` |
+| `GET /api/toggl/users` | `GET /api/v9/workspaces/{ws}/users` |
+| `PUT /api/toggl/time_entries/{id}` | `PUT /api/v9/workspaces/{ws}/time_entries/{id}` |
+| `GET /api/toggl/reports/details` | `GET /reports/api/v2/details` |
+| `GET /api/toggl/reports/summary` | `GET /reports/api/v2/summary` |
+| `GET /api/toggl/reports/summary.pdf` | `GET /reports/api/v2/summary.pdf` |
+| `GET /api/toggl/reports/details.pdf` | `GET /reports/api/v2/details.pdf` |
+
+- Ids are integers: data imported from Toggl keeps its Toggl ids; anything created in Tempo gets ids from
+  10,000,000,000 up, so they never collide with old Toggl ids.
+- `since`/`until` are days in `TEMPO_API_TIMEZONE` (default `America/Montevideo`); `timezone=` overrides it.
+- There's a single workspace: any `workspace_id` is accepted. Tasks, rates and currencies don't exist (null/empty).
+- Moving a Toggl script: change the URLs as in the table and use a Tempo token as the Toggl token.
+
 ## Deployment
 
 First install on the server:
@@ -132,6 +158,7 @@ Backend (`backend/.env` in development):
 | `TEMPO_ENABLE_API_DOCS` | `false` | Serve `/api/docs` |
 | `TEMPO_TEST_DATABASE_URL` | unset | Enables the Postgres integration tests |
 | `TEMPO_LOG_LEVEL` | `INFO` | Log level |
+| `TEMPO_API_TIMEZONE` | `America/Montevideo` | Timezone of days in the Toggl-compatible API |
 
 Server (root `.env`, see `.env.example`): database credentials, `TEMPO_DATA_DIR`, `TEMPO_HTTP_PORT`,
 `TEMPO_COOKIE_SECURE`, and the backup schedule (`BACKUP_TIME`, `BACKUP_RETENTION_DAYS`, `TZ`).

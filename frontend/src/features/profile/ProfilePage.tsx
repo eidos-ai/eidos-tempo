@@ -5,6 +5,7 @@ import { Button } from '../../components/Button'
 import { ErrorMessage, Field, TextInput } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { useCurrentUser } from '../auth/useAuth'
+import { ApiTokenCard } from './ApiTokenCard'
 
 export function ProfilePage() {
   const user = useCurrentUser()
@@ -26,7 +27,7 @@ export function ProfilePage() {
   return (
     <>
       <PageHeader title="Profile" />
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 space-y-6 overflow-y-auto p-8">
         <div className="max-w-md space-y-6 rounded-xl border border-line bg-surface p-6">
           <div>
             <p className="font-display text-lg font-bold">{user.full_name}</p>
@@ -48,6 +49,7 @@ export function ProfilePage() {
             </Button>
           </form>
         </div>
+        <ApiTokenCard />
       </div>
     </>
   )

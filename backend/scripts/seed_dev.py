@@ -44,7 +44,11 @@ def seed() -> None:
     with session_factory.begin() as session:
         repositories = build_sql_repositories(session)
         users = UserService(
-            repositories.users, repositories.sessions, Argon2PasswordHasher(), clock
+            repositories.users,
+            repositories.sessions,
+            repositories.api_tokens,
+            Argon2PasswordHasher(),
+            clock,
         )
         if repositories.users.list_all():
             ensure_dev_member(repositories, users)

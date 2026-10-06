@@ -1,5 +1,6 @@
 export const queryKeys = {
   me: ['me'] as const,
+  apiToken: ['me', 'api-token'] as const,
   users: ['users'] as const,
   clients: ['clients'] as const,
   projects: ['projects'] as const,

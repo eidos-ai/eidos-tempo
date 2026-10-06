@@ -9,8 +9,10 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
 from app.db.models import Base
+from app.domain.api_tokens import ApiToken
 from app.domain.clients import Client
 from app.domain.ids import ClientId, ProjectId, TagId, TimeEntryId, UserId, new_uuid
+from app.domain.numeric_ids import FIRST_TEMPO_NUMBER, NumberedEntity
 from app.domain.projects import Project
 from app.domain.reports import Choice, ReportFilter
 from app.domain.sessions import AuthSession
@@ -281,3 +283,31 @@ def test_report_query_applies_every_filter(sql_repositories: Repositories) -> No
     assert ids(replace(everything, is_billable=False)) == [unassigned.id]
     assert ids(replace(everything, description="100%")) == [matching.id]
     assert ids(replace(everything, users=Choice((UserId(new_uuid()),)))) == []
+
+
+def test_numeric_ids_keep_toggl_numbers_and_allocate_new_ones(
+    sql_repositories: Repositories,
+) -> None:
+    numbers = sql_repositories.numeric_ids
+    imported, created = new_uuid(), new_uuid()
+    numbers.keep(NumberedEntity.TIME_ENTRY, imported, 4_542_321_181)
+
+    first = numbers.numbers_for(NumberedEntity.TIME_ENTRY, {imported, created})
+
+    assert first[imported] == 4_542_321_181
+    assert first[created] >= FIRST_TEMPO_NUMBER
+    assert numbers.numbers_for(NumberedEntity.TIME_ENTRY, {created}) == {created: first[created]}
+    assert numbers.internal_id(NumberedEntity.TIME_ENTRY, first[created]) == created
+    assert numbers.internal_id(NumberedEntity.PROJECT, first[created]) is None
+
+
+def test_api_token_is_replaced_and_found_by_hash(sql_repositories: Repositories) -> None:
+    user = make_user(sql_repositories)
+    tokens = sql_repositories.api_tokens
+    tokens.replace(ApiToken(user.id, "old-hash", NOW))
+    tokens.replace(ApiToken(user.id, "new-hash", NOW))
+
+    assert tokens.get_by_hash("old-hash") is None
+    assert tokens.get_by_hash("new-hash") == ApiToken(user.id, "new-hash", NOW)
+    tokens.delete_for_user(user.id)
+    assert tokens.get_for_user(user.id) is None

@@ -10,6 +10,7 @@ from app.domain.clock import Clock
 from app.domain.errors import InvalidValueError
 from app.domain.ids import ClientId, ProjectId, TagId, TimeEntryId, UserId
 from app.domain.import_links import ImportedEntity, ImportLink, ImportSource
+from app.domain.numeric_ids import NumberedEntity
 from app.domain.users import Role, User
 from app.domain.value_objects import EmailAddress, HexColor
 from app.importers.toggl_api import TogglSnapshot, TogglTimeEntry, TogglUser
@@ -64,7 +65,9 @@ class TogglImporter:
         self._repositories = repositories
         self._clock = clock
         self._admin_emails = admin_emails
-        self._users = UserService(repositories.users, repositories.sessions, hasher, clock)
+        self._users = UserService(
+            repositories.users, repositories.sessions, repositories.api_tokens, hasher, clock
+        )
         self._clients = ClientService(repositories.clients, clock)
         self._projects = ProjectService(repositories.projects, repositories.clients, clock)
         self._tags = TagService(repositories.tags, clock)
@@ -333,3 +336,4 @@ class TogglImporter:
                 source=SOURCE, entity=entity, external_id=str(external_id), internal_id=internal_id
             )
         )
+        self._repositories.numeric_ids.keep(NumberedEntity(entity.value), internal_id, external_id)

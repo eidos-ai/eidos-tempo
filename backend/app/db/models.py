@@ -2,19 +2,24 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
+    BigInteger,
     Column,
     DateTime,
     ForeignKey,
     Index,
     MetaData,
+    Sequence,
     SmallInteger,
     String,
     Table,
+    UniqueConstraint,
     false,
     func,
     text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+from app.domain.numeric_ids import FIRST_TEMPO_NUMBER
 
 NAMING_CONVENTION = {
     "ix": "ix_%(column_0_label)s",
@@ -52,6 +57,16 @@ class AuthSessionRow(Base):
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class ApiTokenRow(Base):
+    __tablename__ = "api_tokens"
+
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class ClientRow(Base):
@@ -131,4 +146,18 @@ class ImportLinkRow(Base):
     source: Mapped[str] = mapped_column(String(20), primary_key=True)
     entity: Mapped[str] = mapped_column(String(20), primary_key=True)
     external_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    internal_id: Mapped[UUID]
+
+
+numeric_id_sequence = Sequence("numeric_id_seq", start=FIRST_TEMPO_NUMBER, metadata=Base.metadata)
+
+
+class NumericIdRow(Base):
+    __tablename__ = "numeric_ids"
+    __table_args__ = (UniqueConstraint("entity", "internal_id"),)
+
+    entity: Mapped[str] = mapped_column(String(20), primary_key=True)
+    number: Mapped[int] = mapped_column(
+        BigInteger, primary_key=True, server_default=numeric_id_sequence.next_value()
+    )
     internal_id: Mapped[UUID]

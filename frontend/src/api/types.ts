@@ -154,3 +154,11 @@ export interface SummaryReport {
 }
 
 export type ReportKind = 'summary' | 'detailed'
+
+export interface ApiToken {
+  created_at: string
+}
+
+export interface IssuedApiToken extends ApiToken {
+  token: string
+}

@@ -6,7 +6,6 @@ Guide for agents working in this repository. Read README.md for setup, configura
 
 Eidos Tempo is Eidos' internal replacement for Toggl: the team tracks time daily, admins manage
 members, clients and billable projects. Time entries are billing records, so **never lose data**.
-Planned next: personal API tokens.
 Not set up yet: HTTPS in front of the app, and CI/CD (images are built on the server by `scripts/deploy.sh`).
 
 ## Commands
@@ -62,6 +61,16 @@ Dependencies point inward only: `api → services → repositories (protocols) �
 Toggl's Summary and Detailed reports: filter by member, client, project, tag, billable and description; running
 and deleted entries are left out; days are grouped in the browser's timezone. PDFs are drawn with reportlab in
 `app/exports/report_pdf.py`. The frontend keeps report filters in the URL (`features/reports/reportFilters.ts`).
+
+### API tokens and the Toggl-compatible API
+
+Personal API tokens (`services/api_tokens.py`, hashed in `api_tokens`, one per user, managed on the Profile page)
+authenticate only the `/api/toggl/*` routes (`ApiUser` in `api/deps.py`: HTTP Basic `<token>:api_token`); every other
+route needs the session cookie. `/api/toggl/*` (`services/toggl_compat.py`, `api/schemas/toggl.py`) copies Toggl's v9 and
+Reports v2 shapes so Eidos scripts written for Toggl keep working: integer ids from `numeric_ids` (Toggl ids kept from the
+import, new ids from 10,000,000,000), `dur` in ms, days in `TEMPO_API_TIMEZONE`, details oldest first in pages of 50, partial
+`PUT`s merged onto the entry before the normal full-replacement update. Verified against the real Toggl API; when changing
+these shapes, compare with Toggl again.
 
 ## Frontend architecture (`frontend/src`)
 
@@ -121,13 +130,13 @@ and deleted entries are left out; days are grouped in the browser's timezone. PD
 - `RepositoriesDep` uses `scope="function"` so the transaction commits before the response is sent;
   keep it, or a failed commit returns 200 and the change is silently lost.
 - Sessions slide: `AuthService.authenticate` extends them (at most once a day) and `get_current_user`
-  re-sends the cookie. Password resets and deactivation must revoke the user's sessions.
+  re-sends the cookie. Password resets and deactivation must revoke the user's sessions and API token.
 - Never commit `.env` files; secrets go only in `.env`.
 
 ## Security rules (the server has a public IP)
 
-- Every new route must be added to exactly one of `PUBLIC_ROUTES`, `MEMBER_ROUTES` or `ADMIN_ROUTES`
-  in `tests/test_endpoint_protection.py`; the test fails otherwise. Public routes need a strong reason.
+- Every new route must be added to exactly one of `PUBLIC_ROUTES`, `MEMBER_ROUTES`, `ADMIN_ROUTES` or
+  `API_TOKEN_ROUTES` in `tests/test_endpoint_protection.py`; the test fails otherwise. Public routes need a strong reason.
 - Protected routes take `CurrentUser`; admin rules are enforced in services with `require_admin`.
 - Members may only see and touch their own time entries; return 404 (not 403) for other users' entries.
   Admins may edit and delete anyone's entries (Detailed report); `TimeEntryService` logs each change made on

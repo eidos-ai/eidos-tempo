@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     cookie_secure: bool = True
     log_level: str = "INFO"
     enable_api_docs: bool = False
+    api_timezone: str = "America/Montevideo"
 
 
 @lru_cache

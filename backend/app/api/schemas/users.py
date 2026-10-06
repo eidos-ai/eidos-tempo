@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.domain.api_tokens import ApiToken
 from app.domain.users import (
     CalendarZoom,
     DaysShown,
@@ -12,6 +13,7 @@ from app.domain.users import (
     User,
     UserPreferences,
 )
+from app.services.api_tokens import IssuedApiToken
 
 
 class PreferencesSchema(BaseModel):
@@ -85,3 +87,20 @@ class PasswordChangeIn(BaseModel):
 
 class PasswordResetIn(BaseModel):
     new_password: str
+
+
+class ApiTokenOut(BaseModel):
+    created_at: datetime
+
+    @classmethod
+    def from_domain(cls, token: ApiToken) -> "ApiTokenOut":
+        return cls(created_at=token.created_at)
+
+
+class IssuedApiTokenOut(BaseModel):
+    token: str
+    created_at: datetime
+
+    @classmethod
+    def from_domain(cls, issued: IssuedApiToken) -> "IssuedApiTokenOut":
+        return cls(token=issued.token, created_at=issued.created_at)

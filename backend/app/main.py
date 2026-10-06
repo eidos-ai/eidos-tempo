@@ -1,7 +1,17 @@
 from fastapi import APIRouter, FastAPI
 
 from app.api.errors import register_error_handlers
-from app.api.routes import auth, clients, me, projects, reports, tags, time_entries, users
+from app.api.routes import (
+    auth,
+    clients,
+    me,
+    projects,
+    reports,
+    tags,
+    time_entries,
+    toggl,
+    users,
+)
 from app.config import Settings, get_settings
 from app.db.session import create_session_factory
 from app.logging_config import configure_logging
@@ -22,7 +32,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_error_handlers(app)
 
     api = APIRouter(prefix="/api")
-    for module in (auth, me, users, clients, projects, tags, time_entries, reports):
+    for module in (auth, me, users, clients, projects, tags, time_entries, reports, toggl):
         api.include_router(module.router)
     api.add_api_route("/health", health, methods=["GET"], tags=["health"])
     app.include_router(api)

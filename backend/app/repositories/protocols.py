@@ -1,10 +1,13 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
+from uuid import UUID
 
+from app.domain.api_tokens import ApiToken
 from app.domain.clients import Client
 from app.domain.ids import ClientId, ProjectId, TagId, TimeEntryId, UserId
 from app.domain.import_links import ImportedEntity, ImportLink, ImportSource
+from app.domain.numeric_ids import NumberedEntity
 from app.domain.projects import Project
 from app.domain.reports import ReportFilter
 from app.domain.sessions import AuthSession
@@ -29,6 +32,22 @@ class SessionRepository(Protocol):
     def delete(self, token_hash: str) -> None: ...
     def delete_for_user(self, user_id: UserId) -> None: ...
     def delete_expired(self, now: datetime) -> None: ...
+
+
+class ApiTokenRepository(Protocol):
+    def get_by_hash(self, token_hash: str) -> ApiToken | None: ...
+    def get_for_user(self, user_id: UserId) -> ApiToken | None: ...
+    def replace(self, token: ApiToken) -> None: ...
+    def delete_for_user(self, user_id: UserId) -> None: ...
+
+
+class NumericIdRepository(Protocol):
+    def numbers_for(self, entity: NumberedEntity, internal_ids: set[UUID]) -> dict[UUID, int]:
+        """Numbers for these ids, allocating new ones for ids that have none yet."""
+        ...
+
+    def internal_id(self, entity: NumberedEntity, number: int) -> UUID | None: ...
+    def keep(self, entity: NumberedEntity, internal_id: UUID, number: int) -> None: ...
 
 
 class ClientRepository(Protocol):
@@ -82,3 +101,5 @@ class Repositories:
     tags: TagRepository
     time_entries: TimeEntryRepository
     import_links: ImportLinkRepository
+    api_tokens: ApiTokenRepository
+    numeric_ids: NumericIdRepository

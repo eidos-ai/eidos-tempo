@@ -31,6 +31,19 @@ MEMBER_ROUTES = {
     ("GET", "/api/reports/entries"),
     ("GET", "/api/reports/summary.pdf"),
     ("GET", "/api/reports/detailed.pdf"),
+    ("GET", "/api/me/api-token"),
+    ("POST", "/api/me/api-token"),
+    ("DELETE", "/api/me/api-token"),
+}
+API_TOKEN_ROUTES = {
+    ("GET", "/api/toggl/me"),
+    ("GET", "/api/toggl/users"),
+    ("GET", "/api/toggl/projects"),
+    ("PUT", "/api/toggl/time_entries/{entry_id}"),
+    ("GET", "/api/toggl/reports/details"),
+    ("GET", "/api/toggl/reports/summary"),
+    ("GET", "/api/toggl/reports/summary.pdf"),
+    ("GET", "/api/toggl/reports/details.pdf"),
 }
 ADMIN_ROUTES = {
     ("GET", "/api/users"),
@@ -89,17 +102,17 @@ def call(client: TestClient, method: str, path: str) -> int:
 
 
 def test_every_route_is_classified() -> None:
-    assert registered_routes() == PUBLIC_ROUTES | MEMBER_ROUTES | ADMIN_ROUTES
+    assert registered_routes() == PUBLIC_ROUTES | MEMBER_ROUTES | ADMIN_ROUTES | API_TOKEN_ROUTES
 
 
 def test_anonymous_requests_are_rejected(api_client: TestClient) -> None:
-    for method, path in MEMBER_ROUTES | ADMIN_ROUTES:
+    for method, path in MEMBER_ROUTES | ADMIN_ROUTES | API_TOKEN_ROUTES:
         assert call(api_client, method, path) == 401, (method, path)
 
 
 def test_forged_session_cookie_is_rejected(api_client: TestClient) -> None:
     api_client.cookies.set("tempo_session", "forged-token")
-    for method, path in MEMBER_ROUTES | ADMIN_ROUTES:
+    for method, path in MEMBER_ROUTES | ADMIN_ROUTES | API_TOKEN_ROUTES:
         assert call(api_client, method, path) == 401, (method, path)
 
 
@@ -127,3 +140,17 @@ def test_members_cannot_use_admin_routes(api_client: TestClient) -> None:
 def test_api_docs_are_disabled_by_default(api_client: TestClient) -> None:
     for path in ("/api/docs", "/api/openapi.json", "/redoc", "/docs"):
         assert api_client.get(path).status_code == 404, path
+
+
+def test_toggl_routes_need_an_api_token_not_a_session(api_client: TestClient) -> None:
+    api_client.post(
+        "/api/auth/login", json={"email": "admin@eidos.ai", "password": "admin-password"}
+    )
+    for method, path in API_TOKEN_ROUTES:
+        assert call(api_client, method, path) == 401, (method, path)
+
+
+def test_forged_api_token_is_rejected(api_client: TestClient) -> None:
+    api_client.auth = ("forged-token", "api_token")
+    for method, path in API_TOKEN_ROUTES:
+        assert call(api_client, method, path) == 401, (method, path)

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from app.domain.errors import ConflictError, InvalidValueError
@@ -17,6 +17,7 @@ class TimeEntry:
     is_billable: bool = False
     tag_ids: tuple[TagId, ...] = ()
     deleted_at: datetime | None = None
+    updated_at: datetime | None = field(default=None, compare=False)
 
     def __post_init__(self) -> None:
         ensure_valid_period(self.start, self.stop)

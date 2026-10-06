@@ -224,6 +224,17 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Admins edit members' entries from Detailed; the member sees the change with tags kept
 - [x] Light and dark themes
 
+## 20. API tokens and Toggl-compatible API
+- [x] Profile: generate shows the token once with Copy; regenerate replaces it; revoke removes it (UI)
+- [x] Old token stops working after regenerate/revoke; password reset and deactivation revoke it
+- [x] `/api/toggl/*` rejects no token, a forged token and a session cookie (401); other routes ignore tokens
+- [x] Marcelo's `TogglAPI` (`details`, `list_projects`, `summary`) run unchanged against Tempo and Toggl for Sep 1–15:
+      same 85 entries, every field equal, same order, same totals
+- [x] Invoice PDF recipe (`project_ids`, `billable=yes`, users/time_entries, date ascending) returns both PDFs
+- [x] Mongo sync code (`toggl_app.py`) works in both modes (since date, since last id)
+- [x] Partial PUT: stretch by `duration`, change/remove project, add tags; unknown id 404; members can't edit others'
+- [x] Days follow America/Montevideo (an entry at 23:30 local belongs to that day, not the next UTC day)
+
 ## Known follow-ups (not bugs, not blocking v1)
 - After login you always land on Timer, not the page you originally requested.
 - A calendar block split at midnight shows the whole entry's duration, not the part on that day.

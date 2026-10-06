@@ -53,7 +53,13 @@ def load_snapshot(since: date, cache: Path | None) -> TogglSnapshot:
 
 def set_password(repositories: Repositories, email: EmailAddress, password: str) -> None:
     hasher = Argon2PasswordHasher()
-    users = UserService(repositories.users, repositories.sessions, hasher, SystemClock())
+    users = UserService(
+        repositories.users,
+        repositories.sessions,
+        repositories.api_tokens,
+        hasher,
+        SystemClock(),
+    )
     target = repositories.users.get_by_email(email)
     if target is None:
         raise SystemExit(f"--set-password: no user with email {email}")

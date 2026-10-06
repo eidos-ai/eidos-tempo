@@ -26,6 +26,7 @@ def create_admin(email: str, full_name: str) -> None:
         service = UserService(
             users=repositories.users,
             sessions=repositories.sessions,
+            api_tokens=repositories.api_tokens,
             hasher=Argon2PasswordHasher(),
             clock=SystemClock(),
         )

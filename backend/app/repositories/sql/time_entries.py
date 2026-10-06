@@ -170,6 +170,7 @@ def to_time_entry(row: TimeEntryRow) -> TimeEntry:
         is_billable=row.is_billable,
         tag_ids=tuple(TagId(tag.id) for tag in row.tags),
         deleted_at=row.deleted_at,
+        updated_at=row.updated_at,
     )
 
 

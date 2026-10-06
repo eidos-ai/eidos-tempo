@@ -7,7 +7,7 @@ from app.domain.errors import AuthenticationError, ConflictError, InvalidValueEr
 from app.domain.ids import UserId, new_uuid
 from app.domain.users import Role, User, UserPreferences
 from app.domain.value_objects import EmailAddress, require_text
-from app.repositories.protocols import SessionRepository, UserRepository
+from app.repositories.protocols import ApiTokenRepository, SessionRepository, UserRepository
 from app.services.permissions import require_admin
 
 logger = logging.getLogger(__name__)
@@ -36,11 +36,13 @@ class UserService:
         self,
         users: UserRepository,
         sessions: SessionRepository,
+        api_tokens: ApiTokenRepository,
         hasher: PasswordHasher,
         clock: Clock,
     ) -> None:
         self._users = users
         self._sessions = sessions
+        self._api_tokens = api_tokens
         self._hasher = hasher
         self._clock = clock
 
@@ -69,7 +71,7 @@ class UserService:
         user.is_active = update.is_active
         self._users.save(user)
         if not user.is_active:
-            self._sessions.delete_for_user(user.id)
+            self._revoke_access(user)
             logger.info("User %s deactivated by %s", user.email, actor.email)
         return user
 
@@ -78,7 +80,7 @@ class UserService:
         user = self._get(user_id)
         user.password_hash = self._hash_password(new_password)
         self._users.save(user)
-        self._sessions.delete_for_user(user.id)
+        self._revoke_access(user)
         logger.info("Password of %s reset by %s", user.email, actor.email)
 
     def change_own_password(self, actor: User, current_password: str, new_password: str) -> None:
@@ -105,6 +107,10 @@ class UserService:
         )
         self._users.add(user)
         return user
+
+    def _revoke_access(self, user: User) -> None:
+        self._sessions.delete_for_user(user.id)
+        self._api_tokens.delete_for_user(user.id)
 
     def _get(self, user_id: UserId) -> User:
         user = self._users.get(user_id)
