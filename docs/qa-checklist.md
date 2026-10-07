@@ -213,6 +213,14 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Stop with the server unreachable: "Stopping the timer was not saved…", timer keeps running, icon shows `!`
 - [x] Stop, then the entry appears under Today with the day total; ▶ continue starts it again
 - [x] Follows the user's light/dark theme; logo readable in both
+- [x] Layout follows Toggl's popup (450×600): eidos.ai wordmark header with open, refresh and settings; description, timer and stop on one row; Today and Week totals; flat day sections; same tokens and fonts as the web app
+- [x] Long running descriptions fit (16 px) and end in "…" when too long
+- [x] Timer tags: search, toggle, create a new tag with Enter; chips shown next to the project; a failed create keeps the typed name
+- [x] Timer billable $ is a toggle; choosing a project resets it to the project's default
+- [x] Same description, project and billable on one day are grouped with a count badge; ▶ continues the latest
+- [x] Past entries: description editable inline with suggestions (picks description + project), project picker, "+ Add project"; a grouped row updates all its entries; tags and billable are kept
+- [x] Failed edit on a past entry: "Updating the entry was not saved…", the typed value stays; requests are sent in order so quick edits don't overwrite each other
+- [x] Dropdowns near the bottom of the list scroll into view
 
 ## 19. Reports
 - [x] Summary for September matches Toggl: everyone 652:43:46 total, 282:33:31 billable (43.29%), 29.67 h daily average; one member 121:26:45, 4:54:49 (4.05%), 5.52
