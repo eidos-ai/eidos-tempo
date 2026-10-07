@@ -115,7 +115,7 @@ export function DescriptionInput(props: DescriptionInputProps) {
         role="combobox"
         aria-expanded={showList}
         aria-label="Description"
-        className="h-10 w-full bg-transparent text-base outline-none placeholder:text-muted"
+        className="h-11 w-full bg-transparent text-lg outline-none placeholder:text-muted"
         onChange={(event) => {
           onChange(event.target.value)
           setIsOpen(true)

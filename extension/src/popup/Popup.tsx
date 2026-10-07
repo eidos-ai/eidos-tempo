@@ -25,10 +25,11 @@ export function Popup() {
   }, [data])
 
   return (
-    <div className="flex h-[540px] w-[400px] flex-col">
-      <header className="flex items-center gap-2 border-b border-line bg-canvas px-4 py-2">
-        <span className="logo size-5" aria-hidden="true" />
-        <span className="flex-1 font-display font-semibold">Eidos Tempo</span>
+    <div className="flex h-[540px] w-[400px] flex-col bg-canvas">
+      <header className="flex h-12 shrink-0 items-center gap-1 border-b border-line bg-surface pr-2 pl-4">
+        <span role="img" aria-label="eidos.ai" className="wordmark h-[18px]" />
+        <span className="mx-2.5 h-4 w-px bg-line-strong" aria-hidden="true" />
+        <span className="flex-1 font-display text-[15px] font-medium text-ink-soft">Tempo</span>
         <HeaderButton label="Open Eidos Tempo" onClick={() => void openTempo()}>
           <ExternalIcon width={16} height={16} />
         </HeaderButton>
@@ -37,7 +38,11 @@ export function Popup() {
         </HeaderButton>
       </header>
 
-      {tempo.status === 'loading' && <p className="px-4 py-10 text-center text-sm text-muted">Loading…</p>}
+      {tempo.status === 'loading' && (
+        <div className="flex flex-1 items-center justify-center" role="status" aria-label="Loading">
+          <span className="size-6 animate-spin rounded-full border-2 border-line-strong border-t-primary" />
+        </div>
+      )}
 
       {tempo.status === 'signed-out' && tempo.problem && (
         <SignedOut problem={tempo.problem} onRetry={tempo.reload} />
@@ -90,7 +95,7 @@ function HeaderButton({ label, onClick, children }: { label: string; onClick: ()
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="rounded-md p-1.5 text-ink-soft hover:bg-surface hover:text-ink"
+      className="rounded-lg p-2 text-muted hover:bg-canvas hover:text-ink"
     >
       {children}
     </button>
@@ -101,7 +106,7 @@ function SignedOut({ problem, onRetry }: { problem: ApiError; onRetry: () => voi
   const isLoggedOut = problem.kind === 'not-logged-in'
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
-      <span className="logo size-14" aria-hidden="true" />
+      <span role="img" aria-label="eidos.ai" className="wordmark h-8" />
       <p className="text-sm text-ink-soft">
         {isLoggedOut ? 'Log in to Eidos Tempo in this browser to start tracking time here.' : problem.message}
       </p>
@@ -109,7 +114,7 @@ function SignedOut({ problem, onRetry }: { problem: ApiError; onRetry: () => voi
         <button
           type="button"
           onClick={() => void openTempo()}
-          className="h-10 rounded-lg bg-primary px-5 font-semibold text-white hover:bg-primary-strong"
+          className="h-10 rounded-lg bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-strong"
         >
           Log in to Eidos Tempo
         </button>
@@ -118,14 +123,14 @@ function SignedOut({ problem, onRetry }: { problem: ApiError; onRetry: () => voi
           <button
             type="button"
             onClick={onRetry}
-            className="h-10 rounded-lg bg-primary px-5 font-semibold text-white hover:bg-primary-strong"
+            className="h-10 rounded-lg bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-strong"
           >
             Try again
           </button>
           <button
             type="button"
             onClick={() => void chrome.runtime.openOptionsPage()}
-            className="h-10 rounded-lg bg-primary-soft px-5 font-semibold text-ink"
+            className="h-10 rounded-lg border border-line bg-surface px-5 text-sm font-semibold text-ink hover:bg-canvas"
           >
             Settings
           </button>

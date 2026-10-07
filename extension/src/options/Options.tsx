@@ -50,10 +50,11 @@ export function Options() {
   }
 
   return (
-    <main className="mx-auto mt-10 max-w-lg overflow-hidden rounded-xl border border-line">
-      <header className="flex items-center gap-2 border-b border-line bg-canvas px-5 py-3">
-        <span className="logo size-5" aria-hidden="true" />
-        <h1 className="font-display font-semibold">Eidos Tempo settings</h1>
+    <main className="mx-auto mt-10 max-w-lg overflow-hidden rounded-xl border border-line bg-surface">
+      <header className="flex h-12 items-center border-b border-line px-5">
+        <span role="img" aria-label="eidos.ai" className="wordmark h-[18px]" />
+        <span className="mx-2.5 h-4 w-px bg-line-strong" aria-hidden="true" />
+        <h1 className="font-display text-[15px] font-medium text-ink-soft">Tempo settings</h1>
       </header>
       <form onSubmit={handleSubmit} className="space-y-3 p-5">
         <label htmlFor="server-url" className="block text-sm font-semibold">
@@ -72,13 +73,13 @@ export function Options() {
           The address where you open Eidos Tempo. Only https:// addresses are allowed, except localhost.
         </p>
         <div className="flex gap-2">
-          <button type="submit" className="h-10 rounded-lg bg-primary px-4 font-semibold text-white hover:bg-primary-strong">
+          <button type="submit" className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-strong">
             Save and test
           </button>
           <button
             type="button"
             onClick={() => void save(DEFAULT_SERVER_URL)}
-            className="h-10 rounded-lg bg-primary-soft px-4 font-semibold text-ink"
+            className="h-10 rounded-lg border border-line bg-surface px-4 text-sm font-semibold text-ink hover:bg-canvas"
           >
             Use default
           </button>

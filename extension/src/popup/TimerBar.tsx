@@ -55,29 +55,51 @@ export function TimerBar({ running, suggestions, lookups, isBusy, onStart, onSto
     running && running.project_id === projectId ? running.is_billable : (selectedProject?.is_billable ?? false)
 
   return (
-    <div className="border-b border-line px-4 pt-3 pb-2">
-      <div className="flex items-center gap-3">
-        <DescriptionInput
-          value={description}
-          suggestions={suggestions}
+    <div className="shrink-0 border-b border-line bg-surface px-4 pt-2 pb-3">
+      <DescriptionInput
+        value={description}
+        suggestions={suggestions}
+        lookups={lookups}
+        maxLength={MAX_DESCRIPTION_LENGTH}
+        placeholder={running ? '(no description)' : 'What are you working on?'}
+        onChange={setDescription}
+        onSelect={(suggestion) => {
+          setDescription(suggestion.description)
+          setProjectId(suggestion.project_id)
+          commit(suggestion.description, suggestion.project_id)
+        }}
+        onSelectProject={chooseProject}
+        onSubmit={(input) => (running ? input.blur() : startOrStop())}
+        onFocus={() => setIsEditing(true)}
+        onBlur={() => {
+          setIsEditing(false)
+          commit(description, projectId)
+        }}
+      />
+      <div className="flex items-center gap-1">
+        <ProjectPicker
+          value={projectId}
           lookups={lookups}
-          maxLength={MAX_DESCRIPTION_LENGTH}
-          placeholder={running ? '(no description)' : 'What are you working on?'}
-          onChange={setDescription}
-          onSelect={(suggestion) => {
-            setDescription(suggestion.description)
-            setProjectId(suggestion.project_id)
-            commit(suggestion.description, suggestion.project_id)
-          }}
-          onSelectProject={chooseProject}
-          onSubmit={(input) => (running ? input.blur() : startOrStop())}
-          onFocus={() => setIsEditing(true)}
-          onBlur={() => {
-            setIsEditing(false)
-            commit(description, projectId)
-          }}
+          onChange={chooseProject}
+          renderTrigger={(project) =>
+            project ? (
+              <span className="-ml-2 rounded-lg px-2 py-1.5 text-sm hover:bg-canvas">
+                <ProjectLabel project={project} client={clientOf(project, lookups)} />
+              </span>
+            ) : (
+              <span
+                className="-ml-2 flex items-center rounded-lg p-2 text-muted hover:bg-canvas hover:text-primary"
+                title="Select project"
+              >
+                <FolderIcon />
+              </span>
+            )
+          }
         />
-        <span className="font-display text-xl font-medium tabular-nums">
+        <span title={isBillable ? 'Billable' : 'Non-billable'} className={`p-1.5 ${isBillable ? 'text-primary' : 'text-line-strong'}`}>
+          <DollarIcon />
+        </span>
+        <span className="ml-auto pr-3 font-display text-lg font-semibold tabular-nums">
           {formatDuration(running ? entrySeconds(running, now) : 0)}
         </span>
         <button
@@ -86,35 +108,10 @@ export function TimerBar({ running, suggestions, lookups, isBusy, onStart, onSto
           disabled={isBusy}
           aria-label={running ? 'Stop timer' : 'Start timer'}
           title={running ? 'Stop timer' : 'Start timer'}
-          className={`flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-95 disabled:opacity-60 ${running ? 'bg-stop hover:brightness-95' : 'bg-primary hover:bg-primary-strong'}`}
+          className={`flex size-[42px] shrink-0 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-95 disabled:opacity-60 ${running ? 'bg-stop hover:brightness-95' : 'bg-primary hover:bg-primary-strong'}`}
         >
           {running ? <StopIcon /> : <PlayIcon />}
         </button>
-      </div>
-      <div className="flex items-center gap-1">
-        <ProjectPicker
-          value={projectId}
-          lookups={lookups}
-          onChange={chooseProject}
-          renderTrigger={(project) =>
-            project ? (
-              <span className="rounded-md px-1.5 py-1 text-sm hover:bg-canvas">
-                <ProjectLabel project={project} client={clientOf(project, lookups)} />
-              </span>
-            ) : (
-              <span className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted hover:bg-canvas hover:text-primary">
-                <FolderIcon width={16} height={16} />
-                Project
-              </span>
-            )
-          }
-        />
-        <span
-          title={isBillable ? 'Billable' : 'Non-billable'}
-          className={`ml-auto ${isBillable ? 'text-primary' : 'text-line-strong'}`}
-        >
-          <DollarIcon width={16} height={16} />
-        </span>
       </div>
     </div>
   )

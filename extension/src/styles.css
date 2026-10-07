@@ -74,7 +74,7 @@
 }
 
 body {
-  @apply bg-surface text-ink font-sans antialiased;
+  @apply bg-canvas text-ink font-sans antialiased;
 }
 
 button {
@@ -85,7 +85,8 @@ button:disabled {
   cursor: progress;
 }
 
-.logo {
+.wordmark {
+  aspect-ratio: 1880 / 500;
   background-color: var(--color-logo);
-  mask: url("./assets/logo.png") center / contain no-repeat;
+  mask: url("./assets/eidos-logo.png") center / contain no-repeat;
 }
