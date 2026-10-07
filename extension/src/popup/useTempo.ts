@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, tempoApi } from '../api'
 import { showProblem, showRunning } from '../badge'
 import { addDays, startOfDay } from '../time'
-import type { Client, EntrySuggestion, Project, TimeEntry, TimerStartInput, User } from '../types'
+import type { Client, EntrySuggestion, Project, TimeEntry, TimeEntryInput, TimerStartInput, User } from '../types'
 
 const RECENT_DAYS = 7
 
@@ -83,7 +83,15 @@ export function useTempo() {
     else console.error(`Eidos Tempo: ${action} failed`, failure)
   }
 
-  const act = async (action: string, call: () => Promise<unknown>) => {
+  const queue = useRef<Promise<void>>(Promise.resolve())
+
+  const act = (action: string, call: () => Promise<unknown>): Promise<void> => {
+    const next = queue.current.then(() => run(action, call))
+    queue.current = next.catch(() => undefined)
+    return next
+  }
+
+  const run = async (action: string, call: () => Promise<unknown>) => {
     setIsBusy(true)
     setError(null)
     try {
@@ -105,6 +113,19 @@ export function useTempo() {
     }
   }
 
+  const replacement = (entry: TimeEntry, input: TimerStartInput): TimeEntryInput => {
+    const project = data?.projects.find((candidate) => candidate.id === input.project_id)
+    const isBillable = input.project_id === entry.project_id ? entry.is_billable : (project?.is_billable ?? false)
+    return {
+      description: input.description,
+      project_id: input.project_id,
+      is_billable: isBillable,
+      tag_ids: entry.tag_ids,
+      start: entry.start,
+      stop: entry.stop,
+    }
+  }
+
   return {
     status,
     problem,
@@ -119,19 +140,11 @@ export function useTempo() {
     dismissError: () => setError(null),
     start: (input: TimerStartInput) => act('Starting the timer', () => tempoApi.start(input)),
     stop: () => act('Stopping the timer', tempoApi.stop),
-    updateRunning: (entry: TimeEntry, input: TimerStartInput) => {
-      const project = data?.projects.find((candidate) => candidate.id === input.project_id)
-      const isBillable = input.project_id === entry.project_id ? entry.is_billable : (project?.is_billable ?? false)
-      return act('Updating the timer', () =>
-        tempoApi.update(entry.id, {
-          description: input.description,
-          project_id: input.project_id,
-          is_billable: isBillable,
-          tag_ids: entry.tag_ids,
-          start: entry.start,
-          stop: null,
-        }),
-      )
-    },
+    updateRunning: (entry: TimeEntry, input: TimerStartInput) =>
+      act('Updating the timer', () => tempoApi.update(entry.id, replacement(entry, input))),
+    updateEntries: (entries: TimeEntry[], input: TimerStartInput) =>
+      act('Updating the entry', async () => {
+        for (const entry of entries) await tempoApi.update(entry.id, replacement(entry, input))
+      }),
   }
 }

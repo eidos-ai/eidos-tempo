@@ -76,6 +76,7 @@ export function Popup() {
             running={data.running}
             lookups={lookups}
             isBusy={tempo.isBusy}
+            onUpdate={(entries, input) => void tempo.updateEntries(entries, input)}
             onContinue={(entry) =>
               void tempo.start({
                 description: entry.description,

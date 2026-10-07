@@ -22,9 +22,11 @@ export function ProjectPicker({ value, lookups, onChange, renderTrigger }: Proje
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!isOpen) return
+    menuRef.current?.scrollIntoView({ block: 'nearest' })
     const handleClick = (event: MouseEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false)
     }
@@ -65,7 +67,7 @@ export function ProjectPicker({ value, lookups, onChange, renderTrigger }: Proje
         {renderTrigger(value ? lookups.projects.get(value) : undefined)}
       </button>
       {isOpen && (
-        <div className="absolute top-full left-0 z-40 mt-1 w-80 rounded-xl border border-line bg-surface shadow-xl">
+        <div ref={menuRef} className="absolute top-full left-0 z-40 mt-1 w-80 rounded-xl border border-line bg-surface shadow-xl">
           <div className="flex items-center gap-2 border-b border-line px-3 py-2 text-muted">
             <SearchIcon width={16} height={16} />
             <input
