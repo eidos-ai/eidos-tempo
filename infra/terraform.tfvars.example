@@ -1,2 +1,3 @@
-# Copy to terraform.tfvars (not committed) and fill in.
-backup_prefix = "smoke"
+# Copy to terraform.tfvars (not committed). The backup set the service runs on; create it first with
+# scripts/seed-bucket.sh <prefix> --admin EMAIL [--toggl].
+backup_prefix = "test"

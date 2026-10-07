@@ -12,20 +12,63 @@ hand first, then adopted by the `import` block in `main.tf`).
 Not managed here (needs more than Editor, or done by hand): project IAM, public access (`allUsers` invoker),
 a custom domain (the service uses its `run.app` URL). No Cloud Monitoring alerts: uptime and backups are watched from outside.
 
-Needs Terraform ≥ 1.9, Docker, the gcloud CLI and Editor on the project. Terraform and the scripts name the project
-explicitly, so your default gcloud project doesn't matter.
+## What you need
+
+Terraform ≥ 1.9, Docker (with `buildx`), the gcloud CLI and Editor on the project. Terraform and the scripts name
+the project explicitly, so your default gcloud project doesn't matter.
 
 ```bash
 gcloud auth login && gcloud auth application-default login     # Terraform and the scripts use these credentials
 gcloud auth configure-docker us-central1-docker.pkg.dev         # lets Docker push images
-cp terraform.tfvars.example terraform.tfvars        # set backup_prefix
-terraform init
-terraform plan -target=module.base                  # first time: before any image exists
-terraform apply -target=module.base
-../scripts/seed-bucket.sh smoke --admin you@eidos.ai
-../scripts/cloudrun-deploy.sh                       # pushes images (and deploys once the service exists)
-terraform plan && terraform apply
 ```
 
-Image tags are ignored by Terraform; `scripts/cloudrun-deploy.sh` sets them. Changing `backup_prefix` and applying
-restarts the service on that backup set; nothing is deleted.
+## First-time setup (a new project)
+
+Skip the steps already done: in `eidos-15111991` everything below exists.
+
+1. Turn on the APIs (Editor):
+   ```bash
+   gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudscheduler.googleapis.com \
+     iam.googleapis.com iamcredentials.googleapis.com storage.googleapis.com cloudresourcemanager.googleapis.com \
+     --project eidos-15111991
+   ```
+2. Create the bucket (it holds Terraform's state, so it must exist before `terraform init`):
+   ```bash
+   gcloud storage buckets create gs://eidos-tempo --project eidos-15111991 --location us-central1 \
+     --default-storage-class STANDARD --uniform-bucket-level-access --public-access-prevention --soft-delete-duration 60d
+   ```
+3. Base resources (free), from `infra/`:
+   ```bash
+   cp terraform.tfvars.example terraform.tfvars        # backup_prefix = the set created in step 4
+   terraform init
+   terraform plan -target=module.base && terraform apply -target=module.base
+   ```
+4. A first backup set: the service refuses to start without one. Asks for your name and a password:
+   ```bash
+   ../scripts/seed-bucket.sh <prefix> --admin you@eidos.ai            # empty; add --toggl to import Toggl
+   ```
+   Use the same `<prefix>` as `backup_prefix` in `terraform.tfvars`.
+5. Images, then the service and the nightly job (from here about 0.45 USD/day):
+   ```bash
+   ../scripts/cloudrun-deploy.sh                       # first time it only pushes; the service doesn't exist yet
+   terraform plan && terraform apply
+   ```
+6. Check it (the service is private until step 7):
+   ```bash
+   terraform output service_url
+   gcloud run services proxy tempo --region us-central1 --port 8080   # then open http://localhost:8080 and log in
+   ```
+7. **A project Owner** makes it public. Organizations that restrict `allUsers` need a policy exception first.
+   ```bash
+   gcloud run services add-iam-policy-binding tempo --region us-central1 --project eidos-15111991 \
+     --member allUsers --role roles/run.invoker
+   ```
+   Public access is also what lets the nightly job call `/api/internal/backup` (the backend checks the job's
+   Google token itself). Check it once: `gcloud scheduler jobs run tempo-nightly-backup --location us-central1`,
+   then a new file appears in `gs://eidos-tempo/backups/<prefix>/dumps/`.
+
+## Later changes
+
+Image tags are ignored by Terraform; `scripts/cloudrun-deploy.sh` sets them (see the main README, "Deploying a new
+version"). Changing `backup_prefix` and applying restarts the service on that backup set; nothing is deleted and the
+previous set stays as it was. `terraform.tfvars` is not committed.

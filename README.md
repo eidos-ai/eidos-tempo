@@ -1,6 +1,7 @@
 # Eidos Tempo
 
-Internal time tracker for Eidos. FastAPI + PostgreSQL backend, React frontend, Docker Compose on a single server.
+Internal time tracker for Eidos. FastAPI + PostgreSQL backend, React frontend and a Chrome extension, running on
+Google Cloud Run.
 
 ## Features
 
@@ -12,7 +13,8 @@ Internal time tracker for Eidos. FastAPI + PostgreSQL backend, React frontend, D
 - **Admin**: members, clients, billable projects and tags; archive instead of delete.
 - **Chrome extension** to start/stop and edit the timer from the toolbar.
 - **API tokens** (Profile page) and a **Toggl-compatible API** so scripts written for Toggl keep working.
-- **Data safety**: members only see their own time (admins see everyone's in reports), soft deletes, daily backups.
+- **Data safety**: members only see their own time (admins see everyone's in reports), soft deletes, every save
+  backed up to Cloud Storage before it's confirmed, plus nightly full backups.
 
 Verified behavior: [docs/qa-checklist.md](docs/qa-checklist.md). Agent guide and architecture rules: [CLAUDE.md](CLAUDE.md).
 
@@ -94,13 +96,8 @@ uv run python -m scripts.import_toggl --admin admin@eidos.ai
 - `--set-password EMAIL`: set a password for an imported user (they're created without one).
 - `--cache FILE`: save Toggl's data to reuse it later. It contains personal data; keep it out of git.
 
-On the server, pass the token from your shell so it never lands in a file:
-
-```bash
-export TEMPO_TOGGL_API_TOKEN=...
-docker compose exec -e TEMPO_TOGGL_API_TOKEN -e TEMPO_TOGGL_WORKSPACE_ID=<workspace-id> backend \
-  python -m scripts.import_toggl --admin admin@eidos.ai --dry-run
-```
+For Cloud Run, import into a new backup set instead and switch the service to it (see Deployment):
+`scripts/seed-bucket.sh <prefix> --admin EMAIL --toggl`.
 
 ## API for scripts (Toggl-compatible)
 
@@ -129,10 +126,13 @@ Same requests and responses as Toggl, under `/api/toggl`:
 
 ## Deployment
 
-Production runs on Google Cloud Run (project `eidos-15111991`): one service `tempo` with three containers (nginx,
-backend, Postgres + WAL-G) and the database in memory, rebuilt from `gs://eidos-tempo` on every start. Every save
-is archived to the bucket before the response, and only the instance holding the lease (`lease/owner`) may write.
-Infrastructure and first-time setup: [infra/README.md](infra/README.md) (Terraform).
+Production runs on Google Cloud Run (project `eidos-15111991`, region `us-central1`): one service `tempo` with three
+containers (nginx, backend, Postgres + WAL-G) and the database in memory, rebuilt from `gs://eidos-tempo` on every
+start. Every save is archived to the bucket before the response, and only the instance holding the lease
+(`lease/owner`) may write. Address: `https://tempo-787081458205.us-central1.run.app` (the same service as
+`https://tempo-e4zfnlhfya-uc.a.run.app`, which `terraform output service_url` prints).
+
+First-time setup, prerequisites and the Terraform files: [infra/README.md](infra/README.md).
 
 | Task | Command |
 |---|---|
@@ -140,6 +140,39 @@ Infrastructure and first-time setup: [infra/README.md](infra/README.md) (Terrafo
 | Create a new backup set from this Mac (empty, or with `--toggl`) | `scripts/seed-bucket.sh <prefix> --admin EMAIL [--toggl]` |
 | Restore a backup set locally to inspect it (localhost:5434) | `scripts/restore-local.sh <prefix>` |
 | Switch the service to another backup set | set `backup_prefix` in `infra/terraform.tfvars`, `terraform apply` |
+| Open the service while it isn't public | `gcloud run services proxy tempo --region us-central1 --port 8080` → `http://localhost:8080` |
+
+### Deploying a new version
+
+1. Run the checks above and commit: the script refuses uncommitted changes, because images are tagged with the commit.
+2. `scripts/cloudrun-deploy.sh` builds the three images (linux/amd64), pushes them and deploys a new revision.
+3. The new instance takes the lease, waits 30 s for the old one's last saves, restores and replays the bucket, and
+   then gets the traffic (about a minute in total). **Saves fail during that minute** (the app says "not saved" and
+   rolls back), so deploy outside working hours and tell the team. Sessions survive: nobody has to log in again.
+4. Check: Cloud Run → `tempo` → Logs shows `tempo-db: database ready` and `Holding the database lease`, and
+   `/api/health` answers `{"status":"ok"}`.
+
+Roll back by deploying an older commit (`git checkout <sha> && scripts/cloudrun-deploy.sh`). Migrations are additive,
+so older code runs on the newer database. `gcloud run services update-traffic tempo --region us-central1
+--to-revisions <revision>=100` is faster, but only use it for a revision on the same `backup_prefix`.
+
+### Backups on Cloud Run
+
+- `gs://eidos-tempo/backups/<prefix>/`: `wal_005/` (every save), `basebackups_005/` (full backups) and `dumps/`
+  (a `pg_dump` per night). The nightly job (`tempo-nightly-backup`, 03:00 Montevideo) makes the full backup and the
+  dump; check that a new file appears in `dumps/` every day.
+- Files under `backups/` are deleted after 180 days; deleted files can be recovered for 60 days (soft delete). The
+  service account can add and read backups but not delete or overwrite them.
+- To look at the data without touching the service: `scripts/restore-local.sh <prefix>`.
+
+### Logs and usage
+
+Cloud Run → `tempo` → **Metrics** (CPU, memory, requests, latency, instances) and **Logs** (filter by container:
+`web`, `backend`, `db`). From the terminal:
+
+```bash
+gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="tempo" AND severity>=WARNING' --freshness 1d --limit 50
+```
 
 ### Cloud Run simulation
 
@@ -167,7 +200,7 @@ scripts/create-admin.sh admin@eidos.ai "Your Name"  # first admin
 
 Update: `git pull && scripts/deploy.sh` (takes a backup first). Logs: `docker compose logs -f backend`.
 
-### Backups
+Backups:
 
 - Data lives in `${TEMPO_DATA_DIR}/pgdata`; backups in `${TEMPO_DATA_DIR}/backups` (daily, before every deploy and restore).
 - Restore: `scripts/restore.sh` lists backups, `scripts/restore.sh <file>` restores one.
