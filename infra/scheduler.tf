@@ -21,11 +21,3 @@ resource "google_cloud_scheduler_job" "nightly_backup" {
     }
   }
 }
-
-# Works whether or not the service is public (allUsers).
-resource "google_cloud_run_v2_service_iam_member" "scheduler_invokes" {
-  name     = google_cloud_run_v2_service.tempo.name
-  location = var.region
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:${module.base.scheduler_service_account}"
-}
