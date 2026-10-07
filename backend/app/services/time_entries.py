@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from app.domain.clock import Clock
 from app.domain.errors import ConflictError, InvalidValueError, NotFoundError
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 MAX_DESCRIPTION_LENGTH = 500
 MAX_SUGGESTIONS = 300
 STORY_START = datetime(2000, 1, 1, tzinfo=UTC)
+MAX_CLIENT_DELAY = timedelta(minutes=1)
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ class TimerStart:
     project_id: ProjectId | None
     is_billable: bool | None = None
     tag_ids: tuple[TagId, ...] = ()
+    start: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -76,16 +78,18 @@ class TimeEntryService:
         tag_ids = self._usable_tags(timer.tag_ids, current=())
         self._entries.lock_user_entries(actor.id)
         now = self._clock.now()
+        start = self._clicked_at(timer.start, now)
         running = self._entries.get_running(actor.id)
         if running is not None:
-            running.stop_at(now)
+            start = max(start, running.start)
+            running.stop_at(start)
             self._entries.save(running)
         entry = TimeEntry(
             id=TimeEntryId(new_uuid()),
             user_id=actor.id,
             project_id=timer.project_id,
             description=clean_description(timer.description),
-            start=now,
+            start=start,
             stop=None,
             created_at=now,
             is_billable=self._billable(timer.is_billable, timer.project_id),
@@ -94,14 +98,24 @@ class TimeEntryService:
         self._entries.add(entry)
         return entry
 
-    def stop_timer(self, actor: User) -> TimeEntry:
+    def stop_timer(self, actor: User, stop: datetime | None = None) -> TimeEntry:
         self._entries.lock_user_entries(actor.id)
         running = self._entries.get_running(actor.id)
         if running is None:
             raise ConflictError("No timer is running")
-        running.stop_at(max(self._clock.now(), running.start))
+        running.stop_at(max(self._clicked_at(stop, self._clock.now()), running.start))
         self._entries.save(running)
         return running
+
+    @staticmethod
+    def _clicked_at(requested: datetime | None, now: datetime) -> datetime:
+        """The time the user clicked, so a request delayed behind earlier saves keeps it.
+
+        Only a recent past time is trusted; anything else (a wrong client clock) falls back to now.
+        """
+        if requested is None or not now - MAX_CLIENT_DELAY <= requested <= now:
+            return now
+        return requested
 
     def create_entry(self, actor: User, draft: TimeEntryDraft) -> TimeEntry:
         if draft.stop is None:

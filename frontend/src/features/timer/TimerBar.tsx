@@ -96,7 +96,10 @@ export function TimerBar() {
       setFields(EMPTY_FIELDS)
       return
     }
-    if (isOptimistic(running)) return
+    if (isOptimistic(running)) {
+      if (!isEditing) setFields(fieldsOf(running))
+      return
+    }
     if (pendingCommit.current) {
       pendingCommit.current = false
       saveRunning(running, fields)

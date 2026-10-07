@@ -124,9 +124,11 @@ function useEntryMutation<TVariables>(
   })
 }
 
+// Start and stop send the click time, so the saved entry matches what the timer showed even when the
+// request waits behind earlier saves.
 export function useStartTimer() {
-  return useEntryMutation(timeEntriesApi.start, (queryClient, input: TimerStartInput) => {
-    const now = new Date().toISOString()
+  const mutation = useEntryMutation(timeEntriesApi.start, (queryClient, input: TimerStartInput) => {
+    const now = input.start ?? new Date().toISOString()
     const running = queryClient.getQueryData<TimeEntry | null>(queryKeys.runningEntry)
     if (running) {
       updateWeeks(queryClient, (entries) => entries.map((e) => (e.id === running.id ? { ...e, stop: now } : e)))
@@ -143,16 +145,17 @@ export function useStartTimer() {
     queryClient.setQueryData(queryKeys.runningEntry, entry)
     insertIntoWeeks(queryClient, entry)
   })
+  return { ...mutation, mutate: (input: TimerStartInput) => mutation.mutate({ ...input, start: new Date().toISOString() }) }
 }
 
 export function useStopTimer() {
-  return useEntryMutation(timeEntriesApi.stop, (queryClient) => {
+  const mutation = useEntryMutation(timeEntriesApi.stop, (queryClient, stop: string) => {
     const running = queryClient.getQueryData<TimeEntry | null>(queryKeys.runningEntry)
     if (!running) return
-    const now = new Date().toISOString()
-    updateWeeks(queryClient, (entries) => entries.map((e) => (e.id === running.id ? { ...e, stop: now } : e)))
+    updateWeeks(queryClient, (entries) => entries.map((e) => (e.id === running.id ? { ...e, stop } : e)))
     queryClient.setQueryData(queryKeys.runningEntry, null)
   })
+  return { ...mutation, mutate: () => mutation.mutate(new Date().toISOString()) }
 }
 
 export function useCreateEntry() {

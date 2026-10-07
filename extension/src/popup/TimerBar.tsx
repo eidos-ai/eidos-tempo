@@ -16,7 +16,6 @@ interface TimerBarProps {
   suggestions: EntrySuggestion[]
   lookups: Lookups
   tags: Tag[]
-  isBusy: boolean
   onCreateTag: (name: string) => Promise<Tag | null>
   onStart: (input: TimerStartInput) => void
   onStop: () => void
@@ -57,7 +56,7 @@ function toInput(fields: TimerFields): TimerStartInput {
 }
 
 export function TimerBar(props: TimerBarProps) {
-  const { running, suggestions, lookups, tags, isBusy, onStart, onStop, onUpdateRunning, onCreateTag } = props
+  const { running, suggestions, lookups, tags, onStart, onStop, onUpdateRunning, onCreateTag } = props
   const [fields, setFields] = useState<TimerFields>(() => fieldsOf(running))
   const [isEditing, setIsEditing] = useState(false)
   const now = useNow(running !== null)
@@ -120,10 +119,9 @@ export function TimerBar(props: TimerBarProps) {
         <button
           type="button"
           onClick={startOrStop}
-          disabled={isBusy}
           aria-label={running ? 'Stop timer' : 'Start timer'}
           title={running ? 'Stop timer' : 'Start timer'}
-          className={`flex size-[42px] shrink-0 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-95 disabled:opacity-60 ${running ? 'bg-stop hover:brightness-95' : 'bg-primary hover:bg-primary-strong'}`}
+          className={`flex size-[42px] shrink-0 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-95 ${running ? 'bg-stop hover:brightness-95' : 'bg-primary hover:bg-primary-strong'}`}
         >
           {running ? <StopIcon /> : <PlayIcon />}
         </button>

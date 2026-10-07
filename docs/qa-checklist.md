@@ -203,6 +203,11 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [!] Gaps between back-to-back entries varied by a pixel or two because blocks were drawn to the second; blocks are now drawn to the minute like Toggl (stored times, durations and resize handles unchanged)
 - [x] Active Toggl members are active; former members are imported deactivated; `--admin` people are admins
 
+## 17b. Instant timer (web)
+- [x] With saves slowed to 1.5 s: ▶ continue shows description, project, tag and billable at once; the timer never jumps back
+- [x] Typed description/project/tag/billable before Start and suggestions picked while running don't change when the save finishes
+- [x] Start and stop are saved at the click time (a request queued behind slow saves keeps it; clocks off by more than a minute fall back to server time)
+
 ## 18. Chrome extension
 - [x] Uses the browser's Tempo login with no extra setup (verified loading unpacked)
 - [x] Logged out: popup explains it and links to the web app; icon shows a red `!`
@@ -221,6 +226,8 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Past entries: description editable inline with suggestions (picks description + project), project picker, "+ Add project"; a grouped row updates all its entries; tags and billable are kept
 - [x] Failed edit on a past entry: "Updating the entry was not saved…", the typed value stays; requests are sent in order so quick edits don't overwrite each other
 - [x] Dropdowns near the bottom of the list scroll into view
+- [x] With saves slowed to 1.5 s: start, stop, ▶ continue, typed description/project/tag/billable and picked suggestions show at once; nothing changes when the save finishes; buttons are never disabled
+- [x] Stop with the server fully unreachable: the popup goes back to running, shows "Stopping the timer was not saved…", icon ends on `!`
 
 ## 19. Reports
 - [x] Summary for September matches Toggl: everyone 652:43:46 total, 282:33:31 billable (43.29%), 29.67 h daily average; one member 121:26:45, 4:54:49 (4.05%), 5.52

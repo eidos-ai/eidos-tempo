@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -46,6 +46,20 @@ def test_timer_flow(api_client: TestClient) -> None:
     stopped = api_client.post("/api/time-entries/stop")
     assert stopped.json()["stop"] is not None
     assert api_client.get("/api/time-entries/running").json() is None
+
+
+def test_timer_keeps_the_click_time(api_client: TestClient, api_clock: FakeClock) -> None:
+    login(api_client)
+    clicked = api_clock.now() - timedelta(seconds=3)
+    started = api_client.post(
+        "/api/time-entries/start", json={"description": "Queued", "start": clicked.isoformat()}
+    )
+    assert datetime.fromisoformat(started.json()["start"]) == clicked
+
+    api_clock.advance(timedelta(minutes=5))
+    stopped_at = api_clock.now() - timedelta(seconds=1)
+    stopped = api_client.post("/api/time-entries/stop", json={"stop": stopped_at.isoformat()})
+    assert datetime.fromisoformat(stopped.json()["stop"]) == stopped_at
 
 
 def test_domain_errors_map_to_http_status(api_client: TestClient) -> None:

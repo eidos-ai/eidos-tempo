@@ -69,6 +69,6 @@ export const tempoApi = {
     ),
   suggestions: () => request<EntrySuggestion[]>('GET', '/time-entries/suggestions'),
   start: (input: TimerStartInput) => request<TimeEntry>('POST', '/time-entries/start', input),
-  stop: () => request<TimeEntry>('POST', '/time-entries/stop'),
+  stop: (stop: string) => request<TimeEntry>('POST', '/time-entries/stop', { stop }),
   update: (id: string, input: TimeEntryInput) => request<TimeEntry>('PUT', `/time-entries/${id}`, input),
 }

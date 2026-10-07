@@ -75,7 +75,7 @@ export const timeEntriesApi = {
   suggestions: () => http.get<EntrySuggestion[]>('/time-entries/suggestions'),
   story: (timezone: string) => http.get<TrackingStory>(`/time-entries/story?timezone=${encodeURIComponent(timezone)}`),
   start: (input: TimerStartInput) => http.post<TimeEntry>('/time-entries/start', input),
-  stop: () => http.post<TimeEntry>('/time-entries/stop'),
+  stop: (stop: string) => http.post<TimeEntry>('/time-entries/stop', { stop }),
   create: (input: TimeEntryInput) => http.post<TimeEntry>('/time-entries', input),
   update: (id: string, input: TimeEntryInput) => http.put<TimeEntry>(`/time-entries/${id}`, input),
   remove: (id: string) => http.delete(`/time-entries/${id}`),

@@ -41,6 +41,52 @@ def test_starting_a_new_timer_stops_the_running_one(
     assert entries[second.id].is_running
 
 
+def test_timer_starts_and_stops_at_the_recent_click_time(
+    time_entry_service: TimeEntryService, member: User, clock: FakeClock
+) -> None:
+    first = time_entry_service.start_timer(member, TimerStart("First", None))
+    clock.advance(timedelta(minutes=30))
+    clicked = clock.now() - timedelta(seconds=2)
+    second = time_entry_service.start_timer(member, TimerStart("Second", None, start=clicked))
+    clock.advance(timedelta(minutes=10))
+    stopped = time_entry_service.stop_timer(member, clock.now() - timedelta(seconds=1))
+
+    period = DateRange(clock.now() - timedelta(days=1), clock.now() + timedelta(days=1))
+    entries = {e.id: e for e in time_entry_service.list_entries(member, period)}
+    assert second.start == clicked
+    assert entries[first.id].stop == clicked
+    assert stopped.stop == clock.now() - timedelta(seconds=1)
+
+
+@pytest.mark.parametrize("offset", [timedelta(seconds=5), timedelta(minutes=-2)])
+def test_click_time_from_a_wrong_clock_falls_back_to_now(
+    time_entry_service: TimeEntryService, member: User, clock: FakeClock, offset: timedelta
+) -> None:
+    entry = time_entry_service.start_timer(
+        member, TimerStart("Work", None, start=clock.now() + offset)
+    )
+    clock.advance(timedelta(minutes=5))
+    stopped = time_entry_service.stop_timer(member, clock.now() + offset)
+
+    assert entry.start == clock.now() - timedelta(minutes=5)
+    assert stopped.stop == clock.now()
+
+
+def test_click_time_never_goes_before_the_running_entry(
+    time_entry_service: TimeEntryService, member: User, clock: FakeClock
+) -> None:
+    first = time_entry_service.start_timer(member, TimerStart("First", None))
+    clock.advance(timedelta(seconds=10))
+    second = time_entry_service.start_timer(
+        member, TimerStart("Second", None, start=first.start - timedelta(seconds=5))
+    )
+
+    assert second.start == first.start
+    clock.advance(timedelta(seconds=10))
+    stopped = time_entry_service.stop_timer(member, second.start - timedelta(seconds=1))
+    assert stopped.stop == second.start
+
+
 def test_stop_timer_without_running_entry_fails(
     time_entry_service: TimeEntryService, member: User
 ) -> None:

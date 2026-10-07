@@ -84,6 +84,8 @@ these shapes, compare with Toggl again.
   Entry requests are sent in order by `inOrder`, not a TanStack `scope`: queued scoped mutations stay paused
   while the tab is hidden, so changes were lost. Saves are full replacements, so quick edits on one row must
   build on the row's latest input, not on the possibly stale `entry` prop (see `EntryRow` in `DetailedTable.tsx`).
+  Timer start/stop send the click time (`start`/`stop`); the server keeps it if it is under a minute old, so a
+  request queued behind slow saves doesn't move the entry and the timer never jumps back.
 - The current user comes from `useCurrentUser()` (context provided by `RequireAuth`); never read the
   session query directly in pages.
 - Styling: Tailwind v4 with Eidos brand tokens in `index.css` (`--color-primary`, `--color-ink`, ...).
@@ -113,7 +115,8 @@ these shapes, compare with Toggl again.
   for the Tempo address). Logged out → the popup links to the web app.
 - The server address is a setting (`src/config.ts`, options page). Only `https://` or `http://localhost`
   are accepted, so moving to HTTPS is a settings change.
-- `src/api.ts` mirrors the API types by hand, like the frontend. Failed actions show "… was not saved"
+- `src/api.ts` mirrors the API types by hand, like the frontend. Actions are optimistic (`act` in `popup/useTempo.ts`:
+  shown at once, sent in order, refreshed once the queue is empty). Failed actions show "… was not saved", roll back
   in the popup and keep the user's input; the toolbar icon (a simplified three-ring version of the logo, drawn as vectors in `src/badge.ts` so it stays crisp at 16 px) is purple while a timer runs, gray otherwise, and shows a red `!` when not connected.
 - Agents can't open `chrome-extension://` or `chrome://` pages; to test the popup, copy `dist` under
   `frontend/public/` temporarily and stub `chrome.storage`/`chrome.action` (remove the copy afterwards).

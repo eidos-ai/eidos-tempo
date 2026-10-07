@@ -9,6 +9,7 @@ from app.api.schemas.time_entries import (
     TimeEntryIn,
     TimeEntryOut,
     TimerStartIn,
+    TimerStopIn,
     TrackingStoryOut,
 )
 from app.domain.ids import TimeEntryId
@@ -49,8 +50,10 @@ def start_timer(
 
 
 @router.post("/stop")
-def stop_timer(actor: CurrentUser, entries: TimeEntryServiceDep) -> TimeEntryOut:
-    return TimeEntryOut.from_domain(entries.stop_timer(actor))
+def stop_timer(
+    actor: CurrentUser, entries: TimeEntryServiceDep, body: TimerStopIn | None = None
+) -> TimeEntryOut:
+    return TimeEntryOut.from_domain(entries.stop_timer(actor, body.stop if body else None))
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

@@ -67,7 +67,6 @@ export function Popup() {
             suggestions={data.suggestions}
             lookups={lookups}
             tags={data.tags}
-            isBusy={tempo.isBusy}
             onCreateTag={tempo.createTag}
             onStart={(input) => void tempo.start(input)}
             onStop={() => void tempo.stop()}
@@ -78,7 +77,6 @@ export function Popup() {
             suggestions={data.suggestions}
             running={data.running}
             lookups={lookups}
-            isBusy={tempo.isBusy}
             onUpdate={(entries, input) => void tempo.updateEntries(entries, input)}
             onContinue={(entry) =>
               void tempo.start({

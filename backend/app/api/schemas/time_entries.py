@@ -45,6 +45,7 @@ class TimerStartIn(BaseModel):
     project_id: UUID | None = None
     is_billable: bool | None = None
     tag_ids: list[UUID] = []
+    start: AwareDatetime | None = None
 
     def to_command(self) -> TimerStart:
         return TimerStart(
@@ -52,7 +53,12 @@ class TimerStartIn(BaseModel):
             project_id=ProjectId(self.project_id) if self.project_id else None,
             is_billable=self.is_billable,
             tag_ids=tuple(TagId(tag_id) for tag_id in self.tag_ids),
+            start=self.start,
         )
+
+
+class TimerStopIn(BaseModel):
+    stop: AwareDatetime | None = None
 
 
 class TimeEntryIn(BaseModel):

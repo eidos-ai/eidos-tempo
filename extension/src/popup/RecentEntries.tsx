@@ -27,7 +27,6 @@ interface RecentEntriesProps {
   suggestions: EntrySuggestion[]
   running: TimeEntry | null
   lookups: Lookups
-  isBusy: boolean
   onUpdate: (entries: TimeEntry[], input: TimerStartInput) => void
   onContinue: (entry: TimeEntry) => void
 }
@@ -58,7 +57,7 @@ function trackedSince(entries: TimeEntry[], running: TimeEntry | null, rangeStar
   return tracked.reduce((sum, entry) => sum + secondsSince(entry, rangeStart, now), 0)
 }
 
-export function RecentEntries({ entries, suggestions, running, lookups, isBusy, onUpdate, onContinue }: RecentEntriesProps) {
+export function RecentEntries({ entries, suggestions, running, lookups, onUpdate, onContinue }: RecentEntriesProps) {
   const now = useNow(running !== null)
   const days = groupByDay(entries, now)
 
@@ -83,7 +82,6 @@ export function RecentEntries({ entries, suggestions, running, lookups, isBusy, 
                   group={group}
                   suggestions={suggestions}
                   lookups={lookups}
-                  isBusy={isBusy}
                   onUpdate={onUpdate}
                   onContinue={onContinue}
                 />
@@ -109,12 +107,11 @@ interface EntryRowProps {
   group: EntryGroup
   suggestions: EntrySuggestion[]
   lookups: Lookups
-  isBusy: boolean
   onUpdate: (entries: TimeEntry[], input: TimerStartInput) => void
   onContinue: (entry: TimeEntry) => void
 }
 
-function EntryRow({ group, suggestions, lookups, isBusy, onUpdate, onContinue }: EntryRowProps) {
+function EntryRow({ group, suggestions, lookups, onUpdate, onContinue }: EntryRowProps) {
   const { latest, entries } = group
   const [description, setDescription] = useState(latest.description)
   const [projectId, setProjectId] = useState(latest.project_id)
@@ -187,7 +184,6 @@ function EntryRow({ group, suggestions, lookups, isBusy, onUpdate, onContinue }:
         <button
           type="button"
           onClick={() => onContinue({ ...latest, description: description.trim(), project_id: projectId })}
-          disabled={isBusy}
           aria-label={`Continue ${description || 'this entry'}`}
           title="Continue"
           className="-mr-1 rounded-md p-1 text-muted transition-colors hover:bg-primary-soft hover:text-primary group-hover:text-ink-soft"

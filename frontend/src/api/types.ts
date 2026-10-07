@@ -101,6 +101,7 @@ export interface TimerStartInput {
   project_id: string | null
   is_billable?: boolean
   tag_ids?: string[]
+  start?: string
 }
 
 export interface UserCreateInput {
