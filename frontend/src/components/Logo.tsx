@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import logo from '../assets/brand/eidos-logo.png'
+import logo from '../assets/brand/eidos-logo.svg'
 
 const LOGO_HEIGHT_PX = 500
 const LOGO_WIDTH_PX = 1880

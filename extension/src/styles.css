@@ -95,5 +95,5 @@ button:disabled {
 .wordmark {
   aspect-ratio: 1880 / 500;
   background-color: var(--color-logo);
-  mask: url("./assets/eidos-logo.png") center / contain no-repeat;
+  mask: url("./assets/eidos-logo.svg") center / contain no-repeat;
 }
