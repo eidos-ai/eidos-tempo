@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Tag } from '../types'
 import { PlusIcon, SearchIcon } from './icons'
 import { keepInView } from './keepInView'
@@ -20,9 +20,12 @@ export function TagPicker({ tags, value, onChange, onCreate, renderTrigger }: Ta
   const containerRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
+  useLayoutEffect(() => {
+    if (isOpen) keepInView(menuRef.current)
+  }, [isOpen])
+
   useEffect(() => {
     if (!isOpen) return
-    keepInView(menuRef.current)
     const handleClick = (event: MouseEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false)
     }

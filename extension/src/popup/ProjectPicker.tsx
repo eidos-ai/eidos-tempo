@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Project } from '../types'
 import { SearchIcon } from './icons'
 import { keepInView } from './keepInView'
@@ -25,9 +25,12 @@ export function ProjectPicker({ value, lookups, onChange, renderTrigger }: Proje
   const containerRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
+  useLayoutEffect(() => {
+    if (isOpen) keepInView(menuRef.current)
+  }, [isOpen])
+
   useEffect(() => {
     if (!isOpen) return
-    keepInView(menuRef.current)
     const handleClick = (event: MouseEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false)
     }
