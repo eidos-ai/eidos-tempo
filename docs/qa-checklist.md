@@ -210,7 +210,7 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 
 ## 18. Chrome extension
 - [x] Uses the browser's Tempo login with no extra setup (verified loading unpacked)
-- [ ] Default address is production (`https://tempo-787081458205.us-central1.run.app`), no permission prompt; "Use default" restores it
+- [x] Default address is production (`https://tempo-787081458205.us-central1.run.app`), no permission prompt; "Use default" restores it
 - [x] Logged out: popup explains it and links to the web app; icon shows a red `!`
 - [x] Toolbar icon is a simplified three-ring logo, crisp at 16 and 32 px; purple while a timer runs, gray when idle (no time on the icon)
 - [x] Suggestions while typing; ArrowDown + Enter picks one (description + project), Enter starts
