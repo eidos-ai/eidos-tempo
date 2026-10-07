@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds a new data set on this Mac and uploads it as the first backup of gs://eidos-tempo/backups/<prefix>/.
+# Builds a new data set locally (in Docker) and uploads it as the first backup of gs://eidos-tempo/backups/<prefix>/.
 # The Cloud Run service starts from it once Terraform's backup_prefix points there.
 #
 #   scripts/seed-bucket.sh <prefix> --admin EMAIL [--admin EMAIL ...] [--toggl]

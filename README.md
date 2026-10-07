@@ -137,7 +137,7 @@ First-time setup, prerequisites and the Terraform files: [infra/README.md](infra
 | Task | Command |
 |---|---|
 | Deploy the current commit | `scripts/cloudrun-deploy.sh` |
-| Create a new backup set from this Mac (empty, or with `--toggl`) | `scripts/seed-bucket.sh <prefix> --admin EMAIL [--toggl]` |
+| Create a new backup set (empty, or with `--toggl`) | `scripts/seed-bucket.sh <prefix> --admin EMAIL [--toggl]` |
 | Restore a backup set locally to inspect it (localhost:5434) | `scripts/restore-local.sh <prefix>` |
 | Switch the service to another backup set | set `backup_prefix` in `infra/terraform.tfvars`, `terraform apply` |
 | Open the service while it isn't public | `gcloud run services proxy tempo --region us-central1 --port 8080` → `http://localhost:8080` |
