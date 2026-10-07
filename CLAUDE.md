@@ -7,7 +7,8 @@ Guide for agents working in this repository. Read README.md for setup, configura
 Eidos Tempo is Eidos' internal replacement for Toggl: the team tracks time daily, admins manage
 members, clients and billable projects. Time entries are billing records, so **never lose data**.
 Production: Google Cloud Run with the database inside the service (`infra/`, `db/`, `app/durability/`; see "Deployment facts"). Not set up yet:
-CI/CD (`scripts/cloudrun-deploy.sh` builds and deploys from a developer machine).
+CI/CD (`scripts/cloudrun-deploy.sh` builds and deploys from a developer machine; the `deploy` skill in
+`.claude/skills/deploy/` guides it, and `scripts/deploy-status.sh` compares production with the local checkout).
 
 ## Commands
 

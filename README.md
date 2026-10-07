@@ -136,6 +136,7 @@ First-time setup, prerequisites and the Terraform files: [infra/README.md](infra
 
 | Task | Command |
 |---|---|
+| Compare what runs with the local checkout (read-only) | `scripts/deploy-status.sh` |
 | Deploy the current commit | `scripts/cloudrun-deploy.sh` |
 | Create a new backup set (empty, or with `--toggl`) | `scripts/seed-bucket.sh <prefix> --admin EMAIL [--toggl]` |
 | Restore a backup set locally to inspect it (localhost:5434) | `scripts/restore-local.sh <prefix>` |
@@ -143,6 +144,8 @@ First-time setup, prerequisites and the Terraform files: [infra/README.md](infra
 | Open the service while it isn't public | `gcloud run services proxy tempo --region us-central1 --port 8080` → `http://localhost:8080` |
 
 ### Deploying a new version
+
+In Claude Code, `/deploy` walks through these steps (status, checks, deploy, verification).
 
 1. Run the checks above and commit: the script refuses uncommitted changes, because images are tagged with the commit.
 2. `scripts/cloudrun-deploy.sh` builds the three images (linux/amd64), pushes them and deploys a new revision.
