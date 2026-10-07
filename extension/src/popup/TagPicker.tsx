@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Tag } from '../types'
 import { PlusIcon, SearchIcon } from './icons'
+import { keepInView } from './keepInView'
 
 const MAX_TAG_LENGTH = 60
 
@@ -21,7 +22,7 @@ export function TagPicker({ tags, value, onChange, onCreate, renderTrigger }: Ta
 
   useEffect(() => {
     if (!isOpen) return
-    menuRef.current?.scrollIntoView({ block: 'nearest' })
+    keepInView(menuRef.current)
     const handleClick = (event: MouseEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false)
     }

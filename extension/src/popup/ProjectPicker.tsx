@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Project } from '../types'
 import { SearchIcon } from './icons'
+import { keepInView } from './keepInView'
 import { clientOf, type Lookups } from './lookups'
 import { ProjectLabel } from './ProjectLabel'
 
@@ -26,7 +27,7 @@ export function ProjectPicker({ value, lookups, onChange, renderTrigger }: Proje
 
   useEffect(() => {
     if (!isOpen) return
-    menuRef.current?.scrollIntoView({ block: 'nearest' })
+    keepInView(menuRef.current)
     const handleClick = (event: MouseEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false)
     }

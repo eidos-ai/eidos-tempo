@@ -226,6 +226,7 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Past entries: description editable inline with suggestions (picks description + project), project picker, "+ Add project"; a grouped row updates all its entries; tags and billable are kept
 - [x] Failed edit on a past entry: "Updating the entry was not saved…", the typed value stays; requests are sent in order so quick edits don't overwrite each other
 - [x] Dropdowns near the bottom of the list scroll into view
+- [!] Tag menu opened from chips on the right overflowed the 450 px popup and shifted the whole window sideways; menus now shift left to stay inside
 - [x] With saves slowed to 1.5 s: start, stop, ▶ continue, typed description/project/tag/billable and picked suggestions show at once; nothing changes when the save finishes; buttons are never disabled
 - [x] Stop with the server fully unreachable: the popup goes back to running, shows "Stopping the timer was not saved…", icon ends on `!`
 
