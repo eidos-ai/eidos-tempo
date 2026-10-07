@@ -1,4 +1,4 @@
-export const DEFAULT_SERVER_URL = 'http://localhost:5173'
+export const DEFAULT_SERVER_URL = 'https://tempo-787081458205.us-central1.run.app'
 
 const SERVER_URL_KEY = 'serverUrl'
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1'])

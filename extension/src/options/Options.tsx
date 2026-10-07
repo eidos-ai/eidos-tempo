@@ -64,7 +64,7 @@ export function Options() {
           id="server-url"
           value={serverUrl}
           onChange={(event) => setServerUrlInput(event.target.value)}
-          placeholder="https://tempo.example.com"
+          placeholder={DEFAULT_SERVER_URL}
           autoComplete="off"
           required
           className="h-10 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"

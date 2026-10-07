@@ -75,8 +75,9 @@ npm run build
 ```
 
 In Chrome: `chrome://extensions` → Developer mode → **Load unpacked** → `extension/dist`.
-It uses your Tempo login in the same browser. The server address (default `http://localhost:5173`)
-is in the extension's Options (right-click the icon).
+It uses your Tempo login in the same browser. The server address (default: production,
+`https://tempo-787081458205.us-central1.run.app`) is in the extension's Options (right-click the icon); for
+development set it to `http://localhost:5173`.
 
 ## Importing from Toggl
 
