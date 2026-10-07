@@ -73,9 +73,15 @@
   }
 }
 
+/* Chrome grows a popup to fit its content; a fixed width keeps dropdowns from widening the window. */
+html.popup,
+html.popup body {
+  width: 450px;
+  overflow-x: hidden;
+}
+
 body {
   @apply bg-canvas text-ink font-sans antialiased;
-  overflow-x: hidden;
 }
 
 button {
