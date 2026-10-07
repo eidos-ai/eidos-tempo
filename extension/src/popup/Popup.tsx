@@ -25,7 +25,7 @@ export function Popup() {
   }, [data])
 
   return (
-    <div className="flex h-[540px] w-[400px] flex-col bg-canvas">
+    <div className="flex h-[600px] w-[450px] flex-col bg-canvas">
       <header className="flex h-12 shrink-0 items-center gap-1 border-b border-line bg-surface pr-2 pl-4">
         <span role="img" aria-label="eidos.ai" className="wordmark h-[18px]" />
         <span className="mx-2.5 h-4 w-px bg-line-strong" aria-hidden="true" />
