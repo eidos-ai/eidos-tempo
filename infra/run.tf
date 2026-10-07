@@ -16,6 +16,9 @@ resource "google_cloud_run_v2_service" "tempo" {
   ingress             = "INGRESS_TRAFFIC_ALL"
   deletion_protection = false
   labels              = local.labels
+  # Public without an allUsers binding (which needs more than Editor): Cloud Run skips its own sign-in check;
+  # the app still requires a login or API token, and the backend checks the scheduler's token itself.
+  invoker_iam_disabled = true
 
   template {
     service_account                  = module.base.runtime_service_account

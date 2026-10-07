@@ -9,8 +9,12 @@ hand first, then adopted by the `import` block in `main.tf`).
 | `run.tf` | Cloud Run service `tempo`: web + backend + db containers, min 1 / max 1 instance, request-based billing |
 | `scheduler.tf` | `tempo-nightly-backup`: base backup + `pg_dump` at 03:00 Montevideo |
 
-Not managed here (needs more than Editor, or done by hand): project IAM, public access (`allUsers` invoker),
-a custom domain (the service uses its `run.app` URL). No Cloud Monitoring alerts: uptime and backups are watched from outside.
+Public access is `invoker_iam_disabled = true` in `run.tf` (Cloud Run skips its own sign-in check; the app still
+requires a login). Changing that setting needs `run.services.setIamPolicy`, which Editor doesn't have: a project
+Owner turns it on once (step 7); after that, Editor applies leave it as is.
+
+Not managed here (done by hand): project IAM and a custom domain (the service uses its `run.app` URL).
+No Cloud Monitoring alerts: uptime and backups are watched from outside.
 
 ## What you need
 
@@ -53,19 +57,22 @@ Skip the steps already done: in `eidos-15111991` everything below exists.
    ../scripts/cloudrun-deploy.sh                       # first time it only pushes; the service doesn't exist yet
    terraform plan && terraform apply
    ```
+   Creating the service sets public access, which needs an Owner (step 7). An Editor sets
+   `invoker_iam_disabled = false` in `run.tf` for this first apply, puts it back afterwards, and leaves step 7 to an
+   Owner.
 6. Check it (the service is private until step 7):
    ```bash
    terraform output service_url
    gcloud run services proxy tempo --region us-central1 --port 8080   # then open http://localhost:8080 and log in
    ```
-7. **A project Owner** makes it public. Organizations that restrict `allUsers` need a policy exception first.
+7. **A project Owner** makes it public (the setting in `run.tf`, which Editor can't change):
    ```bash
-   gcloud run services add-iam-policy-binding tempo --region us-central1 --project eidos-15111991 \
-     --member allUsers --role roles/run.invoker
+   gcloud run services update tempo --region us-central1 --project eidos-15111991 --no-invoker-iam-check
    ```
    Public access is also what lets the nightly job call `/api/internal/backup` (the backend checks the job's
    Google token itself). Check it once: `gcloud scheduler jobs run tempo-nightly-backup --location us-central1`,
-   then a new file appears in `gs://eidos-tempo/backups/<prefix>/dumps/`.
+   then a new file appears in `gs://eidos-tempo/backups/<prefix>/dumps/`. On a brand-new project, an Owner can
+   instead run step 5's `terraform apply`, which then creates the service public directly.
 
 ## Later changes
 
