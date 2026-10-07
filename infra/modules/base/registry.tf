@@ -17,8 +17,7 @@ resource "google_artifact_registry_repository" "tempo" {
     id     = "delete-older"
     action = "DELETE"
     condition {
-      tag_state  = "ANY"
-      older_than = "0s"
+      tag_state = "ANY"
     }
   }
 }
