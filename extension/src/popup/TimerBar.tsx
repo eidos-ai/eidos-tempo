@@ -62,6 +62,8 @@ export function TimerBar({ running, suggestions, lookups, isBusy, onStart, onSto
           suggestions={suggestions}
           lookups={lookups}
           maxLength={MAX_DESCRIPTION_LENGTH}
+          autoFocus
+          className="h-11 w-full bg-transparent text-lg outline-none placeholder:text-muted"
           placeholder={running ? '(no description)' : 'What are you working on?'}
           onChange={setDescription}
           onSelect={(suggestion) => {

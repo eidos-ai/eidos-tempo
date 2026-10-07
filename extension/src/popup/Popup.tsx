@@ -73,6 +73,7 @@ export function Popup() {
           />
           <RecentEntries
             entries={data.recent}
+            suggestions={data.suggestions}
             running={data.running}
             lookups={lookups}
             isBusy={tempo.isBusy}

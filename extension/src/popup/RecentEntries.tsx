@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { dayLabel, entrySeconds, formatDuration, secondsSince, startOfDay, startOfWeek } from '../time'
-import type { TimeEntry, TimerStartInput } from '../types'
+import type { EntrySuggestion, TimeEntry, TimerStartInput } from '../types'
+import { DescriptionInput } from './DescriptionInput'
 import { PlayIcon, PlusIcon } from './icons'
 import { clientOf, type Lookups } from './lookups'
 import { ProjectLabel } from './ProjectLabel'
@@ -23,6 +24,7 @@ interface DayGroup {
 
 interface RecentEntriesProps {
   entries: TimeEntry[]
+  suggestions: EntrySuggestion[]
   running: TimeEntry | null
   lookups: Lookups
   isBusy: boolean
@@ -56,7 +58,7 @@ function trackedSince(entries: TimeEntry[], running: TimeEntry | null, rangeStar
   return tracked.reduce((sum, entry) => sum + secondsSince(entry, rangeStart, now), 0)
 }
 
-export function RecentEntries({ entries, running, lookups, isBusy, onUpdate, onContinue }: RecentEntriesProps) {
+export function RecentEntries({ entries, suggestions, running, lookups, isBusy, onUpdate, onContinue }: RecentEntriesProps) {
   const now = useNow(running !== null)
   const days = groupByDay(entries, now)
 
@@ -79,6 +81,7 @@ export function RecentEntries({ entries, running, lookups, isBusy, onUpdate, onC
                 <EntryRow
                   key={`${group.latest.id}|${sameWorkKey(group.latest)}`}
                   group={group}
+                  suggestions={suggestions}
                   lookups={lookups}
                   isBusy={isBusy}
                   onUpdate={onUpdate}
@@ -104,13 +107,14 @@ function Total({ label, seconds }: { label: string; seconds: number }) {
 
 interface EntryRowProps {
   group: EntryGroup
+  suggestions: EntrySuggestion[]
   lookups: Lookups
   isBusy: boolean
   onUpdate: (entries: TimeEntry[], input: TimerStartInput) => void
   onContinue: (entry: TimeEntry) => void
 }
 
-function EntryRow({ group, lookups, isBusy, onUpdate, onContinue }: EntryRowProps) {
+function EntryRow({ group, suggestions, lookups, isBusy, onUpdate, onContinue }: EntryRowProps) {
   const { latest, entries } = group
   const [description, setDescription] = useState(latest.description)
   const [projectId, setProjectId] = useState(latest.project_id)
@@ -132,26 +136,30 @@ function EntryRow({ group, lookups, isBusy, onUpdate, onContinue }: EntryRowProp
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <input
+        <DescriptionInput
           value={description}
+          suggestions={suggestions}
+          lookups={lookups}
           maxLength={MAX_DESCRIPTION_LENGTH}
           placeholder="Add a description"
-          aria-label="Description"
-          autoComplete="off"
-          onChange={(event) => setDescription(event.target.value)}
+          className="-mx-1.5 block h-7 w-[calc(100%+0.75rem)] truncate rounded-md bg-transparent px-1.5 text-ink outline-none placeholder:text-muted hover:bg-canvas focus:bg-canvas focus:ring-1 focus:ring-line-strong"
+          onChange={setDescription}
+          onSelect={(suggestion) => {
+            setDescription(suggestion.description)
+            setProjectId(suggestion.project_id)
+            save(suggestion.description, suggestion.project_id)
+          }}
+          onSelectProject={(nextProjectId) => {
+            setProjectId(nextProjectId)
+            save(description.trim(), nextProjectId)
+          }}
+          onSubmit={(input) => input.blur()}
+          onFocus={() => undefined}
           onBlur={() => {
             const trimmed = description.trim()
             setDescription(trimmed)
             save(trimmed, projectId)
           }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') event.currentTarget.blur()
-            if (event.key === 'Escape') {
-              event.preventDefault()
-              setDescription(latest.description)
-            }
-          }}
-          className="-mx-1.5 block h-7 w-[calc(100%+0.75rem)] truncate rounded-md bg-transparent px-1.5 text-ink outline-none placeholder:text-muted hover:bg-canvas focus:bg-canvas focus:ring-1 focus:ring-line-strong"
         />
         <ProjectPicker
           value={projectId}

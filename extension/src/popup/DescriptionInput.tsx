@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import type { EntrySuggestion, Project } from '../types'
 import { clientOf, type Lookups } from './lookups'
 import { ProjectLabel } from './ProjectLabel'
@@ -14,6 +14,8 @@ interface DescriptionInputProps {
   lookups: Lookups
   placeholder: string
   maxLength: number
+  className: string
+  autoFocus?: boolean
   onChange: (value: string) => void
   onSelect: (suggestion: EntrySuggestion) => void
   onSelectProject: (projectId: string) => void
@@ -46,6 +48,11 @@ export function DescriptionInput(props: DescriptionInputProps) {
     : []
   const options = [...entryOptions, ...projectOptions]
   const showList = isOpen && options.length > 0
+  const listRef = useRef<HTMLUListElement>(null)
+
+  useEffect(() => {
+    if (showList) listRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [showList])
 
   const close = () => {
     setIsOpen(false)
@@ -110,12 +117,12 @@ export function DescriptionInput(props: DescriptionInputProps) {
         value={value}
         maxLength={props.maxLength}
         placeholder={props.placeholder}
-        autoFocus
+        autoFocus={props.autoFocus}
         autoComplete="off"
         role="combobox"
         aria-expanded={showList}
         aria-label="Description"
-        className="h-11 w-full bg-transparent text-lg outline-none placeholder:text-muted"
+        className={props.className}
         onChange={(event) => {
           onChange(event.target.value)
           setIsOpen(true)
@@ -131,6 +138,7 @@ export function DescriptionInput(props: DescriptionInputProps) {
       />
       {showList && (
         <ul
+          ref={listRef}
           role="listbox"
           className="absolute top-full left-0 z-40 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-line bg-surface py-1 shadow-xl"
         >
