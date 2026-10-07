@@ -16,6 +16,8 @@ resource "google_cloud_run_v2_service" "tempo" {
   ingress             = "INGRESS_TRAFFIC_ALL"
   deletion_protection = false
   labels              = local.labels
+  # Lets Cloud Run accept the scheduler's token (audience below) when the service is not public.
+  custom_audiences = [local.backup_audience]
 
   template {
     service_account                  = module.base.runtime_service_account
