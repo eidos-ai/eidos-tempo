@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { getServerUrl } from '../config'
 import type { ApiError } from '../api'
-import { ExternalIcon, SettingsIcon } from './icons'
+import { ExternalIcon, RefreshIcon, SettingsIcon } from './icons'
 import { buildLookups } from './lookups'
 import { RecentEntries } from './RecentEntries'
 import { TimerBar } from './TimerBar'
@@ -32,6 +32,9 @@ export function Popup() {
         <span className="flex-1 font-display text-[15px] font-medium text-ink-soft">Tempo</span>
         <HeaderButton label="Open Eidos Tempo" onClick={() => void openTempo()}>
           <ExternalIcon width={16} height={16} />
+        </HeaderButton>
+        <HeaderButton label="Refresh" onClick={tempo.reload}>
+          <RefreshIcon width={16} height={16} />
         </HeaderButton>
         <HeaderButton label="Settings" onClick={() => void chrome.runtime.openOptionsPage()}>
           <SettingsIcon width={16} height={16} />
