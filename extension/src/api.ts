@@ -1,5 +1,15 @@
 import { getServerUrl } from './config'
-import type { Client, EntrySuggestion, Project, TimeEntry, TimeEntryInput, TimerStartInput, User } from './types'
+import type {
+  Client,
+  EntrySuggestion,
+  Project,
+  Tag,
+  TagInput,
+  TimeEntry,
+  TimeEntryInput,
+  TimerStartInput,
+  User,
+} from './types'
 
 export type ApiErrorKind = 'not-logged-in' | 'unreachable' | 'rejected'
 
@@ -49,6 +59,8 @@ export const tempoApi = {
   me: () => request<User>('GET', '/me'),
   clients: () => request<Client[]>('GET', '/clients'),
   projects: () => request<Project[]>('GET', '/projects'),
+  tags: () => request<Tag[]>('GET', '/tags?include_archived=true'),
+  createTag: (input: TagInput) => request<Tag>('POST', '/tags', input),
   running: () => request<TimeEntry | null>('GET', '/time-entries/running'),
   entries: (start: Date, end: Date) =>
     request<TimeEntry[]>(

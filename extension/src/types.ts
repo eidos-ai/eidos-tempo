@@ -19,6 +19,17 @@ export interface Project {
   is_billable: boolean
 }
 
+export interface Tag {
+  id: string
+  name: string
+  is_archived: boolean
+}
+
+export interface TagInput {
+  name: string
+  is_archived: boolean
+}
+
 export interface TimeEntry {
   id: string
   description: string

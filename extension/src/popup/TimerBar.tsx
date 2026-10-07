@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { entrySeconds, formatDuration } from '../time'
-import type { EntrySuggestion, TimeEntry, TimerStartInput } from '../types'
+import type { EntrySuggestion, Tag, TimeEntry, TimerStartInput } from '../types'
 import { DescriptionInput } from './DescriptionInput'
-import { DollarIcon, FolderIcon, PlayIcon, StopIcon } from './icons'
+import { DollarIcon, FolderIcon, PlayIcon, StopIcon, TagIcon } from './icons'
 import { clientOf, type Lookups } from './lookups'
 import { ProjectLabel } from './ProjectLabel'
 import { ProjectPicker } from './ProjectPicker'
+import { TagList, TagPicker } from './TagPicker'
 import { useNow } from './useNow'
 
 const MAX_DESCRIPTION_LENGTH = 500
@@ -14,69 +15,103 @@ interface TimerBarProps {
   running: TimeEntry | null
   suggestions: EntrySuggestion[]
   lookups: Lookups
+  tags: Tag[]
   isBusy: boolean
+  onCreateTag: (name: string) => Promise<Tag | null>
   onStart: (input: TimerStartInput) => void
   onStop: () => void
   onUpdateRunning: (entry: TimeEntry, input: TimerStartInput) => void
 }
 
-export function TimerBar({ running, suggestions, lookups, isBusy, onStart, onStop, onUpdateRunning }: TimerBarProps) {
-  const [description, setDescription] = useState(running?.description ?? '')
-  const [projectId, setProjectId] = useState<string | null>(running?.project_id ?? null)
+interface TimerFields {
+  description: string
+  projectId: string | null
+  isBillable: boolean
+  tagIds: string[]
+}
+
+const EMPTY_FIELDS: TimerFields = { description: '', projectId: null, isBillable: false, tagIds: [] }
+
+function fieldsOf(entry: TimeEntry | null): TimerFields {
+  if (!entry) return EMPTY_FIELDS
+  return { description: entry.description, projectId: entry.project_id, isBillable: entry.is_billable, tagIds: entry.tag_ids }
+}
+
+function sameFields(entry: TimeEntry, fields: TimerFields): boolean {
+  return (
+    entry.description === fields.description.trim() &&
+    entry.project_id === fields.projectId &&
+    entry.is_billable === fields.isBillable &&
+    entry.tag_ids.length === fields.tagIds.length &&
+    entry.tag_ids.every((id) => fields.tagIds.includes(id))
+  )
+}
+
+function toInput(fields: TimerFields): TimerStartInput {
+  return {
+    description: fields.description.trim(),
+    project_id: fields.projectId,
+    is_billable: fields.isBillable,
+    tag_ids: fields.tagIds,
+  }
+}
+
+export function TimerBar(props: TimerBarProps) {
+  const { running, suggestions, lookups, tags, isBusy, onStart, onStop, onUpdateRunning, onCreateTag } = props
+  const [fields, setFields] = useState<TimerFields>(() => fieldsOf(running))
   const [isEditing, setIsEditing] = useState(false)
   const now = useNow(running !== null)
 
   useEffect(() => {
     if (isEditing) return
-    setDescription(running?.description ?? '')
-    setProjectId(running?.project_id ?? null)
+    setFields(fieldsOf(running))
     // Sync only when the running entry changes, not while the user is typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running?.id, running?.description, running?.project_id])
+  }, [running?.id, running?.description, running?.project_id, running?.is_billable, running?.tag_ids.join()])
 
-  const commit = (nextDescription: string, nextProjectId: string | null) => {
-    if (!running) return
-    if (running.description === nextDescription.trim() && running.project_id === nextProjectId) return
-    onUpdateRunning(running, { description: nextDescription.trim(), project_id: nextProjectId })
+  const change = (patch: Partial<TimerFields>, shouldCommit: boolean) => {
+    const next = { ...fields, ...patch }
+    setFields(next)
+    if (shouldCommit && running && !sameFields(running, next)) onUpdateRunning(running, toInput(next))
   }
 
   const startOrStop = () => {
     if (running) onStop()
-    else onStart({ description: description.trim(), project_id: projectId })
+    else onStart(toInput(fields))
   }
 
-  const chooseProject = (nextProjectId: string | null) => {
-    setProjectId(nextProjectId)
-    commit(description, nextProjectId)
-  }
+  const billableFor = (projectId: string | null) => (projectId ? (lookups.projects.get(projectId)?.is_billable ?? false) : false)
 
-  const selectedProject = projectId ? lookups.projects.get(projectId) : undefined
-  const isBillable =
-    running && running.project_id === projectId ? running.is_billable : (selectedProject?.is_billable ?? false)
+  const chooseProject = (projectId: string | null) => change({ projectId, isBillable: billableFor(projectId) }, true)
 
   return (
     <div className="shrink-0 border-b border-line bg-surface px-4 pt-2 pb-2">
       <div className="flex items-center gap-3">
         <DescriptionInput
-          value={description}
+          value={fields.description}
           suggestions={suggestions}
           lookups={lookups}
           maxLength={MAX_DESCRIPTION_LENGTH}
           autoFocus
           className="h-11 w-full truncate bg-transparent text-base font-medium outline-none placeholder:font-normal placeholder:text-muted"
           placeholder={running ? '(no description)' : 'What are you working on?'}
-          onChange={setDescription}
-          onSelect={(suggestion) => {
-            setDescription(suggestion.description)
-            setProjectId(suggestion.project_id)
-            commit(suggestion.description, suggestion.project_id)
-          }}
+          onChange={(description) => change({ description }, false)}
+          onSelect={(suggestion) =>
+            change(
+              {
+                description: suggestion.description,
+                projectId: suggestion.project_id,
+                isBillable: billableFor(suggestion.project_id),
+              },
+              true,
+            )
+          }
           onSelectProject={chooseProject}
           onSubmit={(input) => (running ? input.blur() : startOrStop())}
           onFocus={() => setIsEditing(true)}
           onBlur={() => {
             setIsEditing(false)
-            commit(description, projectId)
+            change({}, true)
           }}
         />
         <span className="font-display text-lg font-semibold tabular-nums">
@@ -95,7 +130,7 @@ export function TimerBar({ running, suggestions, lookups, isBusy, onStart, onSto
       </div>
       <div className="-ml-2 flex items-center gap-1">
         <ProjectPicker
-          value={projectId}
+          value={fields.projectId}
           lookups={lookups}
           onChange={chooseProject}
           renderTrigger={(project) =>
@@ -113,9 +148,32 @@ export function TimerBar({ running, suggestions, lookups, isBusy, onStart, onSto
             )
           }
         />
-        <span title={isBillable ? 'Billable' : 'Non-billable'} className={`p-1.5 ${isBillable ? 'text-primary' : 'text-line-strong'}`}>
+        <TagPicker
+          tags={tags}
+          value={fields.tagIds}
+          onChange={(tagIds) => change({ tagIds }, true)}
+          onCreate={onCreateTag}
+          renderTrigger={(selected) =>
+            selected.length > 0 ? (
+              <span className="max-w-44 rounded-lg px-1.5 py-1 hover:bg-canvas">
+                <TagList tags={selected} />
+              </span>
+            ) : (
+              <span className="flex items-center rounded-lg p-2 text-muted hover:bg-canvas hover:text-primary" title="Add tags">
+                <TagIcon />
+              </span>
+            )
+          }
+        />
+        <button
+          type="button"
+          aria-pressed={fields.isBillable}
+          onClick={() => change({ isBillable: !fields.isBillable }, true)}
+          title={fields.isBillable ? 'Billable (click to make non-billable)' : 'Non-billable (click to make billable)'}
+          className={`rounded-lg p-2 hover:bg-canvas ${fields.isBillable ? 'text-primary' : 'text-line-strong hover:text-ink-soft'}`}
+        >
           <DollarIcon />
-        </span>
+        </button>
       </div>
     </div>
   )

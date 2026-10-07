@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, tempoApi } from '../api'
 import { showProblem, showRunning } from '../badge'
 import { addDays, startOfDay } from '../time'
-import type { Client, EntrySuggestion, Project, TimeEntry, TimeEntryInput, TimerStartInput, User } from '../types'
+import type { Client, EntrySuggestion, Project, Tag, TimeEntry, TimeEntryInput, TimerStartInput, User } from '../types'
 
 const RECENT_DAYS = 7
 
@@ -14,6 +14,7 @@ export interface TempoData {
   recent: TimeEntry[]
   projects: Project[]
   clients: Client[]
+  tags: Tag[]
   suggestions: EntrySuggestion[]
 }
 
@@ -56,13 +57,14 @@ export function useTempo() {
 
   const load = useCallback(async () => {
     try {
-      const [me, projects, clients, activity] = await Promise.all([
+      const [me, projects, clients, tags, activity] = await Promise.all([
         tempoApi.me(),
         tempoApi.projects(),
         tempoApi.clients(),
+        tempoApi.tags(),
         fetchActivity(),
       ])
-      setData({ me, projects, clients, ...activity })
+      setData({ me, projects, clients, tags, ...activity })
       setStatus('ready')
     } catch (loadError) {
       if (loadError instanceof ApiError && loadError.kind !== 'rejected') return signOut(loadError)
@@ -115,12 +117,12 @@ export function useTempo() {
 
   const replacement = (entry: TimeEntry, input: TimerStartInput): TimeEntryInput => {
     const project = data?.projects.find((candidate) => candidate.id === input.project_id)
-    const isBillable = input.project_id === entry.project_id ? entry.is_billable : (project?.is_billable ?? false)
+    const projectBillable = input.project_id === entry.project_id ? entry.is_billable : (project?.is_billable ?? false)
     return {
       description: input.description,
       project_id: input.project_id,
-      is_billable: isBillable,
-      tag_ids: entry.tag_ids,
+      is_billable: input.is_billable ?? projectBillable,
+      tag_ids: input.tag_ids ?? entry.tag_ids,
       start: entry.start,
       stop: entry.stop,
     }
@@ -138,6 +140,17 @@ export function useTempo() {
       void load()
     },
     dismissError: () => setError(null),
+    createTag: async (name: string): Promise<Tag | null> => {
+      try {
+        const tag = await tempoApi.createTag({ name, is_archived: false })
+        setData((current) => (current ? { ...current, tags: [...current.tags, tag] } : current))
+        return tag
+      } catch (createError) {
+        await reportFailure('Creating the tag', createError)
+        setError(`Creating the tag was not saved. ${describe(createError)}`)
+        return null
+      }
+    },
     start: (input: TimerStartInput) => act('Starting the timer', () => tempoApi.start(input)),
     stop: () => act('Stopping the timer', tempoApi.stop),
     updateRunning: (entry: TimeEntry, input: TimerStartInput) =>
