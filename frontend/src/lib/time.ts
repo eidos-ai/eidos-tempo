@@ -105,14 +105,16 @@ export function toTwelveHour(value: string): { text: string; meridiem: Meridiem 
   return { text: `${hours % 12 || 12}:${match[2]}`, meridiem: hours >= 12 ? 'PM' : 'AM' }
 }
 
+const CLOCK_TEXT = /^(\d{1,2})(?:(?:[:.,]|\s+)(\d{1,2})|(\d{2}))?\s*(?:([ap])\.?(?:m\.?)?)?$/i
+
 export function parseClockText(text: string, meridiem: Meridiem): ClockTime | null {
-  const match = /^(\d{1,2}):?(\d{2})?\s*([ap])?m?$/i.exec(text.trim())
+  const match = CLOCK_TEXT.exec(text.trim())
   if (!match) return null
   const hours = Number(match[1])
-  const minutes = Number(match[2] ?? 0)
+  const minutes = Number(match[2] ?? match[3] ?? 0)
   if (hours > 23 || minutes > 59) return null
   const isTwentyFourHour = hours === 0 || hours > 12
-  const suffix = match[3]?.toUpperCase()
+  const suffix = match[4]?.toUpperCase()
   const chosen: Meridiem = isTwentyFourHour ? (hours >= 12 ? 'PM' : 'AM') : suffix ? (suffix === 'A' ? 'AM' : 'PM') : meridiem
   const hours24 = isTwentyFourHour ? hours : (hours % 12) + (chosen === 'PM' ? 12 : 0)
   return { value: `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`, meridiem: chosen }

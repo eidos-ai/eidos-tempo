@@ -59,6 +59,7 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [!] Drag on calendar creates entry with exact snapped times (fast drags lost the end; fixed)
 - [x] Single click on calendar creates a 30-minute draft
 - [x] Edit an entry: description, project, start, stop
+- [ ] Start/stop fields accept `10:10`, `10.10`, `10,10`, `10 10`, `1010`, `9:5`, `10.10pm`, `10:10 a.m.` (like Toggl); invalid text (`10-10`, `10:60`) shows "Enter valid start and stop times" on Save
 - [x] Edit running entry: stop shows "Running", start editable
 - [!] Validation: running entry starting in the future (was server-only and closed the form; client check added)
 - [x] Validation: stop before start, manual entry without stop, naive datetimes (API)
