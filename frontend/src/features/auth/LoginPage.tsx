@@ -22,7 +22,7 @@ export function LoginPage() {
     <div className="flex h-full items-center justify-center bg-gradient-to-br from-sand via-rose to-lavender p-4 dark:from-canvas dark:via-deep dark:to-canvas">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5 rounded-2xl bg-surface p-8 shadow-xl">
         <div className="space-y-2">
-          <Logo height={32} />
+          <Logo height={40} />
           <p className="text-sm text-ink-soft">Tempo · time tracking</p>
         </div>
         <Field label="Email">
