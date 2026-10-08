@@ -12,6 +12,6 @@
   "options_page": "options.html",
   "background": { "service_worker": "background.js", "type": "module" },
   "permissions": ["storage", "alarms"],
-  "host_permissions": ["https://tempo-787081458205.us-central1.run.app/*", "http://localhost/*", "http://127.0.0.1/*"],
+  "host_permissions": ["https://tempo.eidos.ai/*", "https://tempo-787081458205.us-central1.run.app/*", "http://localhost/*", "http://127.0.0.1/*"],
   "optional_host_permissions": ["https://*/*"]
 }

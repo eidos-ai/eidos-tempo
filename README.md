@@ -76,7 +76,7 @@ npm run build
 
 In Chrome: `chrome://extensions` → Developer mode → **Load unpacked** → `extension/dist`.
 It uses your Tempo login in the same browser. The server address (default: production,
-`https://tempo-787081458205.us-central1.run.app`) is in the extension's Options (right-click the icon); for
+`https://tempo.eidos.ai`) is in the extension's Options (right-click the icon); for
 development set it to `http://localhost:5173`.
 
 ## Importing from Toggl
@@ -130,8 +130,9 @@ Same requests and responses as Toggl, under `/api/toggl`:
 Production runs on Google Cloud Run (project `eidos-15111991`, region `us-central1`): one service `tempo` with three
 containers (nginx, backend, Postgres + WAL-G) and the database in memory, rebuilt from `gs://eidos-tempo` on every
 start. Every save is archived to the bucket before the response, and only the instance holding the lease
-(`lease/owner`) may write. Address: `https://tempo-787081458205.us-central1.run.app` (the same service as
-`https://tempo-e4zfnlhfya-uc.a.run.app`, which `terraform output service_url` prints).
+(`lease/owner`) may write. Address: `https://tempo.eidos.ai` (a Cloud Run domain mapping, set up by hand), the same
+service as `https://tempo-787081458205.us-central1.run.app` and `https://tempo-e4zfnlhfya-uc.a.run.app` (which
+`terraform output service_url` prints).
 
 First-time setup, prerequisites and the Terraform files: [infra/README.md](infra/README.md).
 

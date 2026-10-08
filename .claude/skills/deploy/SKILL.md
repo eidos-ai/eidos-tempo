@@ -64,7 +64,7 @@ It builds three linux/amd64 images tagged with the commit, pushes them and creat
    gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.revision_name="<revision>" AND (textPayload=~"lease acquired|database ready|Holding the database lease" OR severity>=ERROR)' --freshness 15m --limit 30 --format="value(timestamp.date('%H:%M:%S'),labels.container_name,textPayload)"
    ```
    Expect `lease acquired`, `database ready` and `Holding the database lease`, and no errors.
-3. Health: `curl -s https://tempo-787081458205.us-central1.run.app/api/health` returns `{"status":"ok"}` (while
+3. Health: `curl -s https://tempo.eidos.ai/api/health` returns `{"status":"ok"}` (while
    the service isn't public, use the proxy: `gcloud run services proxy tempo --region us-central1 --port 8080`).
 4. Ask the user to open the app and try what the deploy changed.
 

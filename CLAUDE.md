@@ -114,7 +114,7 @@ these shapes, compare with Toggl again.
 - Manifest V3, React + Tailwind built with Vite into `extension/dist` (load it unpacked in Chrome).
 - No separate login: it calls the same API with the browser's `tempo_session` cookie (host permission
   for the Tempo address). Logged out → the popup links to the web app.
-- The server address is a setting (`src/config.ts`, options page); the default is production's `run.app` address,
+- The server address is a setting (`src/config.ts`, options page); the default is production's address (`https://tempo.eidos.ai`),
   which is also in the manifest's `host_permissions` so no permission prompt appears. Only `https://` or `http://localhost`
   are accepted, so moving to HTTPS is a settings change.
 - `src/api.ts` mirrors the API types by hand, like the frontend. Actions are optimistic (`act` in `popup/useTempo.ts`:

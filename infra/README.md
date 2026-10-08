@@ -13,7 +13,7 @@ Public access is `invoker_iam_disabled = true` in `run.tf` (Cloud Run skips its 
 requires a login). Changing that setting needs `run.services.setIamPolicy`, which Editor doesn't have: a project
 Owner turns it on once (step 7); after that, Editor applies leave it as is.
 
-Not managed here (done by hand): project IAM and a custom domain (the service uses its `run.app` URL).
+Not managed here (done by hand): project IAM and the domain mapping `tempo.eidos.ai`.
 No Cloud Monitoring alerts: uptime and backups are watched from outside.
 
 ## What you need
