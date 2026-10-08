@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { ReportEntry } from '../../api/types'
 import { ChevronLeftIcon, ChevronRightIcon } from '../../components/icons'
-import { shiftDays, startOfDay, toTimeInputValue, withTimeOfDay } from '../../lib/time'
+import { atTimeOf, shiftDays, startOfDay, toTimeInputValue, withTimeOfDay } from '../../lib/time'
 import { TimeField } from '../timer/TimeField'
 import { MonthCalendar } from './MonthCalendar'
 import { useDismiss } from './useDismiss'
@@ -10,10 +10,6 @@ interface TimeDateEditorProps {
   entry: ReportEntry
   onSave: (start: Date, stop: Date) => void
   onClose: () => void
-}
-
-function atTimeOf(day: Date, source: Date): Date {
-  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), source.getHours(), source.getMinutes(), source.getSeconds())
 }
 
 function resolvePeriod(

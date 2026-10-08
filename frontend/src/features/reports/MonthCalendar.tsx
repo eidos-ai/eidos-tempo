@@ -8,6 +8,7 @@ interface MonthCalendarProps {
   rangeEnd: Date | null
   onPick: (day: Date) => void
   showWeekNumbers?: boolean
+  isDisabled?: (day: Date) => boolean
 }
 
 function weeksOf(month: Date): Date[][] {
@@ -19,7 +20,7 @@ function weeksOf(month: Date): Date[][] {
   return weeks
 }
 
-export function MonthCalendar({ month, rangeStart, rangeEnd, onPick, showWeekNumbers = true }: MonthCalendarProps) {
+export function MonthCalendar({ month, rangeStart, rangeEnd, onPick, showWeekNumbers = true, isDisabled }: MonthCalendarProps) {
   const weeks = weeksOf(month)
   const inRange = (day: Date) => rangeStart !== null && rangeEnd !== null && day >= rangeStart && day <= rangeEnd
   const isEdge = (day: Date) =>
@@ -52,7 +53,8 @@ export function MonthCalendar({ month, rangeStart, rangeEnd, onPick, showWeekNum
                   <button
                     type="button"
                     onClick={() => onPick(day)}
-                    className={`h-8 w-9 font-medium tabular-nums ${
+                    disabled={isDisabled?.(day)}
+                    className={`h-8 w-9 font-medium tabular-nums disabled:cursor-default disabled:bg-transparent disabled:text-line-strong ${
                       edge
                         ? 'rounded-md bg-primary text-white'
                         : selected

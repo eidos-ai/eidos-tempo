@@ -61,6 +61,8 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Edit an entry: description, project, start, stop
 - [x] Start/stop fields accept `10:10`, `10.10`, `10,10`, `10 10`, `1010`, `9:5`, `10.10pm`, `10:10 a.m.` (like Toggl); invalid text (`10-10`, `10:60`) shows "Enter valid start and stop times" on Save
 - [x] Edit running entry: stop shows "Running", start editable
+- [ ] Click the running timer: duration becomes editable; Start (Today/date), Stop disabled, calendar with future days off; Enter or a click outside saves (the click does nothing else), Escape cancels; future start shows an error; a failed save rolls back with a message
+- [ ] Timer bar tooltips (project, tags, billable, duration, start/stop) appear after a short delay, fade in, hide on click
 - [!] Validation: running entry starting in the future (was server-only and closed the form; client check added)
 - [x] Validation: stop before start, manual entry without stop, naive datetimes (API)
 - [x] Delete (API): entry disappears, soft-deleted, second delete 404

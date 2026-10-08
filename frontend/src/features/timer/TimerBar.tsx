@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EntrySuggestion, TimeEntry } from '../../api/types'
 import { FolderIcon, PlayIcon, StopIcon, TagIcon } from '../../components/icons'
+import { Tooltip } from '../../components/Tooltip'
 import { entrySeconds, formatDuration } from '../../lib/time'
 import { useNow } from '../../lib/useNow'
 import { ProjectLabel } from '../projects/ProjectLabel'
@@ -16,6 +17,7 @@ import {
   useUpdateEntry,
 } from '../time-entries/useTimeEntries'
 import { BillableToggle } from './BillableToggle'
+import { RunningTimer } from './RunningTimer'
 
 const APP_TITLE = 'Eidos Tempo'
 export const MAX_DESCRIPTION_LENGTH = 500
@@ -66,6 +68,21 @@ export function TimerBar() {
         is_billable: next.isBillable,
         tag_ids: next.tagIds,
         start: entry.start,
+        stop: null,
+      },
+    })
+  }
+
+  const saveStart = (start: Date) => {
+    if (!running) return
+    updateEntry.mutate({
+      id: running.id,
+      input: {
+        description: fields.description,
+        project_id: fields.projectId,
+        is_billable: fields.isBillable,
+        tag_ids: fields.tagIds,
+        start: start.toISOString(),
         stop: null,
       },
     })
@@ -153,47 +170,53 @@ export function TimerBar() {
         placeholder={running ? '(no description)' : 'What are you working on?'}
         className="h-full w-full bg-transparent text-lg outline-none placeholder:text-muted"
       />
-      <ProjectPicker
-        value={fields.projectId}
-        onChange={handleProjectChange}
-        align="right"
-        renderTrigger={(project) =>
-          project ? (
-            <span className="rounded-lg px-2 py-1 text-sm hover:bg-canvas">
-              <ProjectLabel project={project} />
-            </span>
-          ) : (
-            <span className="rounded-lg p-2 text-muted hover:bg-canvas hover:text-primary" title="Select project">
-              <FolderIcon />
-            </span>
-          )
-        }
-      />
-      <TagPicker
-        value={fields.tagIds}
-        onChange={(tagIds) => change({ tagIds }, true)}
-        align="right"
-        renderTrigger={(tags) =>
-          tags.length > 0 ? (
-            <span className="max-w-48 rounded-lg px-1.5 py-1 hover:bg-canvas">
-              <TagList tags={tags} />
-            </span>
-          ) : (
-            <span className="rounded-lg p-2 text-muted hover:bg-canvas hover:text-primary" title="Add tags">
-              <TagIcon />
-            </span>
-          )
-        }
-      />
+      <Tooltip label={fields.projectId ? 'Change project' : 'Select project'}>
+        <ProjectPicker
+          value={fields.projectId}
+          onChange={handleProjectChange}
+          align="right"
+          renderTrigger={(project) =>
+            project ? (
+              <span className="rounded-lg px-2 py-1 text-sm hover:bg-canvas">
+                <ProjectLabel project={project} />
+              </span>
+            ) : (
+              <span className="rounded-lg p-2 text-muted hover:bg-canvas hover:text-primary">
+                <FolderIcon />
+              </span>
+            )
+          }
+        />
+      </Tooltip>
+      <Tooltip label="Select tags">
+        <TagPicker
+          value={fields.tagIds}
+          onChange={(tagIds) => change({ tagIds }, true)}
+          align="right"
+          renderTrigger={(tags) =>
+            tags.length > 0 ? (
+              <span className="max-w-48 rounded-lg px-1.5 py-1 hover:bg-canvas">
+                <TagList tags={tags} />
+              </span>
+            ) : (
+              <span className="rounded-lg p-2 text-muted hover:bg-canvas hover:text-primary">
+                <TagIcon />
+              </span>
+            )
+          }
+        />
+      </Tooltip>
       <BillableToggle value={fields.isBillable} onChange={(isBillable) => change({ isBillable }, true)} />
-      <span className="w-24 text-right font-display text-lg font-semibold tabular-nums">{elapsed}</span>
-      <button
-        onClick={handleStartStop}
-        aria-label={running ? 'Stop timer' : 'Start timer'}
-        className={`flex size-[42px] shrink-0 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-95 ${running ? 'bg-stop hover:brightness-95' : 'bg-primary hover:bg-primary-strong'}`}
-      >
-        {running ? <StopIcon /> : <PlayIcon />}
-      </button>
+      <RunningTimer entry={running} canEdit={running !== null && !isOptimistic(running)} now={now} onSaveStart={saveStart} />
+      <Tooltip label={running ? 'Stop time entry' : 'Start time entry'}>
+        <button
+          onClick={handleStartStop}
+          aria-label={running ? 'Stop timer' : 'Start timer'}
+          className={`flex size-[42px] shrink-0 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-95 ${running ? 'bg-stop hover:brightness-95' : 'bg-primary hover:bg-primary-strong'}`}
+        >
+          {running ? <StopIcon /> : <PlayIcon />}
+        </button>
+      </Tooltip>
     </div>
   )
 }

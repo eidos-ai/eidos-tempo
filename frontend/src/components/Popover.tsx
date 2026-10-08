@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { swallowNextClick } from '../lib/swallowNextClick'
 
 const GAP = 8
 const VIEWPORT_MARGIN = 8
@@ -34,14 +35,6 @@ function popoverPosition(anchor: DOMRect, width: number, height: number, viewpor
   const top = clampTop(fitsBelow ? anchor.bottom + GAP : anchor.top - GAP - height)
   const left = clampLeft(anchor.right - width)
   return { top, left, transformOrigin: `${towardAnchorX(left)}px ${fitsBelow ? 0 : height}px` }
-}
-
-function swallowNextClick(): void {
-  const swallow = (event: MouseEvent) => event.stopPropagation()
-  window.addEventListener('click', swallow, { capture: true, once: true })
-  window.addEventListener('mouseup', () => setTimeout(() => window.removeEventListener('click', swallow, true)), {
-    once: true,
-  })
 }
 
 export function Popover({ anchor, label, onClose, children }: PopoverProps) {

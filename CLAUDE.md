@@ -90,7 +90,8 @@ these shapes, compare with Toggl again.
 - The current user comes from `useCurrentUser()` (context provided by `RequireAuth`); never read the
   session query directly in pages.
 - Styling: Tailwind v4 with Eidos brand tokens in `index.css` (`--color-primary`, `--color-ink`, ...).
-  Fonts: DM Sans (`font-display`) for headings and the timer, Inter for UI text.
+  Fonts: DM Sans (`font-display`) for headings, Inter for UI text and all numbers (timer, durations, day numbers):
+  DM Sans has no tabular digits, so numbers in it change width as they tick.
 - Themes: light and dark, stored per user in `preferences.theme` and applied as `data-theme` on `<html>`
   (`lib/theme.ts`; cached in localStorage only to avoid a flash on load). Dark values override the same
   tokens under `:root[data-theme="dark"]`. Always use tokens (`bg-surface`, `text-ink`, `text-accent`,

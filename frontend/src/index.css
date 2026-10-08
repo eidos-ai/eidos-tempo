@@ -48,11 +48,17 @@
   --animate-drift: spin 40s linear infinite;
   --animate-popover-in: popover-in 0.15s ease-out;
   --animate-popover-content: popover-content 0.2s linear;
+  --animate-tooltip-in: tooltip-in 0.3s ease-out;
 }
 
 @keyframes popover-in {
   from { opacity: 0; transform: scale(0.1); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes tooltip-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes popover-content {

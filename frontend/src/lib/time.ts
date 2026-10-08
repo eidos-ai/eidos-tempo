@@ -65,6 +65,19 @@ export function formatDuration(totalSeconds: number): string {
   return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
+const CLOCK_DURATION = /^(\d+)(?::(\d{1,2}))?(?::(\d{1,2}))?$/
+const DECIMAL_HOURS = /^\d+[.,]\d+$/
+
+export function parseDuration(text: string): number | null {
+  const trimmed = text.trim()
+  if (DECIMAL_HOURS.test(trimmed)) return Math.round(Number(trimmed.replace(',', '.')) * 3600)
+  const match = CLOCK_DURATION.exec(trimmed)
+  if (!match) return null
+  const [hours, minutes = '0', seconds = '0'] = match.slice(1)
+  if (Number(minutes) > 59 || Number(seconds) > 59) return null
+  return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds)
+}
+
 export function formatClockTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
@@ -83,6 +96,10 @@ export function formatShortDate(date: Date): string {
 
 export function toTimeInputValue(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+export function atTimeOf(day: Date, source: Date): Date {
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), source.getHours(), source.getMinutes(), source.getSeconds())
 }
 
 export function withTimeOfDay(date: Date, value: string): Date | null {

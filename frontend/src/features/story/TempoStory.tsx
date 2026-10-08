@@ -124,7 +124,7 @@ function StoryContent({ story, onClose }: { story: TrackingStory; onClose: () =>
     <>
       <Header onClose={onClose}>
         <p className="pt-1 text-sm text-white/80">Tracking since {longDate(parseDay(story.first_day))}</p>
-        <p className="pt-5 font-display text-6xl leading-none font-bold tabular-nums">
+        <p className="pt-5 text-6xl leading-none font-bold tabular-nums">
           {hours.toLocaleString()}
           <span className="pl-2 text-2xl font-semibold text-white/80">hours</span>
         </p>
@@ -169,7 +169,7 @@ function Stat({ step, label, value, children }: { step: number; label: string; v
   return (
     <div className="animate-story-rise rounded-2xl bg-canvas px-4 py-3 motion-reduce:animate-none" style={delay(step)}>
       <p className="text-[11px] font-semibold tracking-wider text-muted uppercase">{label}</p>
-      <p className="pt-1 font-display text-xl font-bold tabular-nums">{value}</p>
+      <p className="pt-1 text-xl font-bold tabular-nums">{value}</p>
       <p className="truncate text-xs text-ink-soft">{children}</p>
     </div>
   )

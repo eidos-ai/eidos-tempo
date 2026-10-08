@@ -4,7 +4,7 @@ import type { ReportEntry, Tag, TimeEntryInput } from '../../api/types'
 import { Button } from '../../components/Button'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, DollarIcon, FolderIcon, MoreIcon, PencilIcon, TagIcon, TrashIcon } from '../../components/icons'
 import { Modal } from '../../components/Modal'
-import { entrySeconds, formatClockTime, formatDuration } from '../../lib/time'
+import { entrySeconds, formatClockTime, formatDuration, parseDuration } from '../../lib/time'
 import { useCurrentUser } from '../auth/useAuth'
 import { ProjectLabel } from '../projects/ProjectLabel'
 import { ProjectPicker } from '../projects/ProjectPicker'
@@ -19,8 +19,6 @@ import { useDismiss } from './useDismiss'
 import { useMemberLookup } from './useReports'
 
 const PAGE_SIZE = 100
-const CLOCK_DURATION = /^(\d+)(?::(\d{1,2}))?(?::(\d{1,2}))?$/
-const DECIMAL_HOURS = /^\d+[.,]\d+$/
 
 type SortKey = 'description' | 'billable' | 'duration' | 'member' | 'project' | 'tags' | 'time'
 type Changes = Partial<TimeEntryInput>
@@ -39,16 +37,6 @@ function inputFor(entry: ReportEntry, changes: Changes): TimeEntryInput {
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString([], { year: 'numeric', month: '2-digit', day: '2-digit' })
-}
-
-function parseDuration(text: string): number | null {
-  const trimmed = text.trim()
-  if (DECIMAL_HOURS.test(trimmed)) return Math.round(Number(trimmed.replace(',', '.')) * 3600)
-  const match = CLOCK_DURATION.exec(trimmed)
-  if (!match) return null
-  const [hours, minutes = '0', seconds = '0'] = match.slice(1)
-  if (Number(minutes) > 59 || Number(seconds) > 59) return null
-  return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds)
 }
 
 function durationOf(entry: ReportEntry): number {

@@ -283,7 +283,7 @@ function DayHeader({ day, entries, now, isToday }: { day: Date; entries: TimeEnt
   return (
     <div className="flex items-center gap-2 border-l border-line px-3 py-3">
       <span
-        className={`flex size-10 items-center justify-center rounded-full font-display text-2xl ${isToday ? 'bg-primary-soft text-accent' : ''}`}
+        className={`flex size-10 items-center justify-center rounded-full text-2xl tabular-nums ${isToday ? 'bg-primary-soft text-accent' : ''}`}
       >
         {day.getDate()}
       </span>
