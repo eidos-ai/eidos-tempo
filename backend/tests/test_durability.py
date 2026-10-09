@@ -6,6 +6,7 @@ from typing import cast
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from google.cloud.storage import Bucket
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_backup_caller_verifier, get_repositories
@@ -16,7 +17,9 @@ from app.durability.errors import (
     ArchiveTimeoutError,
     BackupFailedError,
     LeaseLostError,
+    LeaseUnavailableError,
 )
+from app.durability.lease import GcsLease, LeaseWatcher
 from app.durability.runtime import Durability
 from app.repositories.protocols import Repositories
 from tests.fakes import FakeClock
@@ -129,6 +132,45 @@ def test_archive_timeout_is_an_error() -> None:
 
     with pytest.raises(ArchiveTimeoutError):
         commit_with(wal, FakeLease(log), log, FakeTime())
+
+
+class UnreachableBucket:
+    def get_blob(self, name: str) -> None:
+        raise ConnectionError("connection refused")
+
+
+class FlakyLease:
+    def __init__(self, error: Exception | None) -> None:
+        self.error = error
+
+    def check(self) -> None:
+        if self.error is not None:
+            raise self.error
+
+
+def test_unreachable_storage_makes_the_lease_unavailable() -> None:
+    lease = GcsLease(cast(Bucket, UnreachableBucket()), "lease/owner", 1)
+
+    with pytest.raises(LeaseUnavailableError):
+        lease.check()
+
+
+@pytest.mark.parametrize(
+    ("error", "keeps_watching", "stops"),
+    [
+        (None, True, False),
+        (LeaseUnavailableError("storage down"), True, False),
+        (LeaseLostError("taken over"), False, True),
+    ],
+)
+def test_lease_watcher_stops_the_server_only_when_the_lease_is_lost(
+    error: Exception | None, keeps_watching: bool, stops: bool
+) -> None:
+    stopped: list[bool] = []
+    watcher = LeaseWatcher(FlakyLease(error), lambda: stopped.append(True), 30)
+
+    assert watcher.check_once() is keeps_watching
+    assert bool(stopped) is stops
 
 
 def test_lease_loss_returns_503_and_stops_the_server(api_client: TestClient) -> None:

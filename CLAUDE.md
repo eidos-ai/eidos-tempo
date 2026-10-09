@@ -160,7 +160,8 @@ Cloud Run (production; `db/`, `infra/`, `app/durability/`, `docker-compose.cloud
 - `get_repositories` commits through `Durability.committer`. On Cloud Run (`TEMPO_DURABLE_WRITES`) a transaction that
   wrote checks the lease, commits, switches the WAL segment (1 MB segments) and waits until it is archived, then
   checks the lease again. Never respond "saved" before that; never write to the database outside this path while
-  serving. Lease lost → 503 and the process stops; archive timeout → 503.
+  serving. Lease lost → 503 and the process stops; archive timeout → 503. A background `LeaseWatcher` checks
+  the lease every 30 s and stops the process too, so an instance that lost it while idle doesn't keep serving.
 - The runtime service account can create and read under `backups/` but not delete or overwrite (only WAL-G's
   temporary `_chunks/` objects), and owns `lease/`. Keep it that way; ask before changing how data is stored or deleted.
 - `/api/internal/backup` (scheduler, OIDC) pushes a base backup and uploads a `pg_dump` to `backups/<prefix>/dumps/`.

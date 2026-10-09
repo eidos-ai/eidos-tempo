@@ -227,7 +227,7 @@ Backend (`backend/.env` in development):
 | `TEMPO_API_TIMEZONE` | `America/Montevideo` | Timezone of days in the Toggl-compatible API |
 | `TEMPO_DURABLE_WRITES` | `false` | Cloud Run: archive each write to the bucket before responding; hold the lease |
 | `TEMPO_BUCKET` / `TEMPO_BACKUP_PREFIX` | unset | Cloud Run: backups go to `gs://<bucket>/backups/<prefix>/` |
-| `TEMPO_ARCHIVE_TIMEOUT_SECONDS` | `15` | Cloud Run: a save not archived by then returns 503 |
+| `TEMPO_ARCHIVE_TIMEOUT_SECONDS` | `90` | Cloud Run: a save not archived by then returns 503 (keep it under nginx's `proxy_read_timeout`, 120 s) |
 | `TEMPO_BACKUP_AUDIENCE` / `TEMPO_BACKUP_CALLER_EMAIL` | unset | Cloud Run: OIDC audience and service account allowed to call `/api/internal/backup` |
 
 Server (root `.env`, see `.env.example`): database credentials, `TEMPO_DATA_DIR`, `TEMPO_HTTP_PORT`,

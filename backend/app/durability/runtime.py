@@ -13,9 +13,11 @@ from app.config import Settings
 from app.domain.clock import SystemClock
 from app.durability.backup import BackupLocation, BackupService, PostgresBackupTools
 from app.durability.commit import Committer, DurableCommitter, PlainCommitter, PostgresWalArchive
-from app.durability.lease import GcsLease
+from app.durability.lease import GcsLease, LeaseWatcher
 
 logger = logging.getLogger(__name__)
+
+LEASE_WATCH_SECONDS = 30
 
 
 @dataclass(frozen=True)
@@ -23,6 +25,7 @@ class Durability:
     committer: Committer
     backups: BackupService | None
     on_lease_lost: Callable[[], None]
+    watch_lease: Callable[[], None] = lambda: None
 
 
 def build_durability(settings: Settings) -> Durability:
@@ -40,6 +43,7 @@ def build_durability(settings: Settings) -> Durability:
         ),
         backups=BackupService(lease, tools, location, SystemClock()),
         on_lease_lost=stop_server,
+        watch_lease=LeaseWatcher(lease, stop_server, LEASE_WATCH_SECONDS).start,
     )
 
 

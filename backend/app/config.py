@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     lease_object: str = "lease/owner"
     run_dir: str = "/run/tempo"
     pgdata: str = "/var/lib/postgresql/data/pgdata"
-    archive_timeout_seconds: float = 15
+    archive_timeout_seconds: float = 90
     backup_audience: str = ""
     backup_caller_email: str = ""
 

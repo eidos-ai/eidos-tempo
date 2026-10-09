@@ -33,6 +33,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.session_factory = create_session_factory(settings.database_url)
     app.state.durability = build_durability(settings)
+    app.state.durability.watch_lease()
     app.state.backup_caller_verifier = (
         GoogleIdTokenVerifier(settings.backup_audience, settings.backup_caller_email)
         if settings.backup_audience and settings.backup_caller_email

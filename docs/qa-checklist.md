@@ -167,6 +167,11 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Second instance started during saves: takes the lease, old instance returns 503 and stops; 132 confirmed, 0 lost,
       1 save answered 503 but kept (the known duplicate-on-retry case)
 - [x] Two instances started at once: the one that lost the lease exits before restoring; one serves
+- [x] WAL uploads failing (wal-push replaced by a failing script; 2026-10-09): 40 s outage → save answered 200 after
+      62 s (Postgres retries a failed archive after up to 60 s); 100 s outage → 503 at 90 s, change kept; reads
+      unaffected. Emulator paused instead: the lease check before commit waits for Cloud Storage, nothing committed
+- [x] Lease taken while idle (lease object overwritten; 2026-10-09): backend logs the loss and stops 15 s later
+      (checked every 30 s); Cloud Storage paused 70 s: no false stop
 - [x] Nightly backup (`app.cli backup`): base backup + dump uploaded; dump restored with `pg_restore`, same row count
 - [x] Seed mode on linux/amd64 (emulated): migrations, ensure-admin (create, then promote), base backup
 - [ ] On Cloud Run: same drills (deploy during saves, restore), IAM conditions allow WAL-G and deny deletes
