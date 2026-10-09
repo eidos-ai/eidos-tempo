@@ -172,6 +172,8 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
       unaffected. Emulator paused instead: the lease check before commit waits for Cloud Storage, nothing committed
 - [x] Lease taken while idle (lease object overwritten; 2026-10-09): backend logs the loss and stops 15 s later
       (checked every 30 s); Cloud Storage paused 70 s: no false stop
+- [x] On Cloud Run, same drill (2026-10-09, revision tempo-00007-8fp): loss logged 14 s after the takeover, backend
+      exit(0) 18 s later, Cloud Run started a new instance 4 s after that, which took the lease and served
 - [x] Nightly backup (`app.cli backup`): base backup + dump uploaded; dump restored with `pg_restore`, same row count
 - [x] Seed mode on linux/amd64 (emulated): migrations, ensure-admin (create, then promote), base backup
 - [ ] On Cloud Run: same drills (deploy during saves, restore), IAM conditions allow WAL-G and deny deletes
