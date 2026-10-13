@@ -233,8 +233,16 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Long running descriptions fit (16 px) and end in "…" when too long
 - [x] Timer tags: search, toggle, create a new tag with Enter; chips shown next to the project; a failed create keeps the typed name
 - [x] Timer billable $ is a toggle; choosing a project resets it to the project's default
-- [x] Same description, project and billable on one day are grouped with a count badge; ▶ continues the latest
-- [x] Past entries: description editable inline with suggestions (picks description + project), project picker, "+ Add project"; a grouped row updates all its entries; tags and billable are kept
+- [ ] Billable $ when off uses the same grey and purple hover as the folder and tag icons (readable in dark mode)
+- [x] Entries on one day with the same description, project, billable and tags are grouped with a count badge; clicking the group opens and closes a drawer with each entry's times; ▶ continues the latest
+- [x] Past entries: clicking one (or one in a drawer) opens the edit overlay inside the popup: description with suggestions, project, tags, billable, duration; the "Duration" field (the only way to edit times) opens start/stop/date (changing duration moves stop, picking a day keeps times and duration, stop before start crosses midnight); Save or Enter saves, Cancel, × or Escape discards; Escape in a menu closes only the menu; an edited entry leaves its group
+- [x] Failed save from the edit overlay (server unreachable): the list shows the server's version, the overlay reopens with every typed field and selection and "Your changes were not saved…"; Save again succeeds once reconnected
+- [x] Escape order in the edit overlay: menu (focus returns to its button) → time popover → overlay; Escape after ticking a tag checkbox or after picking a project still only closes one level; none reaches Chrome (which would close the popup)
+- [x] Picking a project with Enter closes the menu and doesn't reopen it (timer and overlay)
+- [x] Only the duration field opens the time popover; the "Duration" label and the empty space next to it don't
+- [x] Time errors ("Enter a valid…", "Stop must be after start") show inside the popover while it is open; the duration keeps its last valid value instead of 0:00:00
+- [x] Running timer editor: Escape closes it even when focus is outside its fields (e.g. after clicking the month); a future start keeps the last valid duration
+- [x] Running timer: clicking the time opens the start editor like the web (duration, start time, date; future starts rejected); Enter or click outside saves; an edited start is kept when the start request was still pending
 - [x] Failed edit on a past entry: "Updating the entry was not saved…", the typed value stays; requests are sent in order so quick edits don't overwrite each other
 - [x] Dropdowns near the bottom of the list scroll into view
 - [!] Tag menu opened from chips on the right overflowed the 450 px popup and shifted the whole window sideways; menus now shift left to stay inside

@@ -1,16 +1,15 @@
 import { useState } from 'react'
-import { dayLabel, entrySeconds, formatDuration, secondsSince, startOfDay, startOfWeek } from '../time'
-import type { EntrySuggestion, TimeEntry, TimerStartInput } from '../types'
-import { DescriptionInput } from './DescriptionInput'
-import { PlayIcon, PlusIcon } from './icons'
+import { dayLabel, entrySeconds, formatClockTime, formatDuration, secondsSince, startOfDay, startOfWeek } from '../time'
+import type { EntrySuggestion, Tag, TimeEntry, TimeEntryInput } from '../types'
+import { EntryEditor } from './EntryEditor'
+import { DollarIcon, PlayIcon } from './icons'
 import { clientOf, type Lookups } from './lookups'
 import { ProjectLabel } from './ProjectLabel'
-import { ProjectPicker } from './ProjectPicker'
+import { TagList } from './TagPicker'
 import { useNow } from './useNow'
 
-const MAX_DESCRIPTION_LENGTH = 500
-
 interface EntryGroup {
+  key: string
   latest: TimeEntry
   entries: TimeEntry[]
   totalSeconds: number
@@ -22,17 +21,25 @@ interface DayGroup {
   totalSeconds: number
 }
 
+interface Editing {
+  entry: TimeEntry
+  draft: TimeEntryInput | null
+}
+
 interface RecentEntriesProps {
   entries: TimeEntry[]
   suggestions: EntrySuggestion[]
   running: TimeEntry | null
   lookups: Lookups
-  onUpdate: (entries: TimeEntry[], input: TimerStartInput) => void
+  tags: Tag[]
+  onCreateTag: (name: string) => Promise<Tag | null>
+  onUpdate: (entry: TimeEntry, input: TimeEntryInput) => Promise<boolean>
   onContinue: (entry: TimeEntry) => void
 }
 
+// Entries are grouped only when every field but the times is the same.
 function sameWorkKey(entry: TimeEntry): string {
-  return `${entry.description}|${entry.project_id}|${entry.is_billable}`
+  return JSON.stringify([entry.description, entry.project_id, entry.is_billable, [...entry.tag_ids].sort()])
 }
 
 function groupByDay(entries: TimeEntry[], now: Date): DayGroup[] {
@@ -42,7 +49,7 @@ function groupByDay(entries: TimeEntry[], now: Date): DayGroup[] {
     const current = days.get(day.getTime()) ?? { day, groups: new Map<string, EntryGroup>(), totalSeconds: 0 }
     const seconds = entrySeconds(entry, now)
     const key = sameWorkKey(entry)
-    const group = current.groups.get(key) ?? { latest: entry, entries: [], totalSeconds: 0 }
+    const group = current.groups.get(key) ?? { key, latest: entry, entries: [], totalSeconds: 0 }
     group.entries.push(entry)
     group.totalSeconds += seconds
     current.groups.set(key, group)
@@ -57,9 +64,17 @@ function trackedSince(entries: TimeEntry[], running: TimeEntry | null, rangeStar
   return tracked.reduce((sum, entry) => sum + secondsSince(entry, rangeStart, now), 0)
 }
 
-export function RecentEntries({ entries, suggestions, running, lookups, onUpdate, onContinue }: RecentEntriesProps) {
+export function RecentEntries(props: RecentEntriesProps) {
+  const { entries, suggestions, running, lookups, tags, onCreateTag, onUpdate, onContinue } = props
   const now = useNow(running !== null)
   const days = groupByDay(entries, now)
+  const [editing, setEditing] = useState<Editing | null>(null)
+
+  // A failed save reopens the editor with what the user entered, unless another entry is being edited.
+  const save = async (entry: TimeEntry, input: TimeEntryInput) => {
+    if (await onUpdate(entry, input)) return
+    setEditing((current) => current ?? { entry, draft: input })
+  }
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -77,12 +92,13 @@ export function RecentEntries({ entries, suggestions, running, lookups, onUpdate
             </header>
             <ul className="divide-y divide-line border-t border-line">
               {day.entries.map((group) => (
-                <EntryRow
-                  key={`${group.latest.id}|${sameWorkKey(group.latest)}`}
+                <EntryGroupRow
+                  key={group.key}
                   group={group}
-                  suggestions={suggestions}
                   lookups={lookups}
-                  onUpdate={onUpdate}
+                  tags={tags}
+                  now={now}
+                  onEdit={(entry) => setEditing({ entry, draft: null })}
                   onContinue={onContinue}
                 />
               ))}
@@ -90,6 +106,19 @@ export function RecentEntries({ entries, suggestions, running, lookups, onUpdate
           </section>
         ))}
       </div>
+      {editing && (
+        <EntryEditor
+          key={`${editing.entry.id}|${editing.draft ? 'retry' : 'edit'}`}
+          entry={editing.entry}
+          draft={editing.draft}
+          suggestions={suggestions}
+          lookups={lookups}
+          tags={tags}
+          onCreateTag={onCreateTag}
+          onSave={(input) => void save(editing.entry, input)}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
   )
 }
@@ -103,94 +132,85 @@ function Total({ label, seconds }: { label: string; seconds: number }) {
   )
 }
 
-interface EntryRowProps {
+interface EntryGroupRowProps {
   group: EntryGroup
-  suggestions: EntrySuggestion[]
   lookups: Lookups
-  onUpdate: (entries: TimeEntry[], input: TimerStartInput) => void
+  tags: Tag[]
+  now: Date
+  onEdit: (entry: TimeEntry) => void
   onContinue: (entry: TimeEntry) => void
 }
 
-function EntryRow({ group, suggestions, lookups, onUpdate, onContinue }: EntryRowProps) {
+function EntryGroupRow({ group, lookups, tags, now, onEdit, onContinue }: EntryGroupRowProps) {
   const { latest, entries } = group
-  const [description, setDescription] = useState(latest.description)
-  const [projectId, setProjectId] = useState(latest.project_id)
-
-  const save = (nextDescription: string, nextProjectId: string | null) => {
-    if (nextDescription === latest.description && nextProjectId === latest.project_id) return
-    onUpdate(entries, { description: nextDescription, project_id: nextProjectId })
-  }
-
+  const [isOpen, setIsOpen] = useState(false)
   const count = entries.length
+  const isGroup = count > 1
+  const project = latest.project_id ? lookups.projects.get(latest.project_id) : undefined
+  const entryTags = latest.tag_ids.map((id) => tags.find((tag) => tag.id === id)).filter((tag): tag is Tag => tag !== undefined)
+
   return (
-    <li className="group flex items-center gap-3 py-2 pr-3 pl-4 text-sm transition-colors duration-150 ease-out hover:bg-canvas/60">
-      {count > 1 && (
-        <span
-          title={`${count} entries`}
-          className="flex size-7 shrink-0 items-center justify-center rounded-md border border-line-strong text-xs font-semibold text-ink-soft"
-        >
-          {count}
-        </span>
-      )}
-      <div className="min-w-0 flex-1">
-        <DescriptionInput
-          value={description}
-          suggestions={suggestions}
-          lookups={lookups}
-          maxLength={MAX_DESCRIPTION_LENGTH}
-          placeholder="Add a description"
-          className="-mx-1.5 block h-7 w-[calc(100%+0.75rem)] truncate rounded-md bg-transparent px-1.5 text-ink outline-none placeholder:text-muted hover:bg-canvas focus:bg-canvas focus:ring-1 focus:ring-line-strong"
-          onChange={setDescription}
-          onSelect={(suggestion) => {
-            setDescription(suggestion.description)
-            setProjectId(suggestion.project_id)
-            save(suggestion.description, suggestion.project_id)
-          }}
-          onSelectProject={(nextProjectId) => {
-            setProjectId(nextProjectId)
-            save(description.trim(), nextProjectId)
-          }}
-          onSubmit={(input) => input.blur()}
-          onFocus={() => undefined}
-          onBlur={() => {
-            const trimmed = description.trim()
-            setDescription(trimmed)
-            save(trimmed, projectId)
-          }}
-        />
-        <ProjectPicker
-          value={projectId}
-          lookups={lookups}
-          onChange={(nextProjectId) => {
-            setProjectId(nextProjectId)
-            save(description.trim(), nextProjectId)
-          }}
-          renderTrigger={(selected) =>
-            selected ? (
-              <span className="-mx-1.5 block truncate rounded-md px-1.5 py-0.5 text-xs hover:bg-canvas">
-                <ProjectLabel project={selected} client={clientOf(selected, lookups)} />
-              </span>
-            ) : (
-              <span className="-mx-1.5 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-muted hover:bg-canvas hover:text-primary">
-                <PlusIcon width={12} height={12} />
-                Add project
-              </span>
-            )
-          }
-        />
-      </div>
-      <div className="flex flex-col items-end gap-0.5">
-        <span className="tabular-nums">{formatDuration(group.totalSeconds)}</span>
+    <li>
+      <div className="group flex items-center gap-3 py-2 pr-3 pl-4 text-sm transition-colors duration-150 ease-out hover:bg-canvas/60">
         <button
           type="button"
-          onClick={() => onContinue({ ...latest, description: description.trim(), project_id: projectId })}
-          aria-label={`Continue ${description || 'this entry'}`}
-          title="Continue"
-          className="-mr-1 rounded-md p-1 text-muted transition-colors hover:bg-primary-soft hover:text-primary group-hover:text-ink-soft"
+          onClick={() => (isGroup ? setIsOpen(!isOpen) : onEdit(latest))}
+          aria-expanded={isGroup ? isOpen : undefined}
+          title={isGroup ? (isOpen ? 'Hide entries' : 'Show entries') : 'Edit entry'}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
         >
-          <PlayIcon width={14} height={14} />
+          {isGroup && (
+            <span
+              className={`flex size-7 shrink-0 items-center justify-center rounded-md border text-xs font-semibold transition-colors ${
+                isOpen ? 'border-primary bg-primary-soft text-accent' : 'border-line-strong text-ink-soft'
+              }`}
+            >
+              {count}
+            </span>
+          )}
+          <span className="min-w-0 flex-1">
+            <span className={`block truncate ${latest.description ? 'text-ink' : 'text-muted'}`}>
+              {latest.description || 'Add a description'}
+            </span>
+            <span className="flex min-w-0 items-center gap-2 text-xs">
+              {project && <ProjectLabel project={project} client={clientOf(project, lookups)} />}
+              {entryTags.length > 0 && <TagList tags={entryTags} />}
+              {latest.is_billable && <DollarIcon width={12} height={12} className="shrink-0 text-primary" aria-label="Billable" />}
+            </span>
+          </span>
         </button>
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="tabular-nums">{formatDuration(group.totalSeconds)}</span>
+          <button
+            type="button"
+            onClick={() => onContinue(latest)}
+            aria-label={`Continue ${latest.description || 'this entry'}`}
+            title="Continue"
+            className="-mr-1 rounded-md p-1 text-muted transition-colors hover:bg-primary-soft hover:text-primary group-hover:text-ink-soft"
+          >
+            <PlayIcon width={14} height={14} />
+          </button>
+        </div>
       </div>
+      {isGroup && isOpen && (
+        <ul className="divide-y divide-line border-t border-line bg-canvas/40">
+          {entries.map((entry) => (
+            <li key={entry.id}>
+              <button
+                type="button"
+                onClick={() => onEdit(entry)}
+                title="Edit entry"
+                className="flex w-full items-center justify-between py-2 pr-4 pl-14 text-left text-sm tabular-nums hover:bg-canvas"
+              >
+                <span className="text-ink-soft">
+                  {formatClockTime(new Date(entry.start))} – {entry.stop ? formatClockTime(new Date(entry.stop)) : ''}
+                </span>
+                <span>{formatDuration(entrySeconds(entry, now))}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </li>
   )
 }

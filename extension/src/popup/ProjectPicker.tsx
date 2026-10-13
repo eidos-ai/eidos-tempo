@@ -23,6 +23,7 @@ export function ProjectPicker({ value, lookups, onChange, renderTrigger }: Proje
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
@@ -62,6 +63,7 @@ export function ProjectPicker({ value, lookups, onChange, renderTrigger }: Proje
   return (
     <div ref={containerRef} className="relative min-w-0">
       <button
+        ref={triggerRef}
         type="button"
         className="flex max-w-full items-center"
         aria-haspopup="listbox"
@@ -71,7 +73,16 @@ export function ProjectPicker({ value, lookups, onChange, renderTrigger }: Proje
         {renderTrigger(value ? lookups.projects.get(value) : undefined)}
       </button>
       {isOpen && (
-        <div ref={menuRef} className="absolute top-full left-0 z-40 mt-1 w-80 rounded-xl border border-line bg-surface shadow-xl">
+        <div
+          ref={menuRef}
+          className="absolute top-full left-0 z-40 mt-1 w-80 rounded-xl border border-line bg-surface shadow-xl"
+          onKeyDown={(event) => {
+            if (event.key !== 'Escape') return
+            event.preventDefault()
+            setIsOpen(false)
+            triggerRef.current?.focus()
+          }}
+        >
           <div className="flex items-center gap-2 border-b border-line px-3 py-2 text-muted">
             <SearchIcon width={16} height={16} />
             <input
@@ -80,10 +91,6 @@ export function ProjectPicker({ value, lookups, onChange, renderTrigger }: Proje
               onChange={(event) => setSearch(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && firstMatch) select(firstMatch.id)
-                if (event.key === 'Escape') {
-                  event.preventDefault()
-                  setIsOpen(false)
-                }
               }}
               placeholder="Search projects or clients"
               className="h-7 flex-1 bg-transparent text-sm text-ink outline-none"

@@ -120,7 +120,11 @@ these shapes, compare with Toggl again.
   are accepted, so moving to HTTPS is a settings change.
 - `src/api.ts` mirrors the API types by hand, like the frontend. Actions are optimistic (`act` in `popup/useTempo.ts`:
   shown at once, sent in order, refreshed once the queue is empty). Failed actions show "… was not saved", roll back
-  in the popup and keep the user's input; the toolbar icon (a simplified three-ring version of the logo, drawn as vectors in `src/badge.ts` so it stays crisp at 16 px) is purple while a timer runs, gray otherwise, and shows a red `!` when not connected.
+  in the popup and keep the user's input. The running timer is edited in place; clicking its time opens the start/duration
+  editor like the web. Past entries are edited only in `EntryEditor` (an overlay inside the popup, never a new window):
+  description, project, tags, billable, and duration with a start/stop/date popover. It saves optimistically and closes;
+  a failed save reopens it with the user's input. Rows group entries whose fields all
+  match except the times; a group's row only opens or closes its drawer of entries; the toolbar icon (a simplified three-ring version of the logo, drawn as vectors in `src/badge.ts` so it stays crisp at 16 px) is purple while a timer runs, gray otherwise, and shows a red `!` when not connected.
 - Agents can't open `chrome-extension://` or `chrome://` pages; to test the popup, copy `dist` under
   `frontend/public/` temporarily and stub `chrome.storage`/`chrome.action` (remove the copy afterwards).
 

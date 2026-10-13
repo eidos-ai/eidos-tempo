@@ -77,7 +77,9 @@ export function Popup() {
             suggestions={data.suggestions}
             running={data.running}
             lookups={lookups}
-            onUpdate={(entries, input) => void tempo.updateEntries(entries, input)}
+            tags={data.tags}
+            onCreateTag={tempo.createTag}
+            onUpdate={tempo.updateEntry}
             onContinue={(entry) =>
               void tempo.start({
                 description: entry.description,

@@ -83,3 +83,21 @@ export const TagIcon = (props: IconProps) => (
     <circle cx="7.5" cy="7.5" r="1.5" />
   </Icon>
 )
+
+export const ChevronLeftIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m15 18-6-6 6-6" />
+  </Icon>
+)
+
+export const ChevronRightIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m9 18 6-6-6-6" />
+  </Icon>
+)
+
+export const CloseIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M18 6 6 18M6 6l12 12" />
+  </Icon>
+)
