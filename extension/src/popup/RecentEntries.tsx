@@ -151,13 +151,16 @@ function EntryGroupRow({ group, lookups, tags, now, onEdit, onContinue }: EntryG
 
   return (
     <li>
-      <div className="group flex items-center gap-3 py-2 pr-3 pl-4 text-sm transition-colors duration-150 ease-out hover:bg-canvas/60">
+      {/* The whole row is the target; the inner button keeps it reachable by keyboard and its click bubbles up. */}
+      <div
+        onClick={() => (isGroup ? setIsOpen(!isOpen) : onEdit(latest))}
+        className="group flex cursor-pointer items-center gap-3 py-2 pr-3 pl-4 text-sm transition-colors duration-150 ease-out select-none hover:bg-canvas/60 has-[>button:focus-visible]:bg-canvas"
+      >
         <button
           type="button"
-          onClick={() => (isGroup ? setIsOpen(!isOpen) : onEdit(latest))}
           aria-expanded={isGroup ? isOpen : undefined}
           title={isGroup ? (isOpen ? 'Hide entries' : 'Show entries') : 'Edit entry'}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none"
         >
           {isGroup && (
             <span
@@ -183,7 +186,10 @@ function EntryGroupRow({ group, lookups, tags, now, onEdit, onContinue }: EntryG
           <span className="tabular-nums">{formatDuration(group.totalSeconds)}</span>
           <button
             type="button"
-            onClick={() => onContinue(latest)}
+            onClick={(event) => {
+              event.stopPropagation()
+              onContinue(latest)
+            }}
             aria-label={`Continue ${latest.description || 'this entry'}`}
             title="Continue"
             className="-mr-1 rounded-md p-1 text-muted transition-colors hover:bg-primary-soft hover:text-primary group-hover:text-ink-soft"
@@ -200,7 +206,7 @@ function EntryGroupRow({ group, lookups, tags, now, onEdit, onContinue }: EntryG
                 type="button"
                 onClick={() => onEdit(entry)}
                 title="Edit entry"
-                className="flex w-full items-center justify-between py-2 pr-4 pl-14 text-left text-sm tabular-nums hover:bg-canvas"
+                className="flex w-full items-center justify-between py-2 pr-4 pl-14 text-left text-sm tabular-nums select-none hover:bg-canvas"
               >
                 <span className="text-ink-soft">
                   {formatClockTime(new Date(entry.start))} – {entry.stop ? formatClockTime(new Date(entry.stop)) : ''}

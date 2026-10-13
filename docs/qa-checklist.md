@@ -239,6 +239,7 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Failed save from the edit overlay (server unreachable): the list shows the server's version, the overlay reopens with every typed field and selection and "Your changes were not saved…"; Save again succeeds once reconnected
 - [x] Escape order in the edit overlay: menu (focus returns to its button) → time popover → overlay; Escape after ticking a tag checkbox or after picking a project still only closes one level; none reaches Chrome (which would close the popup)
 - [x] Picking a project with Enter closes the menu and doesn't reopen it (timer and overlay)
+- [x] The whole entry row is clickable (text, duration, empty space) with a pointer cursor and no text selection; ▶ only continues; Tab focus highlights the whole row and Enter/Space opens it
 - [x] Only the duration field opens the time popover; the "Duration" label and the empty space next to it don't
 - [x] Time errors ("Enter a valid…", "Stop must be after start") show inside the popover while it is open; the duration keeps its last valid value instead of 0:00:00
 - [x] Running timer editor: Escape closes it even when focus is outside its fields (e.g. after clicking the month); a future start keeps the last valid duration
