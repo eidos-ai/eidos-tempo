@@ -22,6 +22,7 @@
   --color-stop: #e26d5c;
   --color-danger: #c93c3c;
   --color-logo: #181633;
+  --color-overlay: rgb(24 22 51 / 0.3);
 }
 
 :root {
@@ -48,6 +49,7 @@
   --color-stop: #e8806f;
   --color-danger: #f08a8a;
   --color-logo: #f3f1ee;
+  --color-overlay: rgb(0 0 0 / 0.6);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -70,6 +72,7 @@
     --color-stop: #e8806f;
     --color-danger: #f08a8a;
     --color-logo: #f3f1ee;
+  --color-overlay: rgb(0 0 0 / 0.6);
   }
 }
 

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { entrySeconds, formatDuration } from '../time'
 import type { EntrySuggestion, Tag, TimeEntry, TimerStartInput } from '../types'
 import { DescriptionInput } from './DescriptionInput'
 import { DollarIcon, FolderIcon, PlayIcon, StopIcon, TagIcon } from './icons'
 import { clientOf, type Lookups } from './lookups'
 import { ProjectLabel } from './ProjectLabel'
 import { ProjectPicker } from './ProjectPicker'
+import { RunningTimer } from './RunningTimer'
 import { TagList, TagPicker } from './TagPicker'
 import { useNow } from './useNow'
 
@@ -85,7 +85,7 @@ export function TimerBar(props: TimerBarProps) {
 
   return (
     <div className="shrink-0 border-b border-line bg-surface px-4 pt-2 pb-2">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <DescriptionInput
           value={fields.description}
           suggestions={suggestions}
@@ -113,9 +113,11 @@ export function TimerBar(props: TimerBarProps) {
             change({}, true)
           }}
         />
-        <span className="font-display text-lg font-semibold tabular-nums">
-          {formatDuration(running ? entrySeconds(running, now) : 0)}
-        </span>
+        <RunningTimer
+          entry={running}
+          now={now}
+          onSaveStart={(start) => running && onUpdateRunning(running, { ...toInput(fields), start: start.toISOString() })}
+        />
         <button
           type="button"
           onClick={startOrStop}
@@ -168,7 +170,7 @@ export function TimerBar(props: TimerBarProps) {
           aria-pressed={fields.isBillable}
           onClick={() => change({ isBillable: !fields.isBillable }, true)}
           title={fields.isBillable ? 'Billable (click to make non-billable)' : 'Non-billable (click to make billable)'}
-          className={`rounded-lg p-2 hover:bg-canvas ${fields.isBillable ? 'text-primary' : 'text-line-strong hover:text-ink-soft'}`}
+          className={`rounded-lg p-2 hover:bg-canvas ${fields.isBillable ? 'text-primary' : 'text-muted hover:text-primary'}`}
         >
           <DollarIcon />
         </button>

@@ -32,10 +32,11 @@ async function fetchActivity(): Promise<Activity> {
     tempoApi.suggestions(),
   ])
   await showRunning(running)
-  const recent = entries
-    .filter((entry) => entry.stop !== null)
-    .sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
-  return { running, recent, suggestions }
+  return { running, recent: newestFirst(entries.filter((entry) => entry.stop !== null)), suggestions }
+}
+
+function newestFirst(entries: TimeEntry[]): TimeEntry[] {
+  return [...entries].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
 }
 
 function describe(error: unknown): string {
@@ -113,9 +114,10 @@ export function useTempo() {
 
   // The change shows at once; the request is sent in order behind earlier ones. On failure the popup
   // goes back to what the server has (or to before the change if the server can't be reached).
-  const act = (action: string, change: Change, call: () => Promise<unknown>): Promise<void> => {
+  // Resolves to whether the server saved the change.
+  const act = (action: string, change: Change, call: () => Promise<unknown>): Promise<boolean> => {
     const before = dataRef.current
-    if (!before) return Promise.resolve()
+    if (!before) return Promise.resolve(false)
     const after = change(before)
     setTempo(() => after)
     setError(null)
@@ -133,26 +135,30 @@ export function useTempo() {
           await showRunning(before.running)
         }
         await reportFailure(action, actionError)
-        return
+        return false
       } finally {
         pending.current -= 1
       }
-      if (pending.current > 0) return
+      if (pending.current > 0) return true
       try {
         await refresh()
       } catch (refreshError) {
         await reportFailure('Refreshing', refreshError)
         setError(`Saved, but the popup could not refresh. ${describe(refreshError)}`)
       }
+      return true
     })
-    queue.current = next.catch(() => undefined)
+    queue.current = next.then(() => undefined, () => undefined)
     return next
   }
 
   // The entry as shown, under the id the server gave it (its stop may only exist in the popup so far).
+  // The server's start replaces the click time unless the start was edited since.
   const saved = (entry: TimeEntry): TimeEntry => {
     const server = created.current.get(entry.id)
-    return server ? { ...entry, id: server.id, start: server.start } : entry
+    if (!server) return entry
+    const keepsClickTime = entry.id === `${OPTIMISTIC_ID_PREFIX}${entry.start}`
+    return { ...entry, id: server.id, start: keepsClickTime ? server.start : entry.start }
   }
 
   const replacement = (entry: TimeEntry, input: TimerStartInput): TimeEntryInput => {
@@ -163,17 +169,9 @@ export function useTempo() {
       project_id: input.project_id,
       is_billable: input.is_billable ?? projectBillable,
       tag_ids: input.tag_ids ?? entry.tag_ids,
-      start: entry.start,
+      start: input.start ?? entry.start,
       stop: entry.stop,
     }
-  }
-
-  const replace = (entries: TimeEntry[], input: TimerStartInput): Change => {
-    const changed = new Map(entries.map((entry) => [entry.id, replacement(entry, input)]))
-    return (current) => ({
-      ...current,
-      recent: current.recent.map((entry) => ({ ...entry, ...changed.get(entry.id) })),
-    })
   }
 
   const start = (input: TimerStartInput) => {
@@ -237,9 +235,14 @@ export function useTempo() {
           return tempoApi.update(target.id, replacement(target, input))
         },
       ),
-    updateEntries: (entries: TimeEntry[], input: TimerStartInput) =>
-      act('Updating the entry', replace(entries, input), async () => {
-        for (const entry of entries.map(saved)) await tempoApi.update(entry.id, replacement(entry, input))
-      }),
+    updateEntry: (entry: TimeEntry, input: TimeEntryInput) =>
+      act(
+        'Updating the entry',
+        (current) => ({
+          ...current,
+          recent: newestFirst(current.recent.map((candidate) => (candidate.id === entry.id ? { ...candidate, ...input } : candidate))),
+        }),
+        () => tempoApi.update(saved(entry).id, input),
+      ),
   }
 }

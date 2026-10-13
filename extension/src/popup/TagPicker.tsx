@@ -18,6 +18,7 @@ export function TagPicker({ tags, value, onChange, onCreate, renderTrigger }: Ta
   const [search, setSearch] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
@@ -64,6 +65,7 @@ export function TagPicker({ tags, value, onChange, onCreate, renderTrigger }: Ta
   return (
     <div ref={containerRef} className="relative min-w-0">
       <button
+        ref={triggerRef}
         type="button"
         className="flex max-w-full items-center"
         aria-haspopup="listbox"
@@ -73,7 +75,16 @@ export function TagPicker({ tags, value, onChange, onCreate, renderTrigger }: Ta
         {renderTrigger(selected)}
       </button>
       {isOpen && (
-        <div ref={menuRef} className="absolute top-full left-0 z-40 mt-1 w-72 rounded-xl border border-line bg-surface shadow-xl">
+        <div
+          ref={menuRef}
+          className="absolute top-full left-0 z-40 mt-1 w-72 rounded-xl border border-line bg-surface shadow-xl"
+          onKeyDown={(event) => {
+            if (event.key !== 'Escape') return
+            event.preventDefault()
+            setIsOpen(false)
+            triggerRef.current?.focus()
+          }}
+        >
           <div className="flex items-center gap-2 border-b border-line px-3 py-2 text-muted">
             <SearchIcon width={16} height={16} />
             <input
@@ -84,10 +95,6 @@ export function TagPicker({ tags, value, onChange, onCreate, renderTrigger }: Ta
                 if (event.key === 'Enter') {
                   event.preventDefault()
                   handleEnter()
-                }
-                if (event.key === 'Escape') {
-                  event.preventDefault()
-                  setIsOpen(false)
                 }
               }}
               placeholder="Search or create tags"
