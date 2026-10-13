@@ -292,8 +292,8 @@ function EntryRow({ entry, memberName, isSelected, onToggleSelected }: EntryRowP
           aria-label="Billable"
           title={entry.is_billable ? 'Billable (click to make non-billable)' : 'Non-billable (click to make billable)'}
           onClick={toggleBillable}
-          className={`rounded-md p-1.5 hover:bg-canvas ${
-            entry.is_billable ? 'text-primary' : 'text-muted opacity-0 group-hover:opacity-100 hover:text-ink focus:opacity-100'
+          className={`rounded-md p-1.5 ${
+            entry.is_billable ? 'text-primary hover:bg-canvas' : 'text-muted opacity-0 group-hover:opacity-100 hover:text-primary focus:opacity-100'
           }`}
         >
           <DollarIcon width={16} height={16} />

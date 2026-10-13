@@ -206,7 +206,7 @@ export function TimerBar() {
           }
         />
       </Tooltip>
-      <BillableToggle value={fields.isBillable} onChange={(isBillable) => change({ isBillable }, true)} />
+      <BillableToggle value={fields.isBillable} onChange={(isBillable) => change({ isBillable }, true)} padding="p-2" />
       <RunningTimer entry={running} canEdit={running !== null && !isOptimistic(running)} now={now} onSaveStart={saveStart} />
       <Tooltip label={running ? 'Stop time entry' : 'Start time entry'}>
         <button
