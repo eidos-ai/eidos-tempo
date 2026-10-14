@@ -12,6 +12,7 @@ export interface DaySegment {
   endsHere: boolean
   lane: number
   laneCount: number
+  nextStart: Date | null
 }
 
 function floorToMinute(date: Date): Date {
@@ -38,12 +39,28 @@ export function segmentsForDay(entries: TimeEntry[], day: Date, now: Date): DayS
         endsHere: entry.stop !== null && end <= dayEnd,
         lane: 0,
         laneCount: 1,
+        nextStart: null,
       }
     })
     .sort((a, b) => a.start.getTime() - b.start.getTime() || b.end.getTime() - a.end.getTime())
 
   assignLanes(segments)
+  assignNextStarts(segments)
   return segments
+}
+
+function sharesColumn(a: DaySegment, b: DaySegment): boolean {
+  return a.lane / a.laneCount < (b.lane + 1) / b.laneCount && b.lane / b.laneCount < (a.lane + 1) / a.laneCount
+}
+
+// A short entry is drawn taller than its duration; this is where it must stop so it doesn't cover the next one.
+function assignNextStarts(segments: DaySegment[]): void {
+  segments.forEach((segment, index) => {
+    const next = segments
+      .slice(index + 1)
+      .find((other) => other.start >= segment.end && sharesColumn(segment, other))
+    segment.nextStart = next?.start ?? null
+  })
 }
 
 function assignLanes(segments: DaySegment[]): void {

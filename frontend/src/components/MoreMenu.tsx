@@ -109,7 +109,7 @@ export function MoreMenu({ items, buttonClassName, iconSize = 18, align = 'right
 
   return (
     // Stops clicks (including those in the portal, which bubble through React) from reaching a clickable row.
-    <div className="relative" onClick={(event) => event.stopPropagation()}>
+    <div className="relative flex" onClick={(event) => event.stopPropagation()}>
       <Tooltip label={isOpen ? null : 'More actions'}>
         <button
           ref={buttonRef}
