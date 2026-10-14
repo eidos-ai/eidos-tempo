@@ -10,6 +10,8 @@ import { ProjectLabel } from '../projects/ProjectLabel'
 import { ProjectPicker } from '../projects/ProjectPicker'
 import { useProjectLookup } from '../projects/useProjects'
 import { TagList, TagPicker } from '../tags/TagPicker'
+import { canSplit } from '../time-entries/split'
+import { SplitDialog } from '../time-entries/SplitDialog'
 import { useCreateEntry, useDeleteEntries, useDeleteEntry, useUpdateEntries, useUpdateEntry } from '../time-entries/useTimeEntries'
 import { MAX_DESCRIPTION_LENGTH } from '../timer/TimerBar'
 import { Avatar } from './Avatar'
@@ -242,6 +244,9 @@ function EntryRow({ entry, memberName, isSelected, onToggleSelected }: EntryRowP
   const updateEntry = useUpdateEntry()
   const deleteEntry = useDeleteEntry()
   const [isEditingTime, setIsEditingTime] = useState(false)
+  const [isSplitting, setIsSplitting] = useState(false)
+  // Reports leave out running entries, so the stop is always known.
+  const isSplittable = canSplit(entry, new Date(entry.stop ?? entry.start))
   const start = new Date(entry.start)
   const stop = new Date(entry.stop ?? entry.start)
   const latest = useRef(entry)
@@ -375,7 +380,13 @@ function EntryRow({ entry, memberName, isSelected, onToggleSelected }: EntryRowP
         )}
       </td>
       <td>
-        <RowMenu entry={entry} onToggleBillable={toggleBillable} onDelete={remove} />
+        <RowMenu
+          entry={entry}
+          onToggleBillable={toggleBillable}
+          onSplit={isSplittable ? () => setIsSplitting(true) : null}
+          onDelete={remove}
+        />
+        {isSplitting && <SplitDialog entry={entry} onClose={() => setIsSplitting(false)} />}
       </td>
     </tr>
   )
@@ -432,7 +443,14 @@ function InlineText({ value, onSave, ariaLabel, placeholder, maxLength, classNam
   )
 }
 
-function RowMenu({ entry, onToggleBillable, onDelete }: { entry: ReportEntry; onToggleBillable: () => void; onDelete: () => void }) {
+interface RowMenuProps {
+  entry: ReportEntry
+  onToggleBillable: () => void
+  onSplit: (() => void) | null
+  onDelete: () => void
+}
+
+function RowMenu({ entry, onToggleBillable, onSplit, onDelete }: RowMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const close = useCallback(() => setIsOpen(false), [])
@@ -469,6 +487,9 @@ function RowMenu({ entry, onToggleBillable, onDelete }: { entry: ReportEntry; on
         <div className="absolute top-full right-0 z-40 mt-1 w-44 rounded-lg border border-line bg-surface p-1 shadow-xl">
           {isOwn && <MenuItem onClick={act(duplicate)}>Duplicate</MenuItem>}
           <MenuItem onClick={act(onToggleBillable)}>{entry.is_billable ? 'Set as non-billable' : 'Set as billable'}</MenuItem>
+          <MenuItem onClick={act(() => onSplit?.())} disabled={!onSplit} hint={onSplit ? undefined : 'Too short to split'}>
+            Split
+          </MenuItem>
           {entry.project_id && <MenuItem onClick={act(() => navigate('/projects'))}>Go to project</MenuItem>}
           <MenuItem onClick={act(onDelete)} danger>
             Delete
@@ -479,12 +500,22 @@ function RowMenu({ entry, onToggleBillable, onDelete }: { entry: ReportEntry; on
   )
 }
 
-function MenuItem({ onClick, children, danger = false }: { onClick: () => void; children: ReactNode; danger?: boolean }) {
+interface MenuItemProps {
+  onClick: () => void
+  children: ReactNode
+  danger?: boolean
+  disabled?: boolean
+  hint?: string
+}
+
+function MenuItem({ onClick, children, danger = false, disabled = false, hint }: MenuItemProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`block w-full rounded-md px-3 py-1.5 text-left text-sm font-medium hover:bg-canvas ${danger ? 'text-danger' : ''}`}
+      disabled={disabled}
+      title={hint}
+      className={`block w-full rounded-md px-3 py-1.5 text-left text-sm font-medium hover:bg-canvas disabled:cursor-default disabled:text-muted disabled:hover:bg-transparent ${danger ? 'text-danger' : ''}`}
     >
       {children}
     </button>

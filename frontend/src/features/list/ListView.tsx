@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import type { Tag, TimeEntry } from '../../api/types'
-import { DollarIcon, PlayIcon, TrashIcon } from '../../components/icons'
+import { DollarIcon, PlayIcon } from '../../components/icons'
+import { MoreMenu } from '../../components/MoreMenu'
 import {
   addDays,
   entryEnd,
@@ -14,6 +16,8 @@ import { ProjectLabel } from '../projects/ProjectLabel'
 import { useProjectLookup } from '../projects/useProjects'
 import { TagList } from '../tags/TagPicker'
 import { useTagLookup } from '../tags/useTags'
+import { canSplit } from '../time-entries/split'
+import { SplitDialog } from '../time-entries/SplitDialog'
 import { isOptimistic } from '../time-entries/useTimeEntries'
 
 interface ListViewProps {
@@ -88,6 +92,8 @@ function EntryRow({ entry, now, onSelect, onContinue, onDelete }: { entry: TimeE
   const project = entry.project_id ? projects.get(entry.project_id) : undefined
   const isRunning = entry.stop === null
   const isPending = isOptimistic(entry)
+  const [isSplitting, setIsSplitting] = useState(false)
+  const isSplittable = canSplit(entry, now)
 
   return (
     <li
@@ -106,7 +112,7 @@ function EntryRow({ entry, now, onSelect, onContinue, onDelete }: { entry: TimeE
       <span className={`w-20 text-right font-medium tabular-nums ${isRunning ? 'text-primary' : ''}`}>
         {formatDuration(entrySeconds(entry, now))}
       </span>
-      <div className="flex w-16 justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="flex w-16 justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 has-[[aria-expanded=true]]:opacity-100">
         {!isRunning && (
           <button
             title="Continue"
@@ -120,18 +126,16 @@ function EntryRow({ entry, now, onSelect, onContinue, onDelete }: { entry: TimeE
           </button>
         )}
         {!isPending && (
-          <button
-            title="Delete"
-            className="rounded-md p-1 text-ink-soft hover:bg-danger/10 hover:text-danger"
-            onClick={(event) => {
-              event.stopPropagation()
-              onDelete(entry)
-            }}
-          >
-            <TrashIcon />
-          </button>
+          <MoreMenu
+            buttonClassName="rounded-md p-1 text-ink-soft hover:bg-canvas hover:text-ink"
+            items={[
+              { label: 'Split', onSelect: () => setIsSplitting(true), disabled: !isSplittable, hint: isSplittable ? undefined : 'Too short to split' },
+              { label: 'Delete', onSelect: () => onDelete(entry), danger: true },
+            ]}
+          />
         )}
       </div>
+      {isSplitting && <SplitDialog entry={entry} onClose={() => setIsSplitting(false)} />}
     </li>
   )
 }

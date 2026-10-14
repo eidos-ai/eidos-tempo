@@ -262,3 +262,30 @@ def test_admin_can_edit_a_members_entry_from_reports(api_client: TestClient) -> 
     assert response.status_code == 200
     entries = api_client.get("/api/reports/entries", params=SEPTEMBER_PARAMS).json()
     assert [(e["description"], e["is_billable"]) for e in entries] == [("Fixed", False)]
+
+
+def test_split_entry_endpoint(api_client: TestClient) -> None:
+    login(api_client)
+    entry_id = add_entry(api_client, "Review", "2026-09-10T12:00:00Z", "2026-09-10T14:00:00Z")
+
+    response = api_client.post(
+        f"/api/time-entries/{entry_id}/split", json={"at": "2026-09-10T13:15:00Z"}
+    )
+
+    assert response.status_code == 201
+    split = response.json()
+    assert split["later"]["id"] == entry_id
+    assert (split["later"]["start"], split["later"]["stop"]) == (
+        "2026-09-10T13:15:00Z",
+        "2026-09-10T14:00:00Z",
+    )
+    assert (split["earlier"]["start"], split["earlier"]["stop"]) == (
+        "2026-09-10T12:00:00Z",
+        "2026-09-10T13:15:00Z",
+    )
+    assert split["earlier"]["description"] == "Review"
+    assert split["earlier"]["is_billable"] is True
+    outside = api_client.post(
+        f"/api/time-entries/{entry_id}/split", json={"at": "2026-09-10T15:00:00Z"}
+    )
+    assert outside.status_code == 422

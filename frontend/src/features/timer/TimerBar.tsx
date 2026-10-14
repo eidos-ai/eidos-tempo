@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EntrySuggestion, TimeEntry } from '../../api/types'
 import { FolderIcon, PlayIcon, StopIcon, TagIcon } from '../../components/icons'
+import { MoreMenu } from '../../components/MoreMenu'
 import { Tooltip } from '../../components/Tooltip'
 import { entrySeconds, formatDuration } from '../../lib/time'
 import { useNow } from '../../lib/useNow'
@@ -9,9 +10,12 @@ import { DescriptionInput } from '../time-entries/DescriptionInput'
 import { ProjectPicker } from '../projects/ProjectPicker'
 import { useProjectLookup } from '../projects/useProjects'
 import { TagList, TagPicker } from '../tags/TagPicker'
+import { canSplit } from '../time-entries/split'
+import { SplitDialog } from '../time-entries/SplitDialog'
 import {
   isOptimistic,
   useRunningEntry,
+  useDeleteEntry,
   useStartTimer,
   useStopTimer,
   useUpdateEntry,
@@ -50,11 +54,14 @@ export function TimerBar() {
   const startTimer = useStartTimer()
   const stopTimer = useStopTimer()
   const updateEntry = useUpdateEntry()
+  const deleteEntry = useDeleteEntry()
   const projects = useProjectLookup()
   const now = useNow(running !== null)
 
   const [fields, setFields] = useState<TimerFields>(EMPTY_FIELDS)
   const [isEditing, setIsEditing] = useState(false)
+  const [isSplitting, setIsSplitting] = useState(false)
+  if (isSplitting && !running) setIsSplitting(false)
   const pendingCommit = useRef(false)
   const previousRunning = useRef<TimeEntry | null>(null)
 
@@ -207,6 +214,7 @@ export function TimerBar() {
         />
       </Tooltip>
       <BillableToggle value={fields.isBillable} onChange={(isBillable) => change({ isBillable }, true)} padding="p-2" />
+      {isSplitting && running && <SplitDialog entry={running} onClose={() => setIsSplitting(false)} />}
       <RunningTimer entry={running} canEdit={running !== null && !isOptimistic(running)} now={now} onSaveStart={saveStart} />
       <Tooltip label={running ? 'Stop time entry' : 'Start time entry'}>
         <button
@@ -217,6 +225,20 @@ export function TimerBar() {
           {running ? <StopIcon /> : <PlayIcon />}
         </button>
       </Tooltip>
+      {running && !isOptimistic(running) && (
+        <MoreMenu
+          buttonClassName="-mr-2 rounded-lg p-2 text-muted hover:bg-canvas hover:text-ink"
+          items={[
+            {
+              label: 'Split',
+              onSelect: () => setIsSplitting(true),
+              disabled: !canSplit(running, now),
+              hint: canSplit(running, now) ? undefined : 'Too short to split',
+            },
+            { label: 'Delete', onSelect: () => deleteEntry.mutate(running.id), danger: true },
+          ]}
+        />
+      )}
     </div>
   )
 }

@@ -38,6 +38,12 @@ class TimeEntryDraft:
     tag_ids: tuple[TagId, ...] = ()
 
 
+@dataclass(frozen=True)
+class SplitEntries:
+    earlier: TimeEntry
+    later: TimeEntry
+
+
 class TimeEntryService:
     def __init__(
         self,
@@ -154,6 +160,30 @@ class TimeEntryService:
         self._entries.save(entry)
         log_if_on_behalf(actor, entry, "updated")
         return entry
+
+    def split_entry(self, actor: User, entry_id: TimeEntryId, at: datetime) -> SplitEntries:
+        """Splits like Toggl: a new entry takes the earlier part and the original keeps the later
+        part, so it keeps its id and, if running, keeps running."""
+        entry = self._get_editable(actor, entry_id)
+        now = self._clock.now()
+        if not entry.start < at < (entry.stop or now):
+            raise InvalidValueError("The split time must be after the start and before the stop")
+        earlier = TimeEntry(
+            id=TimeEntryId(new_uuid()),
+            user_id=entry.user_id,
+            project_id=entry.project_id,
+            description=entry.description,
+            start=entry.start,
+            stop=at,
+            created_at=now,
+            is_billable=entry.is_billable,
+            tag_ids=entry.tag_ids,
+        )
+        entry.start = at
+        self._entries.add(earlier)
+        self._entries.save(entry)
+        log_if_on_behalf(actor, entry, "split")
+        return SplitEntries(earlier=earlier, later=entry)
 
     def get_editable_entry(self, actor: User, entry_id: TimeEntryId) -> TimeEntry:
         return self._get_editable(actor, entry_id)

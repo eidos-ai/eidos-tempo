@@ -6,7 +6,7 @@ from pydantic import AwareDatetime, BaseModel
 from app.domain.ids import ProjectId, TagId
 from app.domain.story import TrackingStory
 from app.domain.time_entries import EntrySuggestion, TimeEntry
-from app.services.time_entries import TimeEntryDraft, TimerStart
+from app.services.time_entries import SplitEntries, TimeEntryDraft, TimerStart
 
 
 class TimeEntryOut(BaseModel):
@@ -59,6 +59,22 @@ class TimerStartIn(BaseModel):
 
 class TimerStopIn(BaseModel):
     stop: AwareDatetime | None = None
+
+
+class SplitIn(BaseModel):
+    at: AwareDatetime
+
+
+class SplitOut(BaseModel):
+    earlier: TimeEntryOut
+    later: TimeEntryOut
+
+    @classmethod
+    def from_domain(cls, split: SplitEntries) -> "SplitOut":
+        return cls(
+            earlier=TimeEntryOut.from_domain(split.earlier),
+            later=TimeEntryOut.from_domain(split.later),
+        )
 
 
 class TimeEntryIn(BaseModel):
