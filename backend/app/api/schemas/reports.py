@@ -105,6 +105,7 @@ class ChartBucketOut(BaseModel):
     seconds: int
     billable_seconds: int
     segments: list[ShareOut]
+    projects: list["SummaryGroupOut"]
 
 
 class SummaryGroupOut(BaseModel):
@@ -151,6 +152,7 @@ class SummaryReportOut(BaseModel):
                     seconds=bucket.duration.seconds,
                     billable_seconds=bucket.duration.billable_seconds,
                     segments=[ShareOut.from_domain(share) for share in bucket.segments],
+                    projects=[SummaryGroupOut.from_domain(group) for group in bucket.projects],
                 )
                 for bucket in report.buckets
             ],

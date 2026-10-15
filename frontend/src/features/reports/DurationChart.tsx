@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useLayoutEffect, useRef, useState } from 'react'
 import type { Grouping, Resolution, SummaryReport } from '../../api/types'
+import { DollarIcon } from '../../components/icons'
 import { formatDuration } from '../../lib/time'
 import { useGroupLabeler, withSeriesColors, type GroupLabel } from './groupLabels'
 
@@ -142,7 +143,7 @@ export function DurationChart({ report }: { report: SummaryReport }) {
           </span>
         ))}
       </div>
-      {hoveredBucket && hoveredBucket.seconds > 0 && <BucketTooltip bucket={hoveredBucket} resolution={resolution} series={series} />}
+      {hoveredBucket && hoveredBucket.seconds > 0 && <BucketTooltip bucket={hoveredBucket} resolution={resolution} stackBy={stackBy} series={series} />}
     </div>
   )
 }
@@ -225,23 +226,72 @@ function Bar({ x, top, bottom, width, roundTop, color }: { x: number; top: numbe
   return <path d={path} style={{ fill: color }} />
 }
 
-function BucketTooltip({ bucket, resolution, series }: { bucket: Bucket; resolution: Resolution; series: Series[] }) {
+interface BucketTooltipProps {
+  bucket: Bucket
+  resolution: Resolution
+  stackBy: Grouping
+  series: Series[]
+}
+
+function BucketTooltip({ bucket, resolution, stackBy, series }: BucketTooltipProps) {
+  const labelOf = useGroupLabeler()
   const tick = bucketLabel(bucket.start, resolution)
   const seconds = new Map(bucket.segments.map((segment) => [segment.key, segment.seconds]))
+  const isSplit = bucket.projects.some((project) => project.billable_seconds > 0 && project.billable_seconds < project.seconds)
   return (
-    <div className="pointer-events-none absolute top-0 right-0 min-w-48 rounded-lg border border-line bg-surface px-3 py-2 text-xs shadow-lg">
-      <p className="mb-1 font-semibold">
+    <div className="pointer-events-none absolute top-0 right-0 max-w-96 min-w-56 rounded-lg border border-line bg-surface px-3 py-2 text-xs shadow-lg">
+      <p className="mb-1.5 font-semibold">
         {tick.strong} {tick.soft} · <span className="tabular-nums">{formatDuration(bucket.seconds)}</span>
       </p>
-      {series
-        .filter(({ key }) => (seconds.get(key) ?? 0) > 0)
-        .map(({ key, label }) => (
-          <p key={key ?? 'none'} className="flex items-center gap-2 text-ink-soft">
-            <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: label.color }} />
-            <span className="flex-1 truncate">{label.name}</span>
-            <span className="font-medium text-ink tabular-nums">{formatDuration(seconds.get(key) ?? 0)}</span>
-          </p>
-        ))}
+      {stackBy !== 'project' && (
+        <>
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1">
+            {series
+              .filter(({ key }) => (seconds.get(key) ?? 0) > 0)
+              .map(({ key, label }) => (
+                <Fragment key={key ?? 'none'}>
+                  <span className="h-1.5 w-3.5 rounded-full" style={{ backgroundColor: label.color }} />
+                  <span className="truncate text-ink-soft">{label.name}</span>
+                  <span className="text-right font-medium text-ink tabular-nums">{formatDuration(seconds.get(key) ?? 0)}</span>
+                </Fragment>
+              ))}
+          </div>
+          <p className="mt-2.5 mb-1 text-[10px] font-semibold tracking-wider text-muted uppercase">By project</p>
+        </>
+      )}
+      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-x-2 gap-y-1">
+        {isSplit && (
+          <>
+            <span className="col-span-2" />
+            <span className="text-right text-[11px] text-muted">Billable</span>
+            <span className="text-right text-[11px] text-muted">Non-billable</span>
+          </>
+        )}
+        {bucket.projects.map((project) => {
+          const label = labelOf('project', project.key)
+          const nonBillable = project.seconds - project.billable_seconds
+          return (
+            <Fragment key={project.key ?? 'none'}>
+              <span className="size-2 rounded-full" style={{ backgroundColor: label.color }} />
+              <span className="truncate text-ink-soft">
+                {label.name}
+                {label.hint && <span className="text-muted"> · {label.hint}</span>}
+              </span>
+              {isSplit ? (
+                <>
+                  <span className="text-right font-medium text-ink tabular-nums">{project.billable_seconds ? formatDuration(project.billable_seconds) : '—'}</span>
+                  <span className="text-right font-medium text-ink tabular-nums">{nonBillable ? formatDuration(nonBillable) : '—'}</span>
+                </>
+              ) : (
+                <>
+                  {project.billable_seconds > 0 ? <DollarIcon width={12} height={12} className="text-primary" aria-label="Billable" /> : <span />}
+                  <span className="text-right font-medium text-ink tabular-nums">{formatDuration(project.seconds)}</span>
+                </>
+              )}
+            </Fragment>
+          )
+        })}
+      </div>
     </div>
   )
 }

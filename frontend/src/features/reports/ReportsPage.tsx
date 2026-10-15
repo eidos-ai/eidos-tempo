@@ -110,8 +110,8 @@ function ExportMenu({ kind, filters }: { kind: ReportKind; filters: ReportFilter
 function Card({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
     <section className="min-w-0 rounded-lg border border-line bg-surface p-5">
-      <header className="mb-3 flex h-9 items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
+      <header className="mb-3 flex min-h-9 items-center justify-between gap-3">
+        <h2 className="min-w-0 text-sm font-semibold">{title}</h2>
         {action}
       </header>
       {children}

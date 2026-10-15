@@ -150,7 +150,7 @@ export interface SummaryReport {
   days_tracked: number
   average_daily_seconds: number
   resolution: Resolution
-  buckets: Array<Duration & { start: string; segments: Share[] }>
+  buckets: Array<Duration & { start: string; segments: Share[]; projects: SummaryGroup[] }>
   stack_by: Grouping
   slice_by: Grouping
   slices: Share[]

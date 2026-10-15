@@ -199,6 +199,9 @@ def test_report_endpoints(api_client: TestClient) -> None:
     assert summary["groups"][0]["key"] is None
     assert summary["slices"] == [{"key": None, "seconds": 9000}]
     assert summary["buckets"][9]["segments"] == [{"key": "billable", "seconds": 9000}]
+    assert summary["buckets"][9]["projects"] == [
+        {"key": None, "seconds": 9000, "billable_seconds": 9000, "subgroups": []}
+    ]
 
     by_member = api_client.get(
         "/api/reports/summary",

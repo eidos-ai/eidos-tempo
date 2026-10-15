@@ -33,14 +33,6 @@
 
   --color-chart-billable: #9f7fee;
   --color-chart-non-billable: #6a3fe0;
-  --color-series-1: #2a78d6;
-  --color-series-2: #eb6834;
-  --color-series-3: #1baf7a;
-  --color-series-4: #eda100;
-  --color-series-5: #e87ba4;
-  --color-series-6: #008300;
-  --color-series-7: #4a3aa7;
-  --color-series-8: #e34948;
 
   --animate-logo-spin: logo-spin 1.4s cubic-bezier(0.45, 0, 0.2, 1);
   --animate-story-in: story-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
@@ -89,6 +81,15 @@
   --project-text-min-lightness: 0;
   --project-tint: 16%;
   --lift-shadow: 0 4px 16px rgb(24 22 51 / 0.2);
+
+  --color-series-1: #2a78d6;
+  --color-series-2: #eb6834;
+  --color-series-3: #1baf7a;
+  --color-series-4: #eda100;
+  --color-series-5: #e87ba4;
+  --color-series-6: #008300;
+  --color-series-7: #4a3aa7;
+  --color-series-8: #e34948;
 }
 
 :root[data-theme="dark"] {
