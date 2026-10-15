@@ -101,9 +101,11 @@ function EntryRow({ entry, now, onSelect, onContinue, onDelete }: { entry: TimeE
       onClick={(event) => !isPending && onSelect(entry, event.currentTarget.getBoundingClientRect())}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className={`truncate ${entry.description ? '' : 'text-muted'}`}>{entry.description || '(no description)'}</span>
-        {project && <ProjectLabel project={project} />}
-        <TagList tags={entry.tag_ids.map((id) => tags.get(id)).filter((tag): tag is Tag => tag !== undefined)} />
+        <span className={`min-w-0 wrap-anywhere ${entry.description ? '' : 'text-muted'}`}>{entry.description || '(no description)'}</span>
+        <div className="flex max-w-1/2 shrink-0 items-center gap-3">
+          {project && <ProjectLabel project={project} />}
+          <TagList tags={entry.tag_ids.map((id) => tags.get(id)).filter((tag): tag is Tag => tag !== undefined)} />
+        </div>
       </div>
       <DollarIcon className={entry.is_billable ? 'text-primary' : 'text-line-strong'} />
       <span className="w-40 text-right text-ink-soft tabular-nums">

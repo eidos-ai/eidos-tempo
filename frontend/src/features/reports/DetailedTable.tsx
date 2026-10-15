@@ -416,7 +416,7 @@ function InlineText({ value, onSave, ariaLabel, placeholder, maxLength, classNam
         type="button"
         aria-label={`Edit ${ariaLabel.toLowerCase()}`}
         onClick={() => setDraft(value)}
-        className={`block w-full truncate rounded-md border border-transparent px-2 py-1.5 text-left hover:border-line-strong ${value ? '' : 'text-muted'} ${className}`}
+        className={`block w-full rounded-md border border-transparent px-2 py-1.5 wrap-anywhere text-left hover:border-line-strong ${value ? '' : 'text-muted'} ${className}`}
       >
         {value || placeholder}
       </button>
