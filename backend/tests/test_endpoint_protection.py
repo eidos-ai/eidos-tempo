@@ -29,6 +29,7 @@ MEMBER_ROUTES = {
     ("POST", "/api/time-entries"),
     ("PUT", "/api/time-entries/{entry_id}"),
     ("DELETE", "/api/time-entries/{entry_id}"),
+    ("POST", "/api/time-entries/{entry_id}/split"),
     ("GET", "/api/reports/summary"),
     ("GET", "/api/reports/entries"),
     ("GET", "/api/reports/summary.pdf"),

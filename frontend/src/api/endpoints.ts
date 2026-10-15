@@ -14,6 +14,7 @@ import type {
   TimeEntry,
   Tag,
   TagInput,
+  SplitEntries,
   TimeEntryInput,
   TimerStartInput,
   TrackingStory,
@@ -79,6 +80,7 @@ export const timeEntriesApi = {
   create: (input: TimeEntryInput) => http.post<TimeEntry>('/time-entries', input),
   update: (id: string, input: TimeEntryInput) => http.put<TimeEntry>(`/time-entries/${id}`, input),
   remove: (id: string) => http.delete(`/time-entries/${id}`),
+  split: (id: string, at: string) => http.post<SplitEntries>(`/time-entries/${id}/split`, { at }),
 }
 
 export const reportsApi = {

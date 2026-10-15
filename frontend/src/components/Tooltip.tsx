@@ -47,14 +47,12 @@ export function Tooltip({ label, children }: TooltipProps) {
 
   useEffect(() => () => window.clearTimeout(showTimer.current), [])
 
-  if (!label) return <>{children}</>
-
   return (
     <span
       ref={triggerRef}
       className="inline-flex"
       onMouseEnter={() => {
-        if (isSuppressed.current) return
+        if (!label || isSuppressed.current) return
         showTimer.current = window.setTimeout(() => {
           if (triggerRef.current) setAnchor(triggerRef.current.getBoundingClientRect())
         }, SHOW_DELAY_MS)
@@ -69,7 +67,7 @@ export function Tooltip({ label, children }: TooltipProps) {
       }}
     >
       {children}
-      {anchor && <Bubble anchor={anchor} label={label} />}
+      {anchor && label && <Bubble anchor={anchor} label={label} />}
     </span>
   )
 }

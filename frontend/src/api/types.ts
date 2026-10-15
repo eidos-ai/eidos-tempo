@@ -70,6 +70,11 @@ export interface TimeEntry {
   stop: string | null
 }
 
+export interface SplitEntries {
+  earlier: TimeEntry
+  later: TimeEntry
+}
+
 export interface TimeEntryInput {
   description: string
   project_id: string | null

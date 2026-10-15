@@ -52,7 +52,8 @@ export function Popover({ anchor, label, onClose, children }: PopoverProps) {
       if (event.key === 'Escape') onClose()
     }
     const handleMouseDown = (event: MouseEvent) => {
-      if (ref.current?.contains(event.target as Node)) return
+      // Menus opened from inside the popover are rendered on the body (data-floating) but belong to it.
+      if (ref.current?.contains(event.target as Node) || (event.target as Element).closest?.('[data-floating]')) return
       event.stopPropagation()
       event.preventDefault()
       swallowNextClick()

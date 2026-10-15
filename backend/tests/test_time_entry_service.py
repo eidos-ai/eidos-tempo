@@ -344,3 +344,93 @@ def test_description_is_limited_to_500_characters(
 ) -> None:
     with pytest.raises(InvalidValueError):
         time_entry_service.start_timer(member, TimerStart("x" * 501, None))
+
+
+def test_split_creates_the_earlier_part_and_keeps_the_original_for_the_later_part(
+    time_entry_service: TimeEntryService,
+    project_service: ProjectService,
+    tag_service: TagService,
+    member: User,
+    admin: User,
+    clock: FakeClock,
+) -> None:
+    project = project_service.create_project(
+        admin, ProjectDraft("Client work", HexColor("#7b4de7"), None, True)
+    )
+    tag = tag_service.create_tag(admin, TagDraft("dev"))
+    start = clock.now() - timedelta(hours=2)
+    entry = time_entry_service.create_entry(
+        member,
+        TimeEntryDraft(
+            "Review", project.id, start, clock.now(), is_billable=True, tag_ids=(tag.id,)
+        ),
+    )
+    at = start + timedelta(minutes=75)
+
+    split = time_entry_service.split_entry(member, entry.id, at)
+
+    assert split.later.id == entry.id
+    assert (split.later.start, split.later.stop) == (at, clock.now())
+    assert split.earlier.id != entry.id
+    assert (split.earlier.start, split.earlier.stop) == (start, at)
+    for part in (split.earlier, split.later):
+        assert part.description == "Review"
+        assert part.project_id == project.id
+        assert part.is_billable
+        assert part.tag_ids == (tag.id,)
+    period = DateRange(start - timedelta(days=1), start + timedelta(days=1))
+    assert len(time_entry_service.list_entries(member, period)) == 2
+
+
+def test_splitting_the_running_timer_keeps_the_later_part_running(
+    time_entry_service: TimeEntryService, member: User, clock: FakeClock
+) -> None:
+    running = time_entry_service.start_timer(member, TimerStart("Deep work", None))
+    started = clock.now()
+    clock.advance(timedelta(hours=1))
+
+    split = time_entry_service.split_entry(member, running.id, started + timedelta(minutes=40))
+
+    assert split.later.id == running.id
+    assert split.later.is_running
+    assert split.later.start == started + timedelta(minutes=40)
+    assert split.earlier.stop == started + timedelta(minutes=40)
+    assert time_entry_service.get_running(member) == split.later
+
+
+@pytest.mark.parametrize("offset", [timedelta(0), timedelta(hours=1), timedelta(minutes=-5)])
+def test_split_time_must_fall_inside_the_entry(
+    time_entry_service: TimeEntryService, member: User, clock: FakeClock, offset: timedelta
+) -> None:
+    start = clock.now() - timedelta(hours=1)
+    entry = time_entry_service.create_entry(member, TimeEntryDraft("x", None, start, clock.now()))
+
+    with pytest.raises(InvalidValueError):
+        time_entry_service.split_entry(member, entry.id, start + offset)
+
+
+def test_running_timer_cannot_be_split_after_now(
+    time_entry_service: TimeEntryService, member: User, clock: FakeClock
+) -> None:
+    running = time_entry_service.start_timer(member, TimerStart("x", None))
+    clock.advance(timedelta(minutes=30))
+
+    with pytest.raises(InvalidValueError):
+        time_entry_service.split_entry(member, running.id, clock.now() + timedelta(minutes=1))
+
+
+def test_only_the_owner_or_an_admin_can_split_and_deleted_entries_cannot_be_split(
+    time_entry_service: TimeEntryService, member: User, admin: User, clock: FakeClock
+) -> None:
+    start = clock.now() - timedelta(hours=1)
+    entry = time_entry_service.create_entry(member, TimeEntryDraft("x", None, start, clock.now()))
+    other = time_entry_service.create_entry(admin, TimeEntryDraft("y", None, start, clock.now()))
+    at = start + timedelta(minutes=30)
+
+    with pytest.raises(NotFoundError):
+        time_entry_service.split_entry(member, other.id, at)
+    split = time_entry_service.split_entry(admin, entry.id, at)
+    assert split.earlier.user_id == member.id
+    time_entry_service.delete_entry(member, entry.id)
+    with pytest.raises(NotFoundError):
+        time_entry_service.split_entry(member, entry.id, at + timedelta(minutes=10))

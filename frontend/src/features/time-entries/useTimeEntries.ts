@@ -185,6 +185,22 @@ export function useDeleteEntry() {
   })
 }
 
+// Like Toggl, the original entry keeps the later part (and keeps running); a new entry takes the earlier part.
+export function useSplitEntry() {
+  return useEntryMutation(
+    ({ entry, at }: { entry: TimeEntry; at: string }) => timeEntriesApi.split(entry.id, at),
+    (queryClient, { entry, at }) => {
+      const isOwn = queryClient
+        .getQueriesData<TimeEntry[]>({ queryKey: queryKeys.weekEntries })
+        .some(([, entries]) => entries?.some((e) => e.id === entry.id))
+      updateWeeks(queryClient, (entries) => entries.map((e) => (e.id === entry.id ? { ...e, start: at } : e)))
+      if (isOwn) insertIntoWeeks(queryClient, { ...entry, id: `${OPTIMISTIC_ID_PREFIX}${Date.now()}`, stop: at })
+      const running = queryClient.getQueryData<TimeEntry | null>(queryKeys.runningEntry)
+      if (running?.id === entry.id) queryClient.setQueryData(queryKeys.runningEntry, { ...running, start: at })
+    },
+  )
+}
+
 interface EntryUpdate {
   id: string
   input: TimeEntryInput

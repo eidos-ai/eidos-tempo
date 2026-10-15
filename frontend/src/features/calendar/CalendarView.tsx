@@ -28,6 +28,7 @@ const DEFAULT_SCROLL_HOUR = 8
 const CLICK_ENTRY_MINUTES = 30
 const CLICK_TOLERANCE_PX = 4
 const MIN_BLOCK_HEIGHT = 12
+const MIN_VISIBLE_BLOCK_HEIGHT = 3
 const MIN_PLAY_BLOCK_HEIGHT = 24
 const MIN_RESIZE_BLOCK_HEIGHT = 20
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
@@ -315,6 +316,13 @@ function runningStripes(color: string): string {
   return `repeating-linear-gradient(-45deg, transparent 0 7px, ${stripe} 7px 8.4px)`
 }
 
+function blockHeight(segment: DaySegment, durationMinutes: number, hourHeight: number): number {
+  const height = Math.max(MIN_BLOCK_HEIGHT, (durationMinutes / 60) * hourHeight - 2)
+  if (!segment.nextStart) return height
+  const room = ((segment.nextStart.getTime() - segment.start.getTime()) / 3_600_000) * hourHeight - 2
+  return Math.max(MIN_VISIBLE_BLOCK_HEIGHT, Math.min(height, room))
+}
+
 function EntryBlock({ segment, hourHeight, now, isLifted, onMouseDown, onSelect, onContinue }: EntryBlockProps) {
   const projects = useProjectLookup()
   const clients = useClientLookup()
@@ -324,7 +332,7 @@ function EntryBlock({ segment, hourHeight, now, isLifted, onMouseDown, onSelect,
   const color = project?.color ?? NO_PROJECT_COLOR
   const top = (minutesSinceStartOfDay(segment.start) / 60) * hourHeight
   const durationMinutes = (segment.end.getTime() - segment.start.getTime()) / 60_000
-  const height = Math.max(MIN_BLOCK_HEIGHT, (durationMinutes / 60) * hourHeight - 2)
+  const height = blockHeight(segment, durationMinutes, hourHeight)
   const isRunning = entry.stop === null
   const isPending = isOptimistic(entry)
   const canResize = !isRunning && !isPending && height >= MIN_RESIZE_BLOCK_HEIGHT
@@ -340,7 +348,7 @@ function EntryBlock({ segment, hourHeight, now, isLifted, onMouseDown, onSelect,
         if (event.key !== 'Enter' || event.target !== event.currentTarget || isPending) return
         onSelect(entry, event.currentTarget.getBoundingClientRect())
       }}
-      className={`group absolute flex cursor-pointer flex-col justify-start overflow-hidden rounded-md border-l-[3px] bg-(--tint) px-2 py-1 text-left text-xs hover:bg-(--tint-hover) hover:shadow-md ${isRunning ? 'rounded-b-none border-y border-r border-line-strong shadow-sm' : ''} ${isLifted ? 'z-20 bg-(--tint-hover) shadow-(--lift-shadow) ring-2 ring-ink/70 hover:shadow-(--lift-shadow)' : 'transition-[background-color,box-shadow] duration-150 ease-out'}`}
+      className={`group absolute flex cursor-pointer flex-col justify-start overflow-hidden rounded-md border-l-[3px] bg-(--tint) px-2 text-left ${height < MIN_BLOCK_HEIGHT ? '' : 'py-1'} text-xs hover:bg-(--tint-hover) hover:shadow-md ${isRunning ? 'rounded-b-none border-y border-r border-line-strong shadow-sm' : ''} ${isLifted ? 'z-20 bg-(--tint-hover) shadow-(--lift-shadow) ring-2 ring-ink/70 hover:shadow-(--lift-shadow)' : 'transition-[background-color,box-shadow] duration-150 ease-out'}`}
       style={
         {
           top: top + 1,

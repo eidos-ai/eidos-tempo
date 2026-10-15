@@ -23,6 +23,8 @@ from app.domain.value_objects import DateRange, EmailAddress, HexColor
 from app.durability.commit import PostgresWalArchive
 from app.repositories.protocols import Repositories
 from app.repositories.sql import build_sql_repositories
+from app.services.time_entries import TimeEntryService
+from tests.fakes import FakeClock
 
 
 class IntegrationSettings(BaseSettings):
@@ -329,3 +331,22 @@ def test_wal_archive_sees_writes_and_closes_segments(
     segment = wal.close_segment(session)
     assert len(segment) == 24
     assert int(segment, 16) > 0
+
+
+def test_splitting_a_running_entry_keeps_one_running_timer(
+    sql_repositories: Repositories, session: Session
+) -> None:
+    user = make_user(sql_repositories)
+    running = make_entry(user, NOW, None)
+    sql_repositories.time_entries.add(running)
+    clock = FakeClock(NOW + timedelta(hours=1))
+    service = TimeEntryService(
+        sql_repositories.time_entries, sql_repositories.projects, sql_repositories.tags, clock
+    )
+
+    split = service.split_entry(user, running.id, NOW + timedelta(minutes=30))
+    session.flush()
+
+    assert sql_repositories.time_entries.get_running(user.id) == split.later
+    stored = sql_repositories.time_entries.get(split.earlier.id)
+    assert stored is not None and stored.stop == NOW + timedelta(minutes=30)

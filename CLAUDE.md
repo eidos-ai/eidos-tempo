@@ -87,6 +87,12 @@ these shapes, compare with Toggl again.
   build on the row's latest input, not on the possibly stale `entry` prop (see `EntryRow` in `DetailedTable.tsx`).
   Timer start/stop send the click time (`start`/`stop`); the server keeps it if it is under a minute old, so a
   request queued behind slow saves doesn't move the entry and the timer never jumps back.
+- Split (`POST /api/time-entries/{id}/split`, `SplitDialog`, `useSplitEntry`) works like Toggl: the new entry is the
+  earlier part; the original keeps its id and becomes the later part (a running timer keeps running). Both parts
+  copy description, project, tags and billable. Split points are 5-minute steps from the start; entries of 5 minutes
+  or less can't be split.
+- ⋮ menus use `components/MoreMenu.tsx`: drawn on the body so cards and scrolling lists can't clip it, with keyboard
+  focus and arrow keys. Split goes first and a red Delete last. Don't build separate dropdowns for entry actions.
 - The current user comes from `useCurrentUser()` (context provided by `RequireAuth`); never read the
   session query directly in pages.
 - Styling: Tailwind v4 with Eidos brand tokens in `index.css` (`--color-primary`, `--color-ink`, ...).
@@ -150,7 +156,7 @@ these shapes, compare with Toggl again.
   `API_TOKEN_ROUTES` in `tests/test_endpoint_protection.py`; the test fails otherwise. Public routes need a strong reason.
 - Protected routes take `CurrentUser`; admin rules are enforced in services with `require_admin`.
 - Members may only see and touch their own time entries; return 404 (not 403) for other users' entries.
-  Admins may edit and delete anyone's entries (Detailed report); `TimeEntryService` logs each change made on
+  Admins may edit, split and delete anyone's entries (Detailed report); `TimeEntryService` logs each change made on
   someone else's behalf, and `ReportService.visible_to` limits members' reports to their own entries.
 - Keep login constant-time (`verify_dummy` for unknown emails) and keep the nginx login rate limit.
 - API docs stay off in production (`TEMPO_ENABLE_API_DOCS=false`).

@@ -1,15 +1,20 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import type { TimeEntry, TimeEntryInput } from '../../api/types'
 import { Button } from '../../components/Button'
-import { CloseIcon, FolderIcon, PlayIcon, StopIcon, TagIcon, TrashIcon } from '../../components/icons'
+import { CloseIcon, FolderIcon, PlayIcon, StopIcon, TagIcon } from '../../components/icons'
+import { MoreMenu } from '../../components/MoreMenu'
 import { Popover } from '../../components/Popover'
+import { Tooltip } from '../../components/Tooltip'
 import { formatDuration, shiftDays, toTimeInputValue, withTimeOfDay } from '../../lib/time'
+import { useNow } from '../../lib/useNow'
 import { ProjectLabel } from '../projects/ProjectLabel'
 import { ProjectPicker } from '../projects/ProjectPicker'
 import { useProjectLookup } from '../projects/useProjects'
 import { TagList, TagPicker } from '../tags/TagPicker'
 import { DescriptionInput } from '../time-entries/DescriptionInput'
-import { useCreateEntry, useDeleteEntry, useStartTimer, useStopTimer, useUpdateEntry } from '../time-entries/useTimeEntries'
+import { canSplit } from '../time-entries/split'
+import { SplitDialog } from '../time-entries/SplitDialog'
+import { isOptimistic, useCreateEntry, useDeleteEntry, useStartTimer, useStopTimer, useUpdateEntry } from '../time-entries/useTimeEntries'
 import { BillableToggle } from './BillableToggle'
 import { TimeField } from './TimeField'
 import { MAX_DESCRIPTION_LENGTH } from './TimerBar'
@@ -55,6 +60,9 @@ export function EntryEditor({ target, onClose, canContinue = true }: EntryEditor
   const [startTime, setStartTime] = useState(toTimeInputValue(initialStart))
   const [stopTime, setStopTime] = useState(initialStop ? toTimeInputValue(initialStop) : '')
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [isSplitting, setIsSplitting] = useState(false)
+  const now = useNow(isRunning)
+  const isSplittable = existing !== null && canSplit(existing, now)
   const enterPressedInside = useRef(false)
 
   const start = resolveStart(initialStart, startTime)
@@ -116,6 +124,8 @@ export function EntryEditor({ target, onClose, canContinue = true }: EntryEditor
     onClose()
   }
 
+  if (isSplitting && existing) return <SplitDialog entry={existing} onClose={onClose} />
+
   return (
     <Popover anchor={target.anchor} label={existing ? 'Edit time entry' : 'New time entry'} onClose={onClose}>
       <form
@@ -126,37 +136,38 @@ export function EntryEditor({ target, onClose, canContinue = true }: EntryEditor
       >
         <div className="flex items-center gap-1">
           {isRunning && (
-            <button
-              type="button"
-              title="Stop"
-              aria-label="Stop this entry"
-              onClick={handleStop}
-              className="flex size-8 items-center justify-center rounded-full bg-stop text-white hover:brightness-95"
-            >
-              <StopIcon width={12} height={12} />
-            </button>
+            <Tooltip label="Stop time entry">
+              <button
+                type="button"
+                aria-label="Stop this entry"
+                onClick={handleStop}
+                className="flex size-8 items-center justify-center rounded-full bg-stop text-white hover:brightness-95"
+              >
+                <StopIcon width={12} height={12} />
+              </button>
+            </Tooltip>
           )}
           {existing && !isRunning && canContinue && (
-            <button
-              type="button"
-              title="Continue"
-              aria-label="Continue this entry"
-              onClick={handleContinue}
-              className="flex size-8 items-center justify-center rounded-full bg-primary text-white hover:bg-primary-strong"
-            >
-              <PlayIcon width={14} height={14} />
-            </button>
+            <Tooltip label="Continue time entry">
+              <button
+                type="button"
+                aria-label="Continue this entry"
+                onClick={handleContinue}
+                className="flex size-8 items-center justify-center rounded-full bg-primary text-white hover:bg-primary-strong"
+              >
+                <PlayIcon width={14} height={14} />
+              </button>
+            </Tooltip>
           )}
-          {existing && (
-            <button
-              type="button"
-              title="Delete"
-              aria-label="Delete this entry"
-              onClick={handleDelete}
-              className="rounded-md p-1.5 text-ink-soft hover:bg-danger/10 hover:text-danger"
-            >
-              <TrashIcon />
-            </button>
+          {existing && !isOptimistic(existing) && (
+            <MoreMenu
+              buttonClassName="rounded-md p-1.5 text-ink-soft hover:bg-canvas hover:text-ink"
+              align="left"
+              items={[
+                { label: 'Split', onSelect: () => setIsSplitting(true), disabled: !isSplittable, hint: isSplittable ? undefined : 'Too short to split' },
+                { label: 'Delete', onSelect: handleDelete, danger: true },
+              ]}
+            />
           )}
           <button type="button" aria-label="Close" onClick={onClose} className="ml-auto rounded-md p-1 text-muted hover:text-ink">
             <CloseIcon />
@@ -178,36 +189,40 @@ export function EntryEditor({ target, onClose, canContinue = true }: EntryEditor
         />
 
         <div className="flex items-center gap-2">
-          <ProjectPicker
-            value={projectId}
-            onChange={chooseProject}
-            renderTrigger={(project) =>
-              project ? (
-                <span className="rounded-lg px-2 py-1 text-sm hover:bg-canvas">
-                  <ProjectLabel project={project} />
-                </span>
-              ) : (
-                <span className="rounded-lg p-1.5 text-muted hover:bg-canvas hover:text-primary" title="Select project">
-                  <FolderIcon />
-                </span>
-              )
-            }
-          />
-          <TagPicker
-            value={tagIds}
-            onChange={setTagIds}
-            renderTrigger={(tags) =>
-              tags.length > 0 ? (
-                <span className="rounded-lg px-1.5 py-1 hover:bg-canvas">
-                  <TagList tags={tags} />
-                </span>
-              ) : (
-                <span className="rounded-lg p-1.5 text-muted hover:bg-canvas hover:text-primary" title="Add tags">
-                  <TagIcon />
-                </span>
-              )
-            }
-          />
+          <Tooltip label={projectId ? 'Change project' : 'Select project'}>
+            <ProjectPicker
+              value={projectId}
+              onChange={chooseProject}
+              renderTrigger={(project) =>
+                project ? (
+                  <span className="rounded-lg px-2 py-1 text-sm hover:bg-canvas">
+                    <ProjectLabel project={project} />
+                  </span>
+                ) : (
+                  <span className="rounded-lg p-1.5 text-muted hover:bg-canvas hover:text-primary">
+                    <FolderIcon />
+                  </span>
+                )
+              }
+            />
+          </Tooltip>
+          <Tooltip label="Select tags">
+            <TagPicker
+              value={tagIds}
+              onChange={setTagIds}
+              renderTrigger={(tags) =>
+                tags.length > 0 ? (
+                  <span className="rounded-lg px-1.5 py-1 hover:bg-canvas">
+                    <TagList tags={tags} />
+                  </span>
+                ) : (
+                  <span className="rounded-lg p-1.5 text-muted hover:bg-canvas hover:text-primary">
+                    <TagIcon />
+                  </span>
+                )
+              }
+            />
+          </Tooltip>
           <BillableToggle value={isBillable} onChange={setIsBillable} />
         </div>
 

@@ -91,6 +91,17 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [ ] Running entry editor shows a stop button top-left (like Toggl); pressing it stops the timer and closes the editor (shown, not pressed yet)
 - [x] The running entry looks different from stopped ones (faint tint, diagonal stripes, border, open bottom), in light and dark
 
+## 4b. Split entries (web, 2026-10-14)
+- [x] Split from the calendar editor ⋮, List view ⋮, running timer bar ⋮ and Detailed row ⋮; the new entry is the earlier part, the original keeps its id, description, project, tags and billable are copied
+- [x] Running timer: split keeps the later part running; the dialog's end label ticks
+- [x] Dialog: default midpoint on a 5-minute step; drag and handles clamp to start+5 min and the last step; ArrowUp/Down, Home/End, Enter; Escape/Cancel don't split; labels never overlap; dark mode
+- [x] Split disabled with "Too short to split" for entries of 5 minutes or less, in every menu
+- [x] Failed split request rolls back with a toast (Timer page and Detailed)
+- [x] Admin splits a member's entry from Detailed; both parts stay the member's
+- [x] ⋮ menus: not clipped by cards or lists, open upward near the bottom, close on outside click/scroll/Escape (Escape inside the editor closes only the menu), red Delete last
+- [!] ⋮ menus by keyboard: focus was lost on open and Tab couldn't reach the items; now the first item is focused, arrows move, Tab/Escape return to ⋮
+- [x] Delete from the editor and timer bar menus (no confirm), List view and Detailed (confirm); deleting the running timer clears the bar
+
 ## 6. List view
 - [x] Grouped by day, newest first, day totals
 - [x] Hover action: continue

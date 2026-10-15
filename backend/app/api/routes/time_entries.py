@@ -6,6 +6,8 @@ from pydantic import AwareDatetime
 from app.api.deps import CurrentUser, TimeEntryServiceDep
 from app.api.schemas.time_entries import (
     EntrySuggestionOut,
+    SplitIn,
+    SplitOut,
     TimeEntryIn,
     TimeEntryOut,
     TimerStartIn,
@@ -69,6 +71,13 @@ def update_entry(
 ) -> TimeEntryOut:
     entry = entries.update_entry(actor, TimeEntryId(entry_id), body.to_draft())
     return TimeEntryOut.from_domain(entry)
+
+
+@router.post("/{entry_id}/split", status_code=status.HTTP_201_CREATED)
+def split_entry(
+    entry_id: UUID, body: SplitIn, actor: CurrentUser, entries: TimeEntryServiceDep
+) -> SplitOut:
+    return SplitOut.from_domain(entries.split_entry(actor, TimeEntryId(entry_id), body.at))
 
 
 @router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
