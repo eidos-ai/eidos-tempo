@@ -104,6 +104,7 @@ class ChartBucket:
     start: date
     duration: Duration
     segments: list[Share]
+    projects: list["SummaryGroup"]
 
 
 @dataclass(frozen=True)
@@ -172,6 +173,7 @@ def build_summary(
                 start=start,
                 duration=sum_durations(entries_by_bucket[start]),
                 segments=shares(entries_by_bucket[start], key_of[layout.stack_by]),
+                projects=group_entries(entries_by_bucket[start], key_of[Grouping.PROJECT]),
             )
             for start in bucket_starts(first_day, last_day, resolution)
         ],

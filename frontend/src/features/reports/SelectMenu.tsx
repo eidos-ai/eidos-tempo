@@ -15,7 +15,6 @@ export function SelectMenu<T extends string>({ label, value, options, onChange, 
   const containerRef = useRef<HTMLDivElement>(null)
   const close = useCallback(() => setIsOpen(false), [])
   useDismiss(containerRef, isOpen, close)
-  const current = options.find((option) => option.value === value)
 
   return (
     <div ref={containerRef} className="relative">
@@ -23,10 +22,20 @@ export function SelectMenu<T extends string>({ label, value, options, onChange, 
         type="button"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((open) => !open)}
-        className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm ${isOpen ? 'border-primary' : 'border-line-strong hover:border-muted'}`}
+        className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm whitespace-nowrap ${isOpen ? 'border-primary' : 'border-line-strong hover:border-muted'}`}
       >
         <span className="text-muted">{label}:</span>
-        <span className="font-semibold">{current?.label}</span>
+        <span className="grid text-left font-semibold">
+          {options.map((option) => (
+            <span
+              key={option.value}
+              aria-hidden={option.value !== value}
+              className={`col-start-1 row-start-1 ${option.value === value ? '' : 'invisible'}`}
+            >
+              {option.label}
+            </span>
+          ))}
+        </span>
         <ChevronDownIcon width={14} height={14} className={`ml-2 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       {isOpen && (

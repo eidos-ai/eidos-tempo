@@ -114,6 +114,25 @@ def test_summary_groups_by_project_then_member() -> None:
     assert [s.key for s in by_client.slices] == [None, str(client)]
 
 
+def test_chart_buckets_break_down_projects_whatever_the_stack() -> None:
+    vision = ProjectId(new_uuid())
+    day = datetime(2026, 9, 7, 9, tzinfo=MONTEVIDEO)
+    entries = [
+        entry(day, 2, ALICE, vision, is_billable=True),
+        entry(day, 1, BOB, vision),
+        entry(day, 4, BOB),
+    ]
+    layout = SummaryLayout(stack_by=Grouping.MEMBER)
+
+    report = build_summary(entries, SEPTEMBER, MONTEVIDEO, {vision: None}, layout)
+
+    assert [
+        (group.key, group.duration.seconds, group.duration.billable_seconds)
+        for group in report.buckets[6].projects
+    ] == [(None, 4 * 3600, 0), (str(vision), 3 * 3600, 2 * 3600)]
+    assert report.buckets[5].projects == []
+
+
 @pytest.mark.parametrize(
     ("days", "resolution"),
     [(1, Resolution.DAY), (31, Resolution.DAY), (32, Resolution.WEEK), (365, Resolution.MONTH)],

@@ -69,8 +69,8 @@ export function BreakdownTable({ report, onGroupingChange }: BreakdownTableProps
           <SelectMenu
             label="and"
             value={subgroupBy}
-            options={BREAKDOWN_OPTIONS.filter((option) => option.value !== groupBy)}
-            onChange={(next) => onGroupingChange(groupBy, next)}
+            options={BREAKDOWN_OPTIONS}
+            onChange={(next) => onGroupingChange(next === groupBy ? subgroupBy : groupBy, next)}
           />
         </div>
       </header>

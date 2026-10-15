@@ -59,61 +59,63 @@ export function DistributionDonut({ report }: { report: SummaryReport }) {
   if (total === 0) return <p className="py-20 text-center text-sm text-muted">No time tracked</p>
 
   return (
-    <div className="flex items-center gap-2">
-      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={`Time by ${report.slice_by}`} className="shrink-0">
-        {slices.map((slice) => (
-          <path
-            key={slice.id}
-            d={arcPath(slice.start, slice.end)}
-            style={{ fill: slice.label.color }}
-            className={`stroke-surface ${hovered && hovered !== slice.id ? 'opacity-40' : ''}`}
-            strokeWidth={slices.length > 1 ? 2 : 0}
-            onMouseEnter={() => setHovered(slice.id)}
-            onMouseLeave={() => setHovered(null)}
-          />
-        ))}
-        {slices
-          .filter((slice) => slice.seconds / total >= MIN_LABELED_SHARE)
-          .map((slice) => {
-            const middle = (slice.start + slice.end) / 2
-            const [x, y] = point(middle, LABEL_RADIUS)
-            return (
-              <text
-                key={slice.id}
-                x={x}
-                y={y + 4}
-                textAnchor={Math.sin(middle) >= 0 ? 'start' : 'end'}
-                className="fill-ink-soft text-xs font-medium"
-              >
-                {percent(slice.seconds, total, 1)}
-              </text>
-            )
-          })}
-        <text x={CENTER} y={CENTER + 3} textAnchor="middle" className="fill-ink text-base font-semibold tabular-nums">
-          {formatDuration(hoveredSlice?.seconds ?? total)}
-        </text>
-        <text x={CENTER} y={CENTER + 19} textAnchor="middle" className="fill-muted text-[10px] font-semibold tracking-wider uppercase">
-          {hoveredSlice ? percent(hoveredSlice.seconds, total) : GROUPING_SINGULAR[report.slice_by]}
-        </text>
-      </svg>
-      <ul className="max-h-64 min-w-0 flex-1 space-y-2 overflow-y-auto text-sm font-medium">
-        {slices.map((slice) => (
-          <li
-            key={slice.id}
-            className={`flex items-start gap-2 rounded-md px-1 ${hovered === slice.id ? 'bg-canvas' : ''}`}
-            onMouseEnter={() => setHovered(slice.id)}
-            onMouseLeave={() => setHovered(null)}
-            title={`${slice.label.name}: ${formatDuration(slice.seconds)}`}
-          >
-            <span className="mt-1.5 size-2.5 shrink-0 rounded-sm" style={{ backgroundColor: slice.label.color }} />
-            <span className="min-w-0 flex-1">
-              <span className={`block truncate ${slice.label.isEmpty ? 'text-muted' : ''}`}>{slice.label.name}</span>
-              {slice.label.hint && <span className="block truncate text-muted">• {slice.label.hint}</span>}
-            </span>
-            <span className="text-muted tabular-nums">{percent(slice.seconds, total)}</span>
-          </li>
-        ))}
-      </ul>
+    <div className="@container">
+      <div className="flex flex-col items-center gap-2 @lg:flex-row">
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={`Time by ${report.slice_by}`} className="shrink-0">
+          {slices.map((slice) => (
+            <path
+              key={slice.id}
+              d={arcPath(slice.start, slice.end)}
+              style={{ fill: slice.label.color }}
+              className={`stroke-surface ${hovered && hovered !== slice.id ? 'opacity-40' : ''}`}
+              strokeWidth={slices.length > 1 ? 2 : 0}
+              onMouseEnter={() => setHovered(slice.id)}
+              onMouseLeave={() => setHovered(null)}
+            />
+          ))}
+          {slices
+            .filter((slice) => slice.seconds / total >= MIN_LABELED_SHARE)
+            .map((slice) => {
+              const middle = (slice.start + slice.end) / 2
+              const [x, y] = point(middle, LABEL_RADIUS)
+              return (
+                <text
+                  key={slice.id}
+                  x={x}
+                  y={y + 4}
+                  textAnchor={Math.sin(middle) >= 0 ? 'start' : 'end'}
+                  className="fill-ink-soft text-xs font-medium"
+                >
+                  {percent(slice.seconds, total, 1)}
+                </text>
+              )
+            })}
+          <text x={CENTER} y={CENTER + 3} textAnchor="middle" className="fill-ink text-base font-semibold tabular-nums">
+            {formatDuration(hoveredSlice?.seconds ?? total)}
+          </text>
+          <text x={CENTER} y={CENTER + 19} textAnchor="middle" className="fill-muted text-[10px] font-semibold tracking-wider uppercase">
+            {hoveredSlice ? percent(hoveredSlice.seconds, total) : GROUPING_SINGULAR[report.slice_by]}
+          </text>
+        </svg>
+        <ul className="w-full min-w-0 flex-1 space-y-2 text-sm font-medium">
+          {slices.map((slice) => (
+            <li
+              key={slice.id}
+              className={`flex items-start gap-2 rounded-md px-1 ${hovered === slice.id ? 'bg-canvas' : ''}`}
+              onMouseEnter={() => setHovered(slice.id)}
+              onMouseLeave={() => setHovered(null)}
+              title={`${slice.label.name}: ${formatDuration(slice.seconds)}`}
+            >
+              <span className="mt-1.5 size-2.5 shrink-0 rounded-sm" style={{ backgroundColor: slice.label.color }} />
+              <span className="min-w-0 flex-1">
+                <span className={`block truncate ${slice.label.isEmpty ? 'text-muted' : ''}`}>{slice.label.name}</span>
+                {slice.label.hint && <span className="block truncate text-muted">• {slice.label.hint}</span>}
+              </span>
+              <span className="shrink-0 text-muted tabular-nums">{percent(slice.seconds, total)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }
