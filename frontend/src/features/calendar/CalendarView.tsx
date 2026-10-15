@@ -362,14 +362,14 @@ function EntryBlock({ segment, hourHeight, now, isLifted, onMouseDown, onSelect,
         } as CSSProperties
       }
     >
-      {height >= 20 && <p className="truncate font-semibold text-ink">{entry.description || '(no description)'}</p>}
+      {height >= 20 && <p className="min-h-0 overflow-hidden font-semibold wrap-anywhere text-ink">{entry.description || '(no description)'}</p>}
       {height >= 36 && project && (
-        <p className="truncate text-muted">
+        <p className="shrink-0 truncate text-muted">
           <span className="font-medium" style={{ color: projectTextColor(color) }}>{project.name}</span>
           {client && ` · ${client.name}`}
         </p>
       )}
-      {height >= 52 && <p className="mt-auto font-medium text-ink tabular-nums">{formatDuration(entrySeconds(entry, now))}</p>}
+      {height >= 52 && <p className="mt-auto shrink-0 font-medium text-ink tabular-nums">{formatDuration(entrySeconds(entry, now))}</p>}
       {canResize && startsHere && <ResizeHandle edge="start" onMouseDown={(event) => onMouseDown(event, 'resize-start')} />}
       {canResize && endsHere && <ResizeHandle edge="end" onMouseDown={(event) => onMouseDown(event, 'resize-end')} />}
       {!isRunning && !isPending && height >= MIN_PLAY_BLOCK_HEIGHT && (

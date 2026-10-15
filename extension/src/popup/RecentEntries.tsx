@@ -172,7 +172,7 @@ function EntryGroupRow({ group, lookups, tags, now, onEdit, onContinue }: EntryG
             </span>
           )}
           <span className="min-w-0 flex-1">
-            <span className={`block truncate ${latest.description ? 'text-ink' : 'text-muted'}`}>
+            <span className={`block wrap-anywhere ${latest.description ? 'text-ink' : 'text-muted'}`}>
               {latest.description || 'Add a description'}
             </span>
             <span className="flex min-w-0 items-center gap-2 text-xs">
