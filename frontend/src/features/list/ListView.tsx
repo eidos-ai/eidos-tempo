@@ -18,7 +18,7 @@ import { TagList } from '../tags/TagPicker'
 import { useTagLookup } from '../tags/useTags'
 import { canSplit } from '../time-entries/split'
 import { SplitDialog } from '../time-entries/SplitDialog'
-import { isOptimistic } from '../time-entries/useTimeEntries'
+import { isOptimistic, useDuplicateEntry } from '../time-entries/useTimeEntries'
 
 interface ListViewProps {
   entries: TimeEntry[]
@@ -94,6 +94,7 @@ function EntryRow({ entry, now, onSelect, onContinue, onDelete }: { entry: TimeE
   const isPending = isOptimistic(entry)
   const [isSplitting, setIsSplitting] = useState(false)
   const isSplittable = canSplit(entry, now)
+  const duplicateEntry = useDuplicateEntry()
 
   return (
     <li
@@ -131,6 +132,7 @@ function EntryRow({ entry, now, onSelect, onContinue, onDelete }: { entry: TimeE
           <MoreMenu
             buttonClassName="rounded-md p-1 text-ink-soft hover:bg-canvas hover:text-ink"
             items={[
+              ...(isRunning ? [] : [{ label: 'Duplicate', onSelect: () => duplicateEntry.mutate(entry) }]),
               { label: 'Split', onSelect: () => setIsSplitting(true), disabled: !isSplittable, hint: isSplittable ? undefined : 'Too short to split' },
               { label: 'Delete', onSelect: () => onDelete(entry), danger: true },
             ]}

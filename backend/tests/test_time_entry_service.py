@@ -434,3 +434,60 @@ def test_only_the_owner_or_an_admin_can_split_and_deleted_entries_cannot_be_spli
     time_entry_service.delete_entry(member, entry.id)
     with pytest.raises(NotFoundError):
         time_entry_service.split_entry(member, entry.id, at + timedelta(minutes=10))
+
+
+def test_duplicate_is_an_exact_copy_with_the_same_times(
+    time_entry_service: TimeEntryService,
+    project_service: ProjectService,
+    tag_service: TagService,
+    member: User,
+    admin: User,
+    clock: FakeClock,
+) -> None:
+    project = project_service.create_project(
+        admin, ProjectDraft("Client work", HexColor("#7b4de7"), None, True)
+    )
+    tag = tag_service.create_tag(admin, TagDraft("dev"))
+    start = clock.now() - timedelta(hours=2)
+    entry = time_entry_service.create_entry(
+        member,
+        TimeEntryDraft(
+            "Review", project.id, start, clock.now(), is_billable=True, tag_ids=(tag.id,)
+        ),
+    )
+
+    copy = time_entry_service.duplicate_entry(member, entry.id)
+
+    assert copy.id != entry.id
+    assert copy.user_id == member.id
+    assert (copy.start, copy.stop) == (entry.start, entry.stop)
+    assert copy.description == "Review"
+    assert copy.project_id == project.id
+    assert copy.is_billable
+    assert copy.tag_ids == (tag.id,)
+    period = DateRange(start - timedelta(days=1), start + timedelta(days=1))
+    assert len(time_entry_service.list_entries(member, period)) == 2
+
+
+def test_running_timer_cannot_be_duplicated(
+    time_entry_service: TimeEntryService, member: User
+) -> None:
+    running = time_entry_service.start_timer(member, TimerStart("x", None))
+
+    with pytest.raises(InvalidValueError):
+        time_entry_service.duplicate_entry(member, running.id)
+
+
+def test_only_the_owner_or_an_admin_can_duplicate_and_deleted_entries_cannot_be_duplicated(
+    time_entry_service: TimeEntryService, member: User, admin: User, clock: FakeClock
+) -> None:
+    start = clock.now() - timedelta(hours=1)
+    entry = time_entry_service.create_entry(member, TimeEntryDraft("x", None, start, clock.now()))
+    other = time_entry_service.create_entry(admin, TimeEntryDraft("y", None, start, clock.now()))
+
+    with pytest.raises(NotFoundError):
+        time_entry_service.duplicate_entry(member, other.id)
+    assert time_entry_service.duplicate_entry(admin, entry.id).user_id == member.id
+    time_entry_service.delete_entry(member, entry.id)
+    with pytest.raises(NotFoundError):
+        time_entry_service.duplicate_entry(member, entry.id)
