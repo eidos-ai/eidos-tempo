@@ -79,6 +79,9 @@ It uses your Tempo login in the same browser. The server address (default: produ
 `https://tempo.eidos.ai`) is in the extension's Options (right-click the icon); for
 development set it to `http://localhost:5173`.
 
+The popup's screen is served by Tempo itself (`/extension-popup.html`, code in `frontend/src/extension-popup/`), so it
+updates with every deploy. Reinstall the extension only when `extension/` changes (toolbar icon, settings, permissions).
+
 ## Importing from Toggl
 
 Copies members, clients, projects, tags and time entries. Safe to re-run: a second run only updates what changed.

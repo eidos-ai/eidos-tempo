@@ -118,21 +118,34 @@ these shapes, compare with Toggl again.
 
 ## Chrome extension (`extension/`)
 
-- Manifest V3, React + Tailwind built with Vite into `extension/dist` (load it unpacked in Chrome).
-- No separate login: it calls the same API with the browser's `tempo_session` cookie (host permission
+- Manifest V3, built with Vite into `extension/dist` (load it unpacked in Chrome). The `key` in the manifest pins the
+  id `aabjcgobabckcofdneloahhdellfhjhe`; `frontend/nginx/app.conf` lets only that id frame the popup page.
+- The extension is a thin shell so it rarely needs a new release. Its popup (`src/shell/popup.ts`) only shows the popup page
+  the server hosts (`/extension-popup.html`, code in `frontend/src/extension-popup/`) in an iframe, so popup changes ship
+  with every frontend deploy. The page asks the shell for what only the extension can do with `postMessage`
+  (`ShellMessage` in `frontend/src/extension-popup/shell.ts` and `extension/src/shell/messages.ts`, kept in sync by hand):
+  toolbar icon, opening Tempo, opening Settings. The shell accepts messages only from the server's origin and its own frame.
+  Add a new message only when needed: shells already installed ignore it until users update.
+- What stays in the extension: the shell (spinner, "Can't reach" after 10 s), `background.ts` (refreshes the toolbar icon every
+  minute from `GET /time-entries/running`), `badge.ts`, and the options page (server address, `GET /me`). Keep the fields
+  those two endpoints return; changing them needs an extension release.
+- No separate login: the frame and the background use the browser's `tempo_session` cookie (host permission
   for the Tempo address). Logged out → the popup links to the web app.
 - The server address is a setting (`src/config.ts`, options page); the default is production's address (`https://tempo.eidos.ai`),
   which is also in the manifest's `host_permissions` so no permission prompt appears. Only `https://` or `http://localhost`
   are accepted, so moving to HTTPS is a settings change.
-- `src/api.ts` mirrors the API types by hand, like the frontend. Actions are optimistic (`act` in `popup/useTempo.ts`:
-  shown at once, sent in order, refreshed once the queue is empty). Failed actions show "… was not saved", roll back
-  in the popup and keep the user's input. The running timer is edited in place; clicking its time opens the start/duration
-  editor like the web. Past entries are edited only in `EntryEditor` (an overlay inside the popup, never a new window):
-  description, project, tags, billable, and duration with a start/stop/date popover. It saves optimistically and closes;
-  a failed save reopens it with the user's input. Rows group entries whose fields all
-  match except the times; a group's row only opens or closes its drawer of entries; the toolbar icon (a simplified three-ring version of the logo, drawn as vectors in `src/badge.ts` so it stays crisp at 16 px) is purple while a timer runs, gray otherwise, and shows a red `!` when not connected.
-- Agents can't open `chrome-extension://` or `chrome://` pages; to test the popup, copy `dist` under
-  `frontend/public/` temporarily and stub `chrome.storage`/`chrome.action` (remove the copy afterwards).
+- Popup page (`frontend/src/extension-popup/`): its own `api.ts`/`types.ts` mirror the API by hand. Actions are optimistic
+  (`act` in `useTempo.ts`: shown at once, sent in order, refreshed once the queue is empty). Failed actions show
+  "… was not saved", roll back in the popup and keep the user's input. The running timer is edited in place; clicking its
+  time opens the start/duration editor like the web. Past entries are edited only in `EntryEditor` (an overlay inside the
+  popup, never a new window): description, project, tags, billable, and duration with a start/stop/date popover. It saves
+  optimistically and closes; a failed save reopens it with the user's input. Rows group entries whose fields all match
+  except the times; a group's row only opens or closes its drawer of entries. The toolbar icon (a simplified three-ring
+  version of the logo, drawn as vectors in `src/badge.ts` so it stays crisp at 16 px) is purple while a timer runs, gray
+  otherwise, and shows a red `!` when not connected.
+- Agents can't open `chrome-extension://` or `chrome://` pages. Test the popup page at `http://localhost:5173/extension-popup.html`
+  (or inside a temporary iframe page under `frontend/public/` to see its messages; remove it afterwards). The dev server sends no
+  CSP; check framing rules against the nginx build (`docker-compose.cloudrun.yml`).
 
 ## Data safety rules (do not break)
 

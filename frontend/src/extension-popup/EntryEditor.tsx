@@ -9,8 +9,8 @@ import {
   startOfDay,
   toTimeInputValue,
   withTimeOfDay,
-} from '../time'
-import type { EntrySuggestion, Tag, TimeEntry, TimeEntryInput } from '../types'
+} from './time'
+import type { EntrySuggestion, Tag, TimeEntry, TimeEntryInput } from './types'
 import { DayCalendar } from './DayCalendar'
 import { DescriptionInput } from './DescriptionInput'
 import { CloseIcon, DollarIcon, FolderIcon, TagIcon } from './icons'

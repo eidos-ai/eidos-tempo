@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { dayLabel, entrySeconds, formatClockTime, formatDuration, secondsSince, startOfDay, startOfWeek } from '../time'
-import type { EntrySuggestion, Tag, TimeEntry, TimeEntryInput } from '../types'
+import { dayLabel, entrySeconds, formatClockTime, formatDuration, secondsSince, startOfDay, startOfWeek } from './time'
+import type { EntrySuggestion, Tag, TimeEntry, TimeEntryInput } from './types'
 import { EntryEditor } from './EntryEditor'
 import { DollarIcon, PlayIcon } from './icons'
 import { clientOf, type Lookups } from './lookups'

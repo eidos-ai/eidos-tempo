@@ -6,30 +6,6 @@ export interface User {
   preferences: { theme: Theme }
 }
 
-export interface Client {
-  id: string
-  name: string
-}
-
-export interface Project {
-  id: string
-  name: string
-  color: string
-  client_id: string | null
-  is_billable: boolean
-}
-
-export interface Tag {
-  id: string
-  name: string
-  is_archived: boolean
-}
-
-export interface TagInput {
-  name: string
-  is_archived: boolean
-}
-
 export interface TimeEntry {
   id: string
   description: string
@@ -38,26 +14,4 @@ export interface TimeEntry {
   tag_ids: string[]
   start: string
   stop: string | null
-}
-
-export interface TimeEntryInput {
-  description: string
-  project_id: string | null
-  is_billable: boolean
-  tag_ids: string[]
-  start: string
-  stop: string | null
-}
-
-export interface EntrySuggestion {
-  description: string
-  project_id: string | null
-}
-
-export interface TimerStartInput {
-  description: string
-  project_id: string | null
-  is_billable?: boolean
-  tag_ids?: string[]
-  start?: string
 }

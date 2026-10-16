@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import type { Project } from '../types'
+import type { Project } from './types'
 import { SearchIcon } from './icons'
 import { keepInView } from './keepInView'
 import { clientOf, type Lookups } from './lookups'

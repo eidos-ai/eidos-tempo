@@ -9,7 +9,24 @@
     />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/popup/main.tsx"></script>
+    <div class="relative h-[600px] w-[450px] bg-canvas">
+      <div id="loading" class="flex h-full items-center justify-center" role="status" aria-label="Loading">
+        <span class="size-6 animate-spin rounded-full border-2 border-line-strong border-t-primary"></span>
+      </div>
+      <div id="unreachable" hidden class="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
+        <span role="img" aria-label="eidos.ai" class="wordmark h-8"></span>
+        <p id="unreachable-message" class="text-sm text-ink-soft"></p>
+        <div class="flex gap-2">
+          <button id="retry" type="button" class="h-10 rounded-lg bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-strong">
+            Try again
+          </button>
+          <button id="settings" type="button" class="h-10 rounded-lg border border-line bg-surface px-5 text-sm font-semibold text-ink hover:bg-canvas">
+            Settings
+          </button>
+        </div>
+      </div>
+      <iframe id="tempo" hidden title="Eidos Tempo" class="block h-full w-full border-0"></iframe>
+    </div>
+    <script type="module" src="/src/shell/popup.ts"></script>
   </body>
 </html>

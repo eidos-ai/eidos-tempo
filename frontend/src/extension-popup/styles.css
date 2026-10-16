@@ -1,0 +1,102 @@
+@import "tailwindcss" source(".");
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "DM Sans", "Inter", ui-sans-serif, sans-serif;
+
+  --color-ink: #181633;
+  --color-ink-soft: #4a4870;
+  --color-muted: #8a88a8;
+  --color-canvas: #f7f7fb;
+  --color-surface: #ffffff;
+  --color-line: #e7e6f0;
+  --color-line-strong: #d5d3e3;
+
+  --color-primary: #7b4de7;
+  --color-primary-strong: #5325b8;
+  --color-primary-soft: #f1ecfd;
+  --color-accent: #5325b8;
+
+  --color-stop: #e26d5c;
+  --color-danger: #c93c3c;
+  --color-logo: #181633;
+  --color-overlay: rgb(24 22 51 / 0.3);
+}
+
+:root {
+  color-scheme: light;
+  --project-text-min-lightness: 0;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --project-text-min-lightness: 0.82;
+
+  --color-ink: #f3f1ee;
+  --color-ink-soft: #c4c1cc;
+  --color-muted: #96939f;
+  --color-canvas: #121116;
+  --color-surface: #1a191f;
+  --color-line: #29272f;
+  --color-line-strong: #3a3842;
+
+  --color-primary-strong: #9470ee;
+  --color-primary-soft: #2b2340;
+  --color-accent: #c9b6f8;
+
+  --color-stop: #e8806f;
+  --color-danger: #f08a8a;
+  --color-logo: #f3f1ee;
+  --color-overlay: rgb(0 0 0 / 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --project-text-min-lightness: 0.82;
+
+    --color-ink: #f3f1ee;
+    --color-ink-soft: #c4c1cc;
+    --color-muted: #96939f;
+    --color-canvas: #121116;
+    --color-surface: #1a191f;
+    --color-line: #29272f;
+    --color-line-strong: #3a3842;
+
+    --color-primary-strong: #9470ee;
+    --color-primary-soft: #2b2340;
+    --color-accent: #c9b6f8;
+
+    --color-stop: #e8806f;
+    --color-danger: #f08a8a;
+    --color-logo: #f3f1ee;
+  --color-overlay: rgb(0 0 0 / 0.6);
+  }
+}
+
+/* Chrome grows a popup to fit its content; a fixed width keeps dropdowns from widening the window. */
+html.popup,
+html.popup body {
+  width: 450px;
+  overflow-x: hidden;
+}
+
+body {
+  @apply bg-canvas text-ink font-sans antialiased;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: progress;
+}
+
+.wordmark {
+  aspect-ratio: 1880 / 500;
+  background-color: var(--color-logo);
+  mask: url("./assets/eidos-logo.svg") center / contain no-repeat;
+}

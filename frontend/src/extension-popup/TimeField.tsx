@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { parseClockText, toTwelveHour, type Meridiem } from '../time'
+import { parseClockText, toTwelveHour, type Meridiem } from './time'
 
 interface TimeFieldProps {
   label: string

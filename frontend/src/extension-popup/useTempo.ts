@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError, tempoApi } from '../api'
-import { showProblem, showRunning } from '../badge'
-import { addDays, startOfDay } from '../time'
-import type { Client, EntrySuggestion, Project, Tag, TimeEntry, TimeEntryInput, TimerStartInput, User } from '../types'
+import { ApiError, tempoApi } from './api'
+import { showProblem, showRunning } from './shell'
+import { addDays, startOfDay } from './time'
+import type { Client, EntrySuggestion, Project, Tag, TimeEntry, TimeEntryInput, TimerStartInput, User } from './types'
 
 const RECENT_DAYS = 7
 

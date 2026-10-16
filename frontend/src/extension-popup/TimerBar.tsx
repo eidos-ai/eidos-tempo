@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { EntrySuggestion, Tag, TimeEntry, TimerStartInput } from '../types'
+import type { EntrySuggestion, Tag, TimeEntry, TimerStartInput } from './types'
 import { DescriptionInput } from './DescriptionInput'
 import { DollarIcon, FolderIcon, PlayIcon, StopIcon, TagIcon } from './icons'
 import { clientOf, type Lookups } from './lookups'

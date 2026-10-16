@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import type { EntrySuggestion, Project } from '../types'
+import type { EntrySuggestion, Project } from './types'
 import { clientOf, type Lookups } from './lookups'
 import { ProjectLabel } from './ProjectLabel'
 

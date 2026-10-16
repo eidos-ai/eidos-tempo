@@ -240,7 +240,7 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Stop with the server unreachable: "Stopping the timer was not saved…", timer keeps running, icon shows `!`
 - [x] Stop, then the entry appears under Today with the day total; ▶ continue starts it again
 - [x] Follows the user's light/dark theme; logo readable in both
-- [x] Layout follows Toggl's popup (450×600): eidos.ai wordmark header with open, refresh and settings; description, timer and stop on one row; Today and Week totals; flat day sections; same tokens and fonts as the web app
+- [x] Layout follows Toggl's popup (450×600): "Eidos Tempo" header with open, refresh and settings; description, timer and stop on one row; Today and Week totals; flat day sections; same tokens and fonts as the web app
 - [x] Long running descriptions fit (16 px) and end in "…" when too long
 - [x] Timer tags: search, toggle, create a new tag with Enter; chips shown next to the project; a failed create keeps the typed name
 - [x] Timer billable $ is a toggle; choosing a project resets it to the project's default
@@ -260,6 +260,10 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [!] Tag menu opened from chips on the right overflowed the 450 px popup and shifted the whole window sideways; menus now shift left to stay inside
 - [x] With saves slowed to 1.5 s: start, stop, ▶ continue, typed description/project/tag/billable and picked suggestions show at once; nothing changes when the save finishes; buttons are never disabled
 - [x] Stop with the server fully unreachable: the popup goes back to running, shows "Stopping the timer was not saved…", icon ends on `!`
+- [x] Popup served by the server in an iframe: logged in through the frame, entry created from the popup shows on the web (Cloud Run simulation)
+- [x] Only the extension can frame `/extension-popup.html`; a web page framing it or `/` is refused (Cloud Run simulation)
+- [x] Header says "Eidos Tempo" (no wordmark, too small to be sharp)
+- [ ] Server down when opening the popup: spinner, then "Can't reach Eidos Tempo" with Try again and Settings after 10 s, icon shows `!`
 
 ## 19. Reports
 - [x] Summary for September matches Toggl: everyone 652:43:46 total, 282:33:31 billable (43.29%), 29.67 h daily average; one member 121:26:45, 4:54:49 (4.05%), 5.52
