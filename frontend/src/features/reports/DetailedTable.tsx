@@ -5,14 +5,13 @@ import { Button } from '../../components/Button'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, DollarIcon, FolderIcon, MoreIcon, PencilIcon, TagIcon, TrashIcon } from '../../components/icons'
 import { Modal } from '../../components/Modal'
 import { entrySeconds, formatClockTime, formatDuration, parseDuration } from '../../lib/time'
-import { useCurrentUser } from '../auth/useAuth'
 import { ProjectLabel } from '../projects/ProjectLabel'
 import { ProjectPicker } from '../projects/ProjectPicker'
 import { useProjectLookup } from '../projects/useProjects'
 import { TagList, TagPicker } from '../tags/TagPicker'
 import { canSplit } from '../time-entries/split'
 import { SplitDialog } from '../time-entries/SplitDialog'
-import { useCreateEntry, useDeleteEntries, useDeleteEntry, useUpdateEntries, useUpdateEntry } from '../time-entries/useTimeEntries'
+import { useDeleteEntries, useDeleteEntry, useDuplicateEntry, useUpdateEntries, useUpdateEntry } from '../time-entries/useTimeEntries'
 import { MAX_DESCRIPTION_LENGTH } from '../timer/TimerBar'
 import { Avatar } from './Avatar'
 import { MonthCalendar } from './MonthCalendar'
@@ -456,21 +455,11 @@ function RowMenu({ entry, onToggleBillable, onSplit, onDelete }: RowMenuProps) {
   const close = useCallback(() => setIsOpen(false), [])
   useDismiss(containerRef, isOpen, close)
   const navigate = useNavigate()
-  const isOwn = useCurrentUser().id === entry.user_id
-  const createEntry = useCreateEntry()
+  const duplicateEntry = useDuplicateEntry()
   const act = (action: () => void) => () => {
     setIsOpen(false)
     action()
   }
-  const duplicate = () =>
-    createEntry.mutate({
-      description: entry.description,
-      project_id: entry.project_id,
-      is_billable: entry.is_billable,
-      tag_ids: entry.tag_ids,
-      start: entry.start,
-      stop: entry.stop,
-    })
 
   return (
     <div ref={containerRef} className="relative">
@@ -485,7 +474,7 @@ function RowMenu({ entry, onToggleBillable, onSplit, onDelete }: RowMenuProps) {
       </button>
       {isOpen && (
         <div className="absolute top-full right-0 z-40 mt-1 w-44 rounded-lg border border-line bg-surface p-1 shadow-xl">
-          {isOwn && <MenuItem onClick={act(duplicate)}>Duplicate</MenuItem>}
+          <MenuItem onClick={act(() => duplicateEntry.mutate(entry))}>Duplicate</MenuItem>
           <MenuItem onClick={act(onToggleBillable)}>{entry.is_billable ? 'Set as non-billable' : 'Set as billable'}</MenuItem>
           <MenuItem onClick={act(() => onSplit?.())} disabled={!onSplit} hint={onSplit ? undefined : 'Too short to split'}>
             Split

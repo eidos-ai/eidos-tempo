@@ -267,6 +267,24 @@ def test_admin_can_edit_a_members_entry_from_reports(api_client: TestClient) -> 
     assert [(e["description"], e["is_billable"]) for e in entries] == [("Fixed", False)]
 
 
+def test_duplicate_entry_endpoint(api_client: TestClient) -> None:
+    login(api_client)
+    entry_id = add_entry(api_client, "Review", "2026-09-10T12:00:00Z", "2026-09-10T14:00:00Z")
+
+    response = api_client.post(f"/api/time-entries/{entry_id}/duplicate")
+
+    assert response.status_code == 201
+    copy = response.json()
+    assert copy["id"] != entry_id
+    assert (copy["description"], copy["start"], copy["stop"]) == (
+        "Review",
+        "2026-09-10T12:00:00Z",
+        "2026-09-10T14:00:00Z",
+    )
+    entries = api_client.get("/api/reports/entries", params=SEPTEMBER_PARAMS).json()
+    assert len(entries) == 2
+
+
 def test_split_entry_endpoint(api_client: TestClient) -> None:
     login(api_client)
     entry_id = add_entry(api_client, "Review", "2026-09-10T12:00:00Z", "2026-09-10T14:00:00Z")

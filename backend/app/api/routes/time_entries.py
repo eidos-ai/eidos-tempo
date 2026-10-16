@@ -80,6 +80,13 @@ def split_entry(
     return SplitOut.from_domain(entries.split_entry(actor, TimeEntryId(entry_id), body.at))
 
 
+@router.post("/{entry_id}/duplicate", status_code=status.HTTP_201_CREATED)
+def duplicate_entry(
+    entry_id: UUID, actor: CurrentUser, entries: TimeEntryServiceDep
+) -> TimeEntryOut:
+    return TimeEntryOut.from_domain(entries.duplicate_entry(actor, TimeEntryId(entry_id)))
+
+
 @router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_entry(entry_id: UUID, actor: CurrentUser, entries: TimeEntryServiceDep) -> None:
     entries.delete_entry(actor, TimeEntryId(entry_id))

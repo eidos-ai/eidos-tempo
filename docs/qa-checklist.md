@@ -98,6 +98,13 @@ Legend: `[x]` verified · `[ ]` pending · `[!]` found a bug, fixed and re-verif
 - [x] Split disabled with "Too short to split" for entries of 5 minutes or less, in every menu
 - [x] Failed split request rolls back with a toast (Timer page and Detailed)
 - [x] Admin splits a member's entry from Detailed; both parts stay the member's
+
+## 4c. Duplicate entries (web, 2026-10-16)
+- [x] Toggl checked first: exact copy (same start/stop to the second, description, project, tags, billable), no dialog; in single-entry ⋮ menus and Detailed ⋮ (first item), a copy button in the calendar editor that closes it; not on the running timer, grouped rows or bulk selection
+- [x] Duplicate from List view ⋮ (first item, hidden for the running entry): copy shows at once with project, tags, billable and the day total
+- [x] Calendar editor: Duplicate first in its ⋮ menu (not for the running entry), closes the editor
+- [x] Failed duplicate rolls back with the "not saved" toast
+- [x] Admin duplicates a member's entry from Detailed; the copy stays the member's (Detailed no longer limits Duplicate to own entries)
 - [x] ⋮ menus: not clipped by cards or lists, open upward near the bottom, close on outside click/scroll/Escape (Escape inside the editor closes only the menu), red Delete last
 - [!] ⋮ menus by keyboard: focus was lost on open and Tab couldn't reach the items; now the first item is focused, arrows move, Tab/Escape return to ⋮
 - [x] Delete from the editor and timer bar menus (no confirm), List view and Detailed (confirm); deleting the running timer clears the bar

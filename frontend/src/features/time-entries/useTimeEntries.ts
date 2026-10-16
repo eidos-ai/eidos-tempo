@@ -201,6 +201,19 @@ export function useSplitEntry() {
   )
 }
 
+// Like Toggl, the copy has the same times and fields and belongs to the original's owner.
+export function useDuplicateEntry() {
+  return useEntryMutation(
+    (entry: TimeEntry) => timeEntriesApi.duplicate(entry.id),
+    (queryClient, entry) => {
+      const isOwn = queryClient
+        .getQueriesData<TimeEntry[]>({ queryKey: queryKeys.weekEntries })
+        .some(([, entries]) => entries?.some((e) => e.id === entry.id))
+      if (isOwn) insertIntoWeeks(queryClient, { ...entry, id: `${OPTIMISTIC_ID_PREFIX}${Date.now()}` })
+    },
+  )
+}
+
 interface EntryUpdate {
   id: string
   input: TimeEntryInput

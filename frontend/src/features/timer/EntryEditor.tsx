@@ -14,7 +14,7 @@ import { TagList, TagPicker } from '../tags/TagPicker'
 import { DescriptionInput } from '../time-entries/DescriptionInput'
 import { canSplit } from '../time-entries/split'
 import { SplitDialog } from '../time-entries/SplitDialog'
-import { isOptimistic, useCreateEntry, useDeleteEntry, useStartTimer, useStopTimer, useUpdateEntry } from '../time-entries/useTimeEntries'
+import { isOptimistic, useCreateEntry, useDeleteEntry, useDuplicateEntry, useStartTimer, useStopTimer, useUpdateEntry } from '../time-entries/useTimeEntries'
 import { BillableToggle } from './BillableToggle'
 import { TimeField } from './TimeField'
 import { MAX_DESCRIPTION_LENGTH } from './TimerBar'
@@ -44,6 +44,7 @@ export function EntryEditor({ target, onClose, canContinue = true }: EntryEditor
   const createEntry = useCreateEntry()
   const updateEntry = useUpdateEntry()
   const deleteEntry = useDeleteEntry()
+  const duplicateEntry = useDuplicateEntry()
   const startTimer = useStartTimer()
   const stopTimer = useStopTimer()
   const projects = useProjectLookup()
@@ -113,6 +114,12 @@ export function EntryEditor({ target, onClose, canContinue = true }: EntryEditor
     onClose()
   }
 
+  const handleDuplicate = () => {
+    if (!existing) return
+    duplicateEntry.mutate(existing)
+    onClose()
+  }
+
   const handleStop = () => {
     stopTimer.mutate()
     onClose()
@@ -164,6 +171,7 @@ export function EntryEditor({ target, onClose, canContinue = true }: EntryEditor
               buttonClassName="rounded-md p-1.5 text-ink-soft hover:bg-canvas hover:text-ink"
               align="left"
               items={[
+                ...(isRunning ? [] : [{ label: 'Duplicate', onSelect: handleDuplicate }]),
                 { label: 'Split', onSelect: () => setIsSplitting(true), disabled: !isSplittable, hint: isSplittable ? undefined : 'Too short to split' },
                 { label: 'Delete', onSelect: handleDelete, danger: true },
               ]}

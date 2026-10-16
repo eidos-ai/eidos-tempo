@@ -185,6 +185,26 @@ class TimeEntryService:
         log_if_on_behalf(actor, entry, "split")
         return SplitEntries(earlier=earlier, later=entry)
 
+    def duplicate_entry(self, actor: User, entry_id: TimeEntryId) -> TimeEntry:
+        """Duplicates like Toggl: an exact copy with the same times, for the same owner."""
+        entry = self._get_editable(actor, entry_id)
+        if entry.is_running:
+            raise InvalidValueError("A running entry cannot be duplicated")
+        copy = TimeEntry(
+            id=TimeEntryId(new_uuid()),
+            user_id=entry.user_id,
+            project_id=entry.project_id,
+            description=entry.description,
+            start=entry.start,
+            stop=entry.stop,
+            created_at=self._clock.now(),
+            is_billable=entry.is_billable,
+            tag_ids=entry.tag_ids,
+        )
+        self._entries.add(copy)
+        log_if_on_behalf(actor, entry, "duplicated")
+        return copy
+
     def get_editable_entry(self, actor: User, entry_id: TimeEntryId) -> TimeEntry:
         return self._get_editable(actor, entry_id)
 
