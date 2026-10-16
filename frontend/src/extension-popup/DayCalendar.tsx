@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { addDays, isSameDay, startOfWeek } from '../time'
+import { addDays, isSameDay, startOfWeek } from './time'
 import { ChevronLeftIcon, ChevronRightIcon } from './icons'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']

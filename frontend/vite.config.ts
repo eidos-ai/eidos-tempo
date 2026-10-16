@@ -4,6 +4,14 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        'extension-popup': 'extension-popup.html',
+      },
+    },
+  },
   server: {
     proxy: {
       '/api': 'http://localhost:8000',

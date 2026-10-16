@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Eidos Tempo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Start and stop your Eidos Tempo timer from any tab.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAh+2dX+nLMM1cHpVZ/WMnCnkqHV51FTHGdHCquUeCa3px/mWkFYCCHHJjkgYvE/+hVjHDnRUf83Q89Ps4LrmkKoT537OALB+U3bJ2lD9IJnCtsZJCIYMLESDWzrGGjeqGrkyTa57MCpYQDSly7+eBV5B3/q+usr7LXEeAmnFfLfkr3lsCEwTwvisVQuInU4aioseROWTc9tk5EGQYZ9qtJRXn3ZRF4WGHVwowdcRXQKQumxyIRapaxqShwFeSXGWL4VAS07DO9K93GLs4CxnVSj0Rs9FnC1ErIVmVvdGbIotX+bFQJuQuvEvWG5ceUYhF/BwdagoHZgjeqR1F2ZgkCQIDAQAB",
   "icons": { "16": "icon-16.png", "32": "icon-32.png", "48": "icon-48.png", "128": "icon-128.png" },
   "action": {
     "default_title": "Eidos Tempo",

@@ -1,4 +1,4 @@
-import type { Client, Project } from '../types'
+import type { Client, Project } from './types'
 
 export interface Lookups {
   projects: Map<string, Project>

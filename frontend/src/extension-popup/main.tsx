@@ -1,7 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import '../styles.css'
+import './styles.css'
 import { Popup } from './Popup'
+import { announceReady } from './shell'
 import { applyCachedTheme } from './theme'
 
 applyCachedTheme()
@@ -14,3 +15,5 @@ createRoot(root).render(
     <Popup />
   </StrictMode>,
 )
+
+announceReady()

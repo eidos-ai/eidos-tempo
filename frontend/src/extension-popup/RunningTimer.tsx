@@ -11,8 +11,8 @@ import {
   startOfDay,
   toTimeInputValue,
   withTimeOfDay,
-} from '../time'
-import type { TimeEntry } from '../types'
+} from './time'
+import type { TimeEntry } from './types'
 import { DayCalendar } from './DayCalendar'
 import { swallowNextClick } from './swallowNextClick'
 import { TimeField } from './TimeField'

@@ -1,15 +1,5 @@
 import { getServerUrl } from './config'
-import type {
-  Client,
-  EntrySuggestion,
-  Project,
-  Tag,
-  TagInput,
-  TimeEntry,
-  TimeEntryInput,
-  TimerStartInput,
-  User,
-} from './types'
+import type { TimeEntry, User } from './types'
 
 export type ApiErrorKind = 'not-logged-in' | 'unreachable' | 'rejected'
 
@@ -57,18 +47,5 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 export const tempoApi = {
   me: () => request<User>('GET', '/me'),
-  clients: () => request<Client[]>('GET', '/clients'),
-  projects: () => request<Project[]>('GET', '/projects'),
-  tags: () => request<Tag[]>('GET', '/tags?include_archived=true'),
-  createTag: (input: TagInput) => request<Tag>('POST', '/tags', input),
   running: () => request<TimeEntry | null>('GET', '/time-entries/running'),
-  entries: (start: Date, end: Date) =>
-    request<TimeEntry[]>(
-      'GET',
-      `/time-entries?start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`,
-    ),
-  suggestions: () => request<EntrySuggestion[]>('GET', '/time-entries/suggestions'),
-  start: (input: TimerStartInput) => request<TimeEntry>('POST', '/time-entries/start', input),
-  stop: (stop: string) => request<TimeEntry>('POST', '/time-entries/stop', { stop }),
-  update: (id: string, input: TimeEntryInput) => request<TimeEntry>('PUT', `/time-entries/${id}`, input),
 }
